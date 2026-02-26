@@ -21,6 +21,7 @@
         "vue": "^3.4.0"
     },
     "dependencies": {
-        "flowbite": "^4.0.1"
+        "flowbite": "^4.0.1",
+        "ziggy-js": "^2.6.1"
     }
 }
