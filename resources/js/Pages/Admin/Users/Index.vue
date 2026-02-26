@@ -5,6 +5,7 @@ import Breadcrumb from '@/Components/Admin/Breadcrumb.vue';
 import { router } from '@inertiajs/vue3';
 import { route } from 'ziggy-js';
 import { ref, computed } from 'vue';
+import Pagination from '@/Components/Pagination.vue';
 
 const props = defineProps({ users: Object });
 
@@ -63,13 +64,19 @@ function confirmDelete(user) {
   <div class="p-6">
     <div class="flex justify-between items-center mb-4">
       <div class="flex items-center space-x-2">
-        <label for="per_page" class="text-sm font-medium text-gray-700">Per page</label>
-        <select id="per_page" name="per_page" class="rounded-md border-gray-300" v-model="perPage" @change="changePerPage($event.target.value)">
-          <option value="10">10</option>
-          <option value="15">15</option>
-          <option value="25">25</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
+        <label for="per_page" class="sr-only">Per page</label>
+        <select
+          id="per_page"
+          name="per_page"
+          class="block w-32 px-3 py-2.5 bg-neutral-secondary-medium border border-default-medium text-heading text-sm leading-4 rounded-base focus:ring-brand focus:border-brand shadow-xs placeholder:text-body"
+          v-model="perPage"
+          @change="changePerPage($event.target.value)"
+        >
+          <option value="10">10 per page</option>
+          <option value="15">15 per page</option>
+          <option value="25">25 per page</option>
+          <option value="50">50 per page</option>
+          <option value="100">100 per page</option>
         </select>
       </div>
       <a :href="route('admin.users.create')" class="btn">New User</a>
@@ -102,39 +109,7 @@ function confirmDelete(user) {
     </table>
 
     <div class="mt-4">
-      <nav aria-label="Page navigation example" class="flex items-center space-x-4">
-        <ul class="flex -space-x-px text-sm">
-          <li>
-            <button
-              @click.prevent="router.get(route('admin.users.index'), { page: meta.current_page - 1, per_page: perPage })"
-              :disabled="meta.current_page <= 1"
-              class="flex items-center justify-center text-body bg-neutral-secondary-medium border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading shadow-xs font-medium leading-5 rounded-s-base text-sm px-3 h-9 focus:outline-none disabled:opacity-50"
-            >
-              Previous
-            </button>
-          </li>
-
-          <li v-for="p in pages" :key="p">
-            <button
-              @click.prevent="router.get(route('admin.users.index'), { page: p, per_page: perPage })"
-              :aria-current="p === meta.current_page ? 'page' : null"
-              :class="p === meta.current_page ? 'flex items-center justify-center text-fg-brand bg-neutral-tertiary-medium box-border border border-default-medium hover:text-fg-brand font-medium text-sm w-9 h-9 focus:outline-none' : 'flex items-center justify-center text-body bg-neutral-secondary-medium border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading shadow-xs font-medium leading-5 text-sm w-9 h-9 focus:outline-none'"
-            >
-              {{ p }}
-            </button>
-          </li>
-
-          <li>
-            <button
-              @click.prevent="router.get(route('admin.users.index'), { page: meta.current_page + 1, per_page: perPage })"
-              :disabled="meta.current_page >= meta.last_page"
-              class="flex items-center justify-center text-body bg-neutral-secondary-medium border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading shadow-xs font-medium leading-5 rounded-e-base text-sm px-3 h-9 focus:outline-none disabled:opacity-50"
-            >
-              Next
-            </button>
-          </li>
-        </ul>
-      </nav>
+      <Pagination :meta="meta" :per-page="perPage" base-route="admin.users.index" />
     </div>
   </div>
   </AdminLayout>
