@@ -53,9 +53,15 @@ function confirmDelete(user) {
     </table>
 
     <div class="mt-4">
-      <!-- basic pagination links -->
-      <div v-if="users.meta">
-        <span>Page {{ users.meta.current_page }} / {{ users.meta.last_page }}</span>
+      <!-- pagination controls -->
+      <div v-if="users.meta" class="flex items-center justify-between">
+        <div>
+          <span class="text-sm text-body">Page {{ users.meta.current_page }} of {{ users.meta.last_page }}</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <a v-if="users.meta.current_page > 1" :href="route('admin.users.index', { page: users.meta.current_page - 1 })" class="px-3 py-1 bg-neutral-secondary-medium rounded">Previous</a>
+          <a v-if="users.meta.current_page < users.meta.last_page" :href="route('admin.users.index', { page: users.meta.current_page + 1 })" class="px-3 py-1 bg-neutral-secondary-medium rounded">Next</a>
+        </div>
       </div>
     </div>
   </div>

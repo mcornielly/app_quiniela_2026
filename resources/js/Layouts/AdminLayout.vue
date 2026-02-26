@@ -25,6 +25,26 @@ const navLinkClass = (active) =>
         ? 'bg-neutral-tertiary text-fg-brand'
         : 'text-body hover:bg-neutral-tertiary hover:text-fg-brand',
     ].join(' ');
+
+// toast state based on Inertia flash
+const flash = page.props.value?.flash || {};
+const toast = {
+    visible: false,
+    message: '',
+    type: 'success',
+};
+
+if (flash.success) {
+    toast.visible = true;
+    toast.message = flash.success;
+    toast.type = 'success';
+    setTimeout(() => toast.visible = false, 4000);
+} else if (flash.error) {
+    toast.visible = true;
+    toast.message = flash.error;
+    toast.type = 'error';
+    setTimeout(() => toast.visible = false, 4000);
+}
 </script>
 
 <template>
@@ -178,5 +198,21 @@ const navLinkClass = (active) =>
         <div class="p-4 border-1 border-default border-dashed rounded-base">
         <slot />
         </div>
+    </div>
+
+    <!-- Toast -->
+    <div aria-live="polite" class="fixed inset-0 flex items-end px-4 py-6 pointer-events-none sm:p-6 z-50">
+      <div class="w-full flex flex-col items-center space-y-4 sm:items-end">
+        <div v-if="toast.visible" :class="toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'" class="max-w-sm w-full text-white px-4 py-3 rounded shadow-lg pointer-events-auto">
+          <div class="flex items-start">
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium">{{ toast.message }}</p>
+            </div>
+            <div class="ml-4 flex-shrink-0">
+              <button @click="toast.visible = false" class="text-white opacity-80 hover:opacity-100">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 </template>
