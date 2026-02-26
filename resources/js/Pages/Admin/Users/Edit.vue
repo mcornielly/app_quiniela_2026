@@ -1,5 +1,6 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import Breadcrumb from '@/Components/Admin/Breadcrumb.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { route } from 'ziggy-js';
 import { ref } from 'vue';
@@ -40,9 +41,15 @@ const submit = () => {
 <template>
   <Head title="Admin - Edit User" />
   <AdminLayout title="Users">
+    <template #header>
+      <h2 class="text-xl font-semibold leading-tight text-gray-800">Edit User</h2>
+    </template>
+    <template #breadcrumb>
+      <Breadcrumb :items="[{ title: 'Users', href: route('admin.users.index') }, { title: 'Edit' }]" />
+    </template>
 
   <div class="p-6">
-    <h1 class="text-xl font-semibold mb-4">Edit User</h1>
+
 
     <form @submit.prevent="submit">
       <!-- Nombre -->

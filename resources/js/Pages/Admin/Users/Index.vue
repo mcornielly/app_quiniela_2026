@@ -1,6 +1,7 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head } from '@inertiajs/vue3';
+import Breadcrumb from '@/Components/Admin/Breadcrumb.vue';
 import { router } from '@inertiajs/vue3';
 import { route } from 'ziggy-js';
 import { ref } from 'vue';
@@ -24,7 +25,6 @@ function confirmDelete(user) {
   <AdminLayout title="Users">
   <div class="p-6">
     <div class="flex justify-between items-center mb-4">
-      <h1 class="text-xl font-semibold">Users</h1>
       <a :href="route('admin.users.create')" class="btn">New User</a>
     </div>
 
