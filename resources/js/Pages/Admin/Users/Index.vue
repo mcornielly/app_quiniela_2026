@@ -1,6 +1,21 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
+import { route } from 'ziggy-js';
+import { ref } from 'vue';
+
 const props = defineProps({ users: Object });
+
+const deletingId = ref(null);
+
+function confirmDelete(user) {
+  if (!confirm(`Delete user ${user.email}?`)) return;
+  deletingId.value = user.id;
+
+  router.delete(route('admin.users.destroy', user.id), {
+    onFinish: () => { deletingId.value = null; }
+  });
+}
 </script>
 
 <template>
@@ -8,7 +23,7 @@ const props = defineProps({ users: Object });
   <div class="p-6">
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-xl font-semibold">Users</h1>
-      <Link href="/admin/users/create" class="btn">New User</Link>
+      <a :href="route('admin.users.create')" class="btn">New User</a>
     </div>
 
     <table class="min-w-full bg-white">
@@ -28,12 +43,10 @@ const props = defineProps({ users: Object });
           <td class="px-4 py-2">{{ user.email }}</td>
           <td class="px-4 py-2">{{ user.is_admin ? 'Yes' : 'No' }}</td>
           <td class="px-4 py-2">
-            <Link :href="`/admin/users/${user.id}/edit`" class="text-blue-600 mr-3">Edit</Link>
-            <form :action="`/admin/users/${user.id}`" method="post" style="display:inline">
-              <input type="hidden" name="_method" value="delete" />
-              <input type="hidden" name="_token" :value="csrfToken" />
-              <button type="submit" class="text-red-600">Delete</button>
-            </form>
+            <a :href="route('admin.users.edit', user.id)" class="text-blue-600 mr-3">Edit</a>
+            <button @click="confirmDelete(user)" class="text-red-600" :disabled="deletingId===user.id">
+              {{ deletingId===user.id ? 'Deleting...' : 'Delete' }}
+            </button>
           </td>
         </tr>
       </tbody>
@@ -47,13 +60,3 @@ const props = defineProps({ users: Object });
     </div>
   </div>
 </template>
-
-<script>
-export default {
-  computed: {
-    csrfToken() {
-      return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    }
-  }
-}
-</script>
