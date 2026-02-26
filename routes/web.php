@@ -7,6 +7,7 @@ use App\Http\Controllers\PoolEntryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RankingController;
 use App\Http\Controllers\RulesController;
+use App\Http\Controllers\Admin\UserController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -51,6 +52,9 @@ Route::middleware(['auth', 'verified', 'admin'])
         // ✅ Import schedule
         Route::get('/import/schedule', fn () => Inertia::render('Admin/Import/Schedule'))
             ->name('import.schedule');
+
+        // Admin users management
+        Route::resource('users', UserController::class)->names('users');
 });
 
 
