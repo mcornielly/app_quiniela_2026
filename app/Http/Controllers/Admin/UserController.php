@@ -11,7 +11,14 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $users = User::orderBy('id', 'desc')->paginate(15)->withQueryString();
+        $perPage = (int) $request->query('per_page', 15);
+        // clamp allowed values
+        $allowed = [10, 15, 25, 50, 100];
+        if (! in_array($perPage, $allowed)) {
+            $perPage = 15;
+        }
+
+        $users = User::orderBy('id', 'desc')->paginate($perPage)->withQueryString();
 
         return Inertia::render('Admin/Users/Index', [
             'users' => $users,
