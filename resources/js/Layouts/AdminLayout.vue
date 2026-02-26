@@ -181,6 +181,14 @@ if (flash.success) {
             </li>
 
             <li>
+            <Link :href="route('admin.users.index')" :class="navLinkClass(isActive('admin.users.*'))">
+                <svg class="shrink-0 w-5 h-5 transition duration-75 group-hover:text-fg-brand" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                <path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M12 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0H2z"/>
+                </svg>
+                <span class="flex-1 ms-3 whitespace-nowrap">Users</span>
+            </Link>
+            </li>
+            <li>
             <Link :href="route('admin.import.schedule')" :class="navLinkClass(isActive('admin.import.*'))">
                 <svg class="shrink-0 w-5 h-5 transition duration-75 group-hover:text-fg-brand" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10V6a3 3 0 0 1 3-3v0a3 3 0 0 1 3 3v4m3-2 .917 11.923A1 1 0 0 1 17.92 21H6.08a1 1 0 0 1-.997-1.077L6 8h12Z"/>
