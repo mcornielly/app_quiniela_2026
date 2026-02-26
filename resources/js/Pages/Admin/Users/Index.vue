@@ -24,7 +24,7 @@ function confirmDelete(user) {
   <Head title="Admin - Users" />
   <AdminLayout title="Users">
   <div class="p-6">
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex justify-end items-center mb-4">
       <a :href="route('admin.users.create')" class="btn">New User</a>
     </div>
 
