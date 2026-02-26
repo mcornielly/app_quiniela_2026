@@ -27,6 +27,32 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+Route::middleware(['auth', 'verified', 'admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+
+        // ✅ Dashboard admin
+        Route::get('/dashboard', fn () => Inertia::render('Admin/Dashboard'))
+            ->name('dashboard');
+
+        // ✅ Tournaments
+        Route::get('/tournaments', fn () => Inertia::render('Admin/Tournaments/Index'))
+            ->name('tournaments.index');
+
+        // ✅ Teams
+        Route::get('/teams', fn () => Inertia::render('Admin/Teams/Index'))
+            ->name('teams.index');
+
+        // ✅ Matches
+        Route::get('/matches', fn () => Inertia::render('Admin/Matches/Index'))
+            ->name('matches.index');
+
+        // ✅ Import schedule
+        Route::get('/import/schedule', fn () => Inertia::render('Admin/Import/Schedule'))
+            ->name('import.schedule');
+});
+
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
