@@ -204,7 +204,14 @@ if (flash.success) {
     <!-- CONTENT -->
     <div class="p-4 sm:ml-64 mt-14">
         <div class="p-4 border-1 border-default border-dashed rounded-base">
-        <slot />
+            <!-- page header / breadcrumb -->
+            <div class="mb-4">
+                <slot name="header">
+                    <h2 class="text-xl font-semibold leading-tight text-gray-800">{{ title }}</h2>
+                </slot>
+                <slot name="breadcrumb"></slot>
+            </div>
+            <slot />
         </div>
     </div>
 
