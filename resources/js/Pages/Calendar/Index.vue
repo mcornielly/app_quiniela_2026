@@ -1,12 +1,9 @@
-<template>
-  <div>
-    <h1>Calendar</h1>
-    <p>Calendar page for Quiniela</p>
-  </div>
-</template>
-
-<script>
-export default {
-  name: 'CalendarIndex'
-}
+<script setup>
+import AppLayout from '@/Layouts/AppLayout.vue';
 </script>
+
+<template>
+  <AppLayout title="Calendar">
+    <div class="p-6">Calendar view</div>
+  </AppLayout>
+</template>

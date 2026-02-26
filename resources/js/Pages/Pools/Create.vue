@@ -1,12 +1,9 @@
-<template>
-  <div>
-    <h1>Create Pool</h1>
-    <p>Create a new pool for Quiniela</p>
-  </div>
-</template>
-
-<script>
-export default {
-  name: 'PoolsCreate'
-}
+<script setup>
+import AppLayout from '@/Layouts/AppLayout.vue';
 </script>
+
+<template>
+  <AppLayout title="Create Pool">
+    <div class="p-6">Create Pool view</div>
+  </AppLayout>
+</template>

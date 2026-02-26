@@ -1,12 +1,9 @@
-<template>
-  <div>
-    <h1>Pools</h1>
-    <p>Pools index page for Quiniela</p>
-  </div>
-</template>
-
-<script>
-export default {
-  name: 'PoolsIndex'
-}
+<script setup>
+import AppLayout from '@/Layouts/AppLayout.vue';
 </script>
+
+<template>
+  <AppLayout title="Pools">
+    <div class="p-6">Pools view</div>
+  </AppLayout>
+</template>

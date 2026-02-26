@@ -1,12 +1,9 @@
-<template>
-  <div>
-    <h1>Rankings</h1>
-    <p>Rankings page for Quiniela</p>
-  </div>
-</template>
-
-<script>
-export default {
-  name: 'RankingsIndex'
-}
+<script setup>
+import AppLayout from '@/Layouts/AppLayout.vue';
 </script>
+
+<template>
+  <AppLayout title="Rankings">
+    <div class="p-6">Rankings view</div>
+  </AppLayout>
+</template>

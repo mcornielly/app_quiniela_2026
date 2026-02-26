@@ -1,12 +1,9 @@
-<template>
-  <div>
-    <h1>Rules</h1>
-    <p>Rules page for Quiniela</p>
-  </div>
-</template>
-
-<script>
-export default {
-  name: 'RulesIndex'
-}
+<script setup>
+import AppLayout from '@/Layouts/AppLayout.vue';
 </script>
+
+<template>
+  <AppLayout title="Rules">
+    <div class="p-6">Rules view</div>
+  </AppLayout>
+</template>
