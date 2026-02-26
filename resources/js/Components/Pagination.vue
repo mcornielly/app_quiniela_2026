@@ -49,21 +49,16 @@ const props = defineProps({
   baseRoute: { type: String, required: true },
 });
 
-// compute simple page list similar to previous logic
+// compute a simple page list from 1..last_page so the total number of pages
+// is always visible. we intentionally avoid ellipses since the number of pages
+// in our app should be relatively small (14 in the example). If the range
+// grows very large in the future we can reintroduce a sliding window.
 const pages = computed(() => {
   const last = props.meta.last_page || 1;
-  const current = props.meta.current_page || 1;
   const result = [];
-  if (last <= 7) {
-    for (let i = 1; i <= last; i++) result.push(i);
-    return result;
+  for (let i = 1; i <= last; i++) {
+    result.push(i);
   }
-  let start = Math.max(current - 2, 1);
-  let end = Math.min(start + 4, last);
-  if (end - start < 4) {
-    start = Math.max(end - 4, 1);
-  }
-  for (let i = start; i <= end; i++) result.push(i);
   return result;
 });
 
