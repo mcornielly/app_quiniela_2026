@@ -1,4 +1,5 @@
 <script setup>
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { router } from '@inertiajs/vue3';
 import { route } from 'ziggy-js';
@@ -20,6 +21,7 @@ function confirmDelete(user) {
 
 <template>
   <Head title="Admin - Users" />
+  <AdminLayout title="Users">
   <div class="p-6">
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-xl font-semibold">Users</h1>
@@ -65,4 +67,5 @@ function confirmDelete(user) {
       </div>
     </div>
   </div>
+  </AdminLayout>
 </template>

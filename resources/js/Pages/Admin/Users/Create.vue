@@ -1,4 +1,5 @@
 <script setup>
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { route } from 'ziggy-js';
 import { ref } from 'vue';
@@ -28,6 +29,7 @@ const submit = () => {
 
 <template>
   <Head title="Admin - Create User" />
+  <AdminLayout title="Users">
   <div class="p-6">
     <h1 class="text-xl font-semibold mb-4">Create User</h1>
 
@@ -58,4 +60,5 @@ const submit = () => {
       </div>
     </form>
   </div>
+  </AdminLayout>
 </template>
