@@ -13,10 +13,19 @@ const deletingId = ref(null);
 // pagination and per-page
 const perPage = ref(props.users?.meta?.per_page ?? 15);
 
+// safe meta computed (fallback when props.users.meta is undefined)
+const meta = computed(() => {
+  return props.users?.meta ?? {
+    current_page: 1,
+    last_page: 1,
+    per_page: perPage.value,
+    total: props.users?.data ? props.users.data.length : 0,
+  };
+});
+
 const pages = computed(() => {
-  const meta = props.users.meta || {};
-  const last = meta.last_page || 1;
-  const current = meta.current_page || 1;
+  const last = meta.value.last_page || 1;
+  const current = meta.value.current_page || 1;
   const result = [];
 
   if (last <= 7) {
@@ -52,7 +61,17 @@ function confirmDelete(user) {
   <Head title="Admin - Users" />
   <AdminLayout title="Users">
   <div class="p-6">
-    <div class="flex justify-end items-center mb-4">
+    <div class="flex justify-between items-center mb-4">
+      <div class="flex items-center space-x-2">
+        <label for="per_page" class="text-sm font-medium text-gray-700">Per page</label>
+        <select id="per_page" name="per_page" class="rounded-md border-gray-300" v-model="perPage" @change="changePerPage($event.target.value)">
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
       <a :href="route('admin.users.create')" class="btn">New User</a>
     </div>
 
@@ -86,36 +105,35 @@ function confirmDelete(user) {
       <nav aria-label="Page navigation example" class="flex items-center space-x-4">
         <ul class="flex -space-x-px text-sm">
           <li>
-            <a v-if="users.meta && users.meta.current_page > 1" :href="route('admin.users.index', { page: users.meta.current_page - 1, per_page: perPage })" class="flex items-center justify-center text-body bg-neutral-secondary-medium border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading shadow-xs font-medium leading-5 rounded-s-base text-sm px-3 h-9 focus:outline-none">Previous</a>
-            <span v-else class="flex items-center justify-center text-body bg-neutral-secondary-medium border border-default-medium shadow-xs font-medium leading-5 rounded-s-base text-sm px-3 h-9">Previous</span>
+            <button
+              @click.prevent="router.get(route('admin.users.index'), { page: meta.current_page - 1, per_page: perPage })"
+              :disabled="meta.current_page <= 1"
+              class="flex items-center justify-center text-body bg-neutral-secondary-medium border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading shadow-xs font-medium leading-5 rounded-s-base text-sm px-3 h-9 focus:outline-none disabled:opacity-50"
+            >
+              Previous
+            </button>
           </li>
 
           <li v-for="p in pages" :key="p">
-            <a
-              :href="route('admin.users.index', { page: p, per_page: perPage })"
-              :aria-current="p === users.meta.current_page ? 'page' : null"
-              :class="p === users.meta.current_page ? 'flex items-center justify-center text-fg-brand bg-neutral-tertiary-medium box-border border border-default-medium hover:text-fg-brand font-medium text-sm w-9 h-9 focus:outline-none' : 'flex items-center justify-center text-body bg-neutral-secondary-medium border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading shadow-xs font-medium leading-5 text-sm w-9 h-9 focus:outline-none'"
+            <button
+              @click.prevent="router.get(route('admin.users.index'), { page: p, per_page: perPage })"
+              :aria-current="p === meta.current_page ? 'page' : null"
+              :class="p === meta.current_page ? 'flex items-center justify-center text-fg-brand bg-neutral-tertiary-medium box-border border border-default-medium hover:text-fg-brand font-medium text-sm w-9 h-9 focus:outline-none' : 'flex items-center justify-center text-body bg-neutral-secondary-medium border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading shadow-xs font-medium leading-5 text-sm w-9 h-9 focus:outline-none'"
             >
               {{ p }}
-            </a>
+            </button>
           </li>
 
           <li>
-            <a v-if="users.meta && users.meta.current_page < users.meta.last_page" :href="route('admin.users.index', { page: users.meta.current_page + 1, per_page: perPage })" class="flex items-center justify-center text-body bg-neutral-secondary-medium border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading shadow-xs font-medium leading-5 rounded-e-base text-sm px-3 h-9 focus:outline-none">Next</a>
-            <span v-else class="flex items-center justify-center text-body bg-neutral-secondary-medium border border-default-medium shadow-xs font-medium leading-5 rounded-e-base text-sm px-3 h-9">Next</span>
+            <button
+              @click.prevent="router.get(route('admin.users.index'), { page: meta.current_page + 1, per_page: perPage })"
+              :disabled="meta.current_page >= meta.last_page"
+              class="flex items-center justify-center text-body bg-neutral-secondary-medium border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading shadow-xs font-medium leading-5 rounded-e-base text-sm px-3 h-9 focus:outline-none disabled:opacity-50"
+            >
+              Next
+            </button>
           </li>
         </ul>
-
-        <form class="w-32 mx-auto">
-          <label for="per_page" class="sr-only">Per page</label>
-          <select id="per_page" class="block w-full px-3 py-2.5 bg-neutral-secondary-medium border border-default-medium text-heading text-sm leading-4 rounded-base focus:ring-brand focus:border-brand shadow-xs placeholder:text-body" :value="perPage" @change="e => changePerPage(e.target.value)">
-            <option :value="10">10 per page</option>
-            <option :value="15">15 per page</option>
-            <option :value="25">25 per page</option>
-            <option :value="50">50 per page</option>
-            <option :value="100">100 per page</option>
-          </select>
-        </form>
       </nav>
     </div>
   </div>
