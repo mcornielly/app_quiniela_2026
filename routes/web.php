@@ -56,6 +56,9 @@ Route::middleware(['auth', 'verified', 'admin'])
 
         // Admin users management
         Route::resource('users', UserController::class)->names('users');
+
+        Route::get('template', fn () => Inertia::render('Admin/DashboardTemplate'))
+        ->name('template');
 });
 
 
