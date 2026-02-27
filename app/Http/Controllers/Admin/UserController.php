@@ -11,20 +11,27 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $perPage = (int) $request->query('per_page', 15);
-        // clamp allowed values
         $allowed = [10, 15, 25, 50, 100];
-        if (! in_array($perPage, $allowed)) {
+
+        $perPage = $request->integer('per_page', 15);
+        if (!in_array($perPage, $allowed, true)) {
             $perPage = 15;
         }
 
-        $users = User::orderBy('id', 'desc')->paginate($perPage)->withQueryString();
+        $users = User::query()
+            ->select(['id', 'name', 'email', 'is_admin', 'created_at'])
+            ->orderByDesc('id')
+            ->paginate($perPage)
+            ->withQueryString();
 
         return Inertia::render('Admin/Users/Index', [
             'users' => $users,
+            'filters' => [
+                'per_page' => $perPage,
+            ],
         ]);
     }
-
+    
     public function create()
     {
         return Inertia::render('Admin/Users/Create');

@@ -12,7 +12,16 @@ const props = defineProps({ users: Object });
 const deletingId = ref(null);
 
 // pagination and per-page
-const perPage = ref(props.users?.meta?.per_page ?? 15);
+const perPage = ref(props.users?.per_page ?? 15);
+
+function changePerPage(value) {
+  perPage.value = Number(value);
+  router.get(props.users.path, { page: 1, per_page: perPage.value }, {
+    preserveScroll: true,
+    preserveState: true,
+    replace: true,
+  });
+}
 
 // safe meta computed (fallback when props.users.meta is undefined)
 const meta = computed(() => {
@@ -42,11 +51,6 @@ const pages = computed(() => {
   for (let i = start; i <= end; i++) result.push(i);
   return result;
 });
-
-function changePerPage(value) {
-  perPage.value = Number(value);
-  router.get(route('admin.users.index'), { page: 1, per_page: perPage.value });
-}
 
 function confirmDelete(user) {
   if (!confirm(`Delete user ${user.email}?`)) return;
@@ -109,7 +113,7 @@ function confirmDelete(user) {
     </table>
 
     <div class="mt-4">
-      <Pagination :meta="meta" :per-page="perPage" base-route="admin.users.index" />
+      <Pagination :paginator="users" />
     </div>
   </div>
   </AdminLayout>
