@@ -7,6 +7,7 @@ use App\Http\Controllers\PoolEntryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RankingController;
 use App\Http\Controllers\RulesController;
+use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -34,7 +35,7 @@ Route::middleware(['auth', 'verified', 'admin'])
     ->group(function () {
 
         // ✅ Dashboard admin
-        Route::get('/dashboard', fn () => Inertia::render('Admin/Dashboard'))
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])
             ->name('dashboard');
 
         // ✅ Tournaments
