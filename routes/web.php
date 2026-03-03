@@ -1,14 +1,17 @@
 <?php
 
-use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\GroupController;
 use App\Http\Controllers\PoolEntryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RankingController;
 use App\Http\Controllers\RulesController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\GroupController;
+use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\CalendarController;
+use App\Http\Controllers\Admin\MatchController;
+use App\Http\Controllers\Admin\PoolEntriesController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -31,28 +34,51 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'verified', 'admin'])
     ->prefix('admin')
-    ->name('admin.')
     ->group(function () {
 
-        // ✅ Dashboard admin
-        Route::get('/dashboard', [AdminDashboardController::class, 'index'])
-            ->name('dashboard');
+    // ✅ Dashboard admin
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])
+        ->name('admin.dashboard');
 
-        // ✅ Tournaments
-        Route::get('/tournaments', fn () => Inertia::render('Admin/Tournaments/Index'))
-            ->name('tournaments.index');
+        // // ✅ Groups (Grupos) - Anidado bajo tournaments
+        // Route::resource('tournaments.groups', GroupController::class)
+        //     ->names('tournaments.groups')
+        //     ->parameters(['groups' => 'group']);
+
+        // // ✅ Matches (Encuentros) - Anidado bajo tournaments
+        // Route::resource('tournaments.matches', MatchController::class)
+        //     ->names('tournaments.matches')
+        //     ->parameters(['matches' => 'match']);
+
+        // // ✅ Calendar (Calendario) - Recurso adicional (solo index/show)
+        // Route::resource('tournaments.calendar', CalendarController::class)
+        //     ->names('tournaments.calendar')
+        //     ->parameters(['calendar' => 'calendar'])
+        //     ->only(['index', 'show']);
 
         // ✅ Teams
-        Route::get('/teams', fn () => Inertia::render('Admin/Teams/Index'))
+        Route::get('teams', fn () => Inertia::render('Admin/Teams/Index'))
             ->name('teams.index');
+
+        // ✅ Matches
+        Route::get('/flags', fn () => Inertia::render('Admin/Flags/Index'))
+            ->name('flags.index');
+
+        // ✅ Groups
+        Route::get('groups', fn () => Inertia::render('Admin/Groups/Index'))
+            ->name('groups.index');
 
         // ✅ Matches
         Route::get('/matches', fn () => Inertia::render('Admin/Matches/Index'))
             ->name('matches.index');
 
+        // ✅ Matches
+        Route::get('/predictions', fn () => Inertia::render('Admin/predictions/Index'))
+            ->name('predictions.index');
+
         // ✅ Import schedule
-        Route::get('/import/schedule', fn () => Inertia::render('Admin/Import/Schedule'))
-            ->name('import.schedule');
+        // Route::get('/import/schedule', fn () => Inertia::render('Admin/Import/Schedule'))
+        //     ->name('import.schedule');
 
         // Admin users management
         Route::resource('users', UserController::class)->names('users');
