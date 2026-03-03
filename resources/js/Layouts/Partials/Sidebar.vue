@@ -218,6 +218,26 @@ const isActive = (name) => {
                         <span class="ml-3">Users</span>
                     </Link>
                 </li>
+                <!-- Template -->
+                <li>
+                    <Link
+                        :href="route('template')"
+                        :active="route().current('template.*')"
+                        :class="[
+                            'flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group',
+                            isActive('template.*') && 'bg-gray-300 dark:bg-gray-400 text-gray-900 dark:text-white'
+                        ]">
+                        <svg
+                            aria-hidden="true"
+                            class="w-6 h-6 text-gray-500 transition duration-75 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white"
+                            fill="currentColor"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 448 512">
+                            <path d="M0 448c0 17.7 14.3 32 32 32s32-14.3 32-32l0-352 352 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L64 32C28.7 32 0 60.7 0 96L0 448zm128 0c0 17.7 14.3 32 32 32s32-14.3 32-32-14.3-32-32-32-32 14.3-32 32zm128 0c0 17.7 14.3 32 32 32s32-14.3 32-32-14.3-32-32-32-32 14.3-32 32zm160 32c17.7 0 32-14.3 32-32s-14.3-32-32-32-32 14.3-32 32 14.3 32 32 32zM384 192a32 32 0 1 0 64 0 32 32 0 1 0 -64 0zm32 160a32 32 0 1 0 0-64 32 32 0 1 0 0 64z"/>
+                        </svg>
+                        <span class="ml-3">Template</span>
+                    </Link>
+                </li>
                 <!-- <li>
                     <button
                     type="button"
