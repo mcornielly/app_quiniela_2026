@@ -68,6 +68,14 @@ Route::middleware(['auth', 'verified', 'admin'])
         Route::get('groups', fn () => Inertia::render('Admin/Groups/Index'))
             ->name('groups.index');
 
+        // ✅ Calendar
+        Route::get('calendar', fn () => Inertia::render('Admin/Calendar/Index'))
+            ->name('calendar.index');
+
+        // ✅ Pools
+        Route::get('pools', fn () => Inertia::render('Admin/Pools/Index'))
+            ->name('pools.index');
+
         // ✅ Matches
         Route::get('/matches', fn () => Inertia::render('Admin/Matches/Index'))
             ->name('matches.index');
@@ -83,19 +91,18 @@ Route::middleware(['auth', 'verified', 'admin'])
         // Admin users management
         Route::resource('users', UserController::class)->names('users');
 
-        Route::get('template', fn () => Inertia::render('Admin/DashboardTemplate'))
-        ->name('template');
+        Route::get('template', fn () => Inertia::render('Admin/GridTemplate'))->name('template');
 });
 
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
-    Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
-    Route::get('/rules', [RulesController::class, 'index'])->name('rules.index');
-    Route::get('/rankings', [RankingController::class, 'index'])->name('rankings.index');
-    Route::get('/my-pools', [PoolEntryController::class, 'index'])->name('pools.index');
-    Route::get('/pools/create', [PoolEntryController::class, 'create'])->name('pools.create');
+    // Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+    // Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
+    // Route::get('/rules', [RulesController::class, 'index'])->name('rules.index');
+    // Route::get('/rankings', [RankingController::class, 'index'])->name('rankings.index');
+    // Route::get('/my-pools', [PoolEntryController::class, 'index'])->name('pools.index');
+    // Route::get('/pools/create', [PoolEntryController::class, 'create'])->name('pools.create');
 });
 
 require __DIR__.'/auth.php';
