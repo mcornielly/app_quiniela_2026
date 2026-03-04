@@ -7,10 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 class Prediction extends Model
 {
     protected $fillable = [
+
         'pool_entry_id',
         'game_id',
         'home_score',
-        'away_score'
+        'away_score',
+        'points'
+
     ];
 
     public function entry()
@@ -18,8 +21,8 @@ class Prediction extends Model
         return $this->belongsTo(PoolEntry::class, 'pool_entry_id');
     }
 
-    public function games()
+    public function game()
     {
-        return $this->belongsTo(Game::class, 'game_id');
+        return $this->belongsTo(Game::class);
     }
 }

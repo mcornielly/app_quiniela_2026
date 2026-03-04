@@ -98,7 +98,7 @@ class Game extends Model
 
     public function winner()
     {
-        if (!$this->isFinished()) {
+        if (!$this->hasResult()) {
             return null;
         }
 
@@ -113,6 +113,16 @@ class Game extends Model
         return null;
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Determine if match is a draw
+    |--------------------------------------------------------------------------
+    */
+    public function isDraw()
+    {
+        return $this->hasResult() && $this->home_score === $this->away_score;
+    }
     /*
     |--------------------------------------------------------------------------
     | Determine loser (used for Third Place match)
@@ -134,5 +144,31 @@ class Game extends Model
         }
 
         return null;
+    }
+
+    public function loserTeamId()
+    {
+        $loser = $this->loser();
+
+        return $loser?->id;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Check if match has result (used to determine if predictions can be scored)
+    |--------------------------------------------------------------------------*/
+    public function hasResult()
+    {
+        return !is_null($this->home_score) && !is_null($this->away_score);
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Check if winner can advance in bracket (used to determine if next match can be resolved)
+    |--------------------------------------------------------------------------*/
+    public function canAdvanceBracket()
+    {
+        return $this->isFinished() && !$this->isDraw();
     }
 }

@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('predictions', function (Blueprint $table) {
+
             $table->id();
 
             $table->foreignId('pool_entry_id')
@@ -22,12 +23,15 @@ return new class extends Migration
                 ->constrained('games')
                 ->cascadeOnDelete();
 
-            $table->integer('home_score');
-            $table->integer('away_score');
+            $table->integer('home_score')->nullable();
+            $table->integer('away_score')->nullable();
+
+            $table->integer('points')->default(0);
 
             $table->timestamps();
 
             $table->unique(['pool_entry_id', 'game_id']);
+
         });
     }
 

@@ -1,13 +1,14 @@
 <?php
 
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\PoolEntryController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\RankingController;
-use App\Http\Controllers\RulesController;
-use App\Http\Controllers\Admin\AdminDashboardController;
-use App\Http\Controllers\Admin\GroupController;
+// use App\Http\Controllers\DashboardController;
+// use App\Http\Controllers\PoolEntryController;
+// use App\Http\Controllers\RankingController;
+// use App\Http\Controllers\RulesController;
 use App\Http\Controllers\Admin\TeamController;
+use App\Http\Controllers\Admin\GroupController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\GameResultController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CalendarController;
 use App\Http\Controllers\Admin\MatchController;
@@ -34,75 +35,82 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'verified', 'admin'])
     ->prefix('admin')
+    ->name('admin.')
     ->group(function () {
 
-    // ✅ Dashboard admin
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])
-        ->name('admin.dashboard');
+        ->name('dashboard');
 
-        // // ✅ Groups (Grupos) - Anidado bajo tournaments
-        // Route::resource('tournaments.groups', GroupController::class)
-        //     ->names('tournaments.groups')
-        //     ->parameters(['groups' => 'group']);
+    /*
+    |--------------------------------------------------------------------------
+    | Pages (Inertia)
+    |--------------------------------------------------------------------------
+    */
 
-        // // ✅ Matches (Encuentros) - Anidado bajo tournaments
-        // Route::resource('tournaments.matches', MatchController::class)
-        //     ->names('tournaments.matches')
-        //     ->parameters(['matches' => 'match']);
+    Route::get('/teams', fn () => Inertia::render('Admin/Teams/Index'))
+        ->name('teams.index');
 
-        // // ✅ Calendar (Calendario) - Recurso adicional (solo index/show)
-        // Route::resource('tournaments.calendar', CalendarController::class)
-        //     ->names('tournaments.calendar')
-        //     ->parameters(['calendar' => 'calendar'])
-        //     ->only(['index', 'show']);
+    Route::get('/flags', fn () => Inertia::render('Admin/Flags/Index'))
+        ->name('flags.index');
 
-        // ✅ Teams
-        Route::get('teams', fn () => Inertia::render('Admin/Teams/Index'))
-            ->name('teams.index');
+    Route::get('/groups', fn () => Inertia::render('Admin/Groups/Index'))
+        ->name('groups.index');
 
-        // ✅ Matches
-        Route::get('/flags', fn () => Inertia::render('Admin/Flags/Index'))
-            ->name('flags.index');
+    Route::get('/calendar', fn () => Inertia::render('Admin/Calendar/Index'))
+        ->name('calendar.index');
 
-        // ✅ Groups
-        Route::get('groups', fn () => Inertia::render('Admin/Groups/Index'))
-            ->name('groups.index');
+    Route::get('/pools', fn () => Inertia::render('Admin/Pools/Index'))
+        ->name('pools.index');
 
-        // ✅ Calendar
-        Route::get('calendar', fn () => Inertia::render('Admin/Calendar/Index'))
-            ->name('calendar.index');
+    Route::get('/games', fn () => Inertia::render('Admin/Games/Index'))
+        ->name('games.index');
 
-        // ✅ Pools
-        Route::get('pools', fn () => Inertia::render('Admin/Pools/Index'))
-            ->name('pools.index');
+    Route::get('/predictions', fn () => Inertia::render('Admin/Predictions/Index'))
+        ->name('predictions.index');
 
-        // ✅ Matches
-        Route::get('/matches', fn () => Inertia::render('Admin/Matches/Index'))
-            ->name('matches.index');
+    Route::get('/template', fn () => Inertia::render('Admin/GridTemplate'))
+        ->name('template');
 
-        // ✅ Matches
-        Route::get('/predictions', fn () => Inertia::render('Admin/predictions/Index'))
-            ->name('predictions.index');
+    /*
+    |--------------------------------------------------------------------------
+    | Game Management (API)
+    |--------------------------------------------------------------------------
+    */
 
-        // ✅ Import schedule
-        // Route::get('/import/schedule', fn () => Inertia::render('Admin/Import/Schedule'))
-        //     ->name('import.schedule');
+    Route::get('/games/list', [GameResultController::class, 'index'])
+        ->name('games.list');
 
-        // Admin users management
-        Route::resource('users', UserController::class)->names('users');
+    Route::get('/games/{id}', [GameResultController::class, 'show'])
+        ->name('games.show');
 
-        Route::get('template', fn () => Inertia::render('Admin/GridTemplate'))->name('template');
+    Route::post('/games/{id}/score', [GameResultController::class, 'updateScore'])
+        ->name('games.score');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Users
+    |--------------------------------------------------------------------------
+    */
+
+    Route::resource('users', UserController::class)
+        ->names('users');
+
 });
 
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    // Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    // Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
-    // Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
-    // Route::get('/rules', [RulesController::class, 'index'])->name('rules.index');
-    // Route::get('/rankings', [RankingController::class, 'index'])->name('rankings.index');
-    // Route::get('/my-pools', [PoolEntryController::class, 'index'])->name('pools.index');
-    // Route::get('/pools/create', [PoolEntryController::class, 'create'])->name('pools.create');
-});
+// Route::middleware(['auth', 'verified'])->group(function () {
+//     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+//     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+//     Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
+//     Route::get('/rules', [RulesController::class, 'index'])->name('rules.index');
+//     Route::get('/rankings', [RankingController::class, 'index'])->name('rankings.index');
+//     Route::get('/my-pools', [PoolEntryController::class, 'index'])->name('pools.index');
+//     Route::get('/pools/create', [PoolEntryController::class, 'create'])->name('pools.create');
+// });
 
 require __DIR__.'/auth.php';
