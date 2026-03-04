@@ -17,6 +17,7 @@ return new class extends Migration
             $table->unsignedSmallInteger('year')->unique();
             $table->timestamp('deadline_at')->nullable(); // fecha límite global
             $table->string('status')->default('draft'); // draft|live|finished
+            $table->string('type')->default('world_cup');
             $table->timestamps();
         });
     }

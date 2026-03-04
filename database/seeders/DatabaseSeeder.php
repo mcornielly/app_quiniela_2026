@@ -25,7 +25,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CreateAdminUserSeeder::class,
             TestUsersSeeder::class,
-            WorldCup2026GroupsTeamsSeeder::class,
+            CountriesSeeder::class,
+            TournamentSeeder::class,
+            WorldCupSeeder::class,
         ]);
     }
 }

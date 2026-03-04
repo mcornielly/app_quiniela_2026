@@ -13,8 +13,10 @@ class PoolEntry extends Model
 
     protected $casts = [
         'paid_at' => 'datetime',
+        'completion_percent' => 'integer',
+        'total_points' => 'integer'
     ];
-
+    
     public function tournament() { return $this->belongsTo(Tournament::class); }
     public function user() { return $this->belongsTo(User::class); }
     public function predictions() { return $this->hasMany(Prediction::class); }

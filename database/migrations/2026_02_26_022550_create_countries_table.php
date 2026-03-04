@@ -11,14 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('world_cup_groups', function (Blueprint $table) {
+        Schema::create('countries', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tournament_id')->constrained()->cascadeOnDelete();
-            $table->string('code', 2); // A, B, C...
-            $table->string('name');    // GRUPO A
+            $table->string('name');
+            $table->string('code', 8)->unique();
+            $table->string('flag_path');
             $table->timestamps();
-
-            $table->unique(['tournament_id', 'code']);
         });
     }
 
@@ -27,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('world_cup_groups');
+        Schema::dropIfExists('countries');
     }
 };

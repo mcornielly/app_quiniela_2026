@@ -13,16 +13,29 @@ return new class extends Migration
     {
         Schema::create('teams', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tournament_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('world_cup_group_id')->nullable()->constrained('world_cup_groups')->nullOnDelete();
+
+            $table->foreignId('country_id')
+                ->nullable()
+                ->constrained()
+                ->nullOnDelete();
+
+            $table->foreignId('group_id')
+                ->nullable()
+                ->constrained()
+                ->nullOnDelete();
 
             $table->string('name');
-            $table->string('short_code', 8)->nullable(); // MEX, USA, etc.
-            $table->string('flag_url')->nullable(); // opcional (si luego usas API)
-            $table->boolean('is_placeholder')->default(false); // repechajes
+            $table->string('short_code', 8)->nullable();
+
+            $table->enum('type', ['national', 'club'])
+                ->default('national');
+
+            $table->unique(['name', 'type']);
+
             $table->timestamps();
 
-            $table->unique(['tournament_id', 'name']);
+            $table->index('country_id');
+            $table->index('group_id');
         });
     }
 
