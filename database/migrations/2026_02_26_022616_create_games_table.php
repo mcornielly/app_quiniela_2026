@@ -6,17 +6,38 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('games', function (Blueprint $table) {
 
             $table->id();
 
+            /*
+            |--------------------------------------------------------------------------
+            | Tournament relation
+            |--------------------------------------------------------------------------
+            */
+
             $table->foreignId('tournament_id')
                 ->constrained()
                 ->cascadeOnDelete();
 
-            $table->unsignedInteger('match_number');
+            /*
+            |--------------------------------------------------------------------------
+            | Match identity
+            |--------------------------------------------------------------------------
+            */
+
+            $table->unsignedInteger('match_number')->unique();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Teams (when known)
+            |--------------------------------------------------------------------------
+            */
 
             $table->foreignId('home_team_id')
                 ->nullable()
@@ -28,6 +49,43 @@ return new class extends Migration
                 ->constrained('teams')
                 ->nullOnDelete();
 
+            /*
+            |--------------------------------------------------------------------------
+            | Slot references (when teams are not yet defined)
+            |--------------------------------------------------------------------------
+            |
+            | Examples:
+            | 1A
+            | 2B
+            | 3-ABCDF
+            | W74
+            | RU101
+            |
+            */
+
+            $table->string('home_slot', 20)->nullable();
+            $table->string('away_slot', 20)->nullable();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Match results
+            |--------------------------------------------------------------------------
+            */
+
+            $table->unsignedTinyInteger('home_score')->nullable();
+            $table->unsignedTinyInteger('away_score')->nullable();
+
+            $table->foreignId('winner_team_id')
+                ->nullable()
+                ->constrained('teams')
+                ->nullOnDelete();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Tournament stage
+            |--------------------------------------------------------------------------
+            */
+
             $table->enum('stage', [
                 'group',
                 'round_32',
@@ -38,42 +96,32 @@ return new class extends Migration
                 'final'
             ])->default('group');
 
-            // NUEVO: grupo (A-L)
-            $table->string('group')->nullable();
+            /*
+            |--------------------------------------------------------------------------
+            | Metadata
+            |--------------------------------------------------------------------------
+            */
 
-            // ciudad
             $table->string('venue')->nullable();
-
-            $table->dateTime('match_date');
-
-            // RESULTADOS
-            $table->unsignedTinyInteger('home_score')->nullable();
-            $table->unsignedTinyInteger('away_score')->nullable();
-
-            // ESTADO DEL PARTIDO
-            $table->enum('status', [
-                'scheduled',
-                'live',
-                'finished'
-            ])->default('scheduled');
+            $table->date('match_date');
+            $table->time('match_time')->nullable();
 
             $table->timestamps();
 
             /*
             |--------------------------------------------------------------------------
-            | INDEXES
+            | Indexes
             |--------------------------------------------------------------------------
             */
 
             $table->index(['tournament_id', 'stage']);
-            $table->index(['match_number']);
-            $table->index(['home_team_id']);
-            $table->index(['away_team_id']);
-            $table->index(['group']);
-            $table->index(['status']);
+            $table->index('match_number');
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('games');

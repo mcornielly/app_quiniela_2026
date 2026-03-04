@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('teams', function (Blueprint $table) {
+
             $table->id();
 
             $table->foreignId('country_id')
@@ -25,7 +26,8 @@ return new class extends Migration
                 ->nullOnDelete();
 
             $table->string('name');
-            $table->string('short_code', 8)->nullable();
+
+            $table->unsignedTinyInteger('group_position')->nullable();
 
             $table->enum('type', ['national', 'club'])
                 ->default('national');

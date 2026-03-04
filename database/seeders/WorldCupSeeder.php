@@ -5,11 +5,13 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 use App\Models\Tournament;
 use App\Models\Group;
 use App\Models\Team;
 use App\Models\Game;
+use Carbon\Carbon;
 
 class WorldCupSeeder extends Seeder
 {
@@ -30,13 +32,21 @@ class WorldCupSeeder extends Seeder
 
             $stage = 'group';
 
+            /*
+            |--------------------------------------------------------------------------
+            | Cache groups to avoid repeated queries
+            |--------------------------------------------------------------------------
+            */
+
+            $groupsCache = [];
+
             foreach ($rows as $row) {
 
                 $firstColumn = trim((string)$row[0]);
 
                 /*
                 |--------------------------------------------------------------------------
-                | Detect stage rows
+                | Detect stages
                 |--------------------------------------------------------------------------
                 */
 
@@ -80,14 +90,63 @@ class WorldCupSeeder extends Seeder
                 $time       = $row[1];
                 $teamName1  = $row[2];
                 $teamName2  = $row[3];
-                $slot1      = $row[5];
-                $slot2      = $row[6];
+                $slot1      = trim((string)$row[5]);
+                $slot2      = trim((string)$row[6]);
                 $venue      = $row[7];
 
-                $homeTeam = $this->getTeam($teamName1, $slot1, $tournament->id);
-                $awayTeam = $this->getTeam($teamName2, $slot2, $tournament->id);
+                /*
+                |--------------------------------------------------------------------------
+                | Convert date
+                |--------------------------------------------------------------------------
+                */
 
-                $matchDate = date('Y-m-d H:i:s', strtotime("$date $time"));
+                if (is_numeric($date)) {
+
+                    $matchDate = Date::excelToDateTimeObject($date)->format('Y-m-d');
+
+                } else {
+
+                    // remove weekday if present (Thu, Fri, etc.)
+                    $date = trim($date);
+
+                    if (str_contains($date, ',')) {
+                        $parts = explode(',', $date);
+                        $date = trim($parts[1]);
+                    }
+
+                    $matchDate = Carbon::createFromFormat('d/m/Y', $date)->format('Y-m-d');
+
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Convert time
+                |--------------------------------------------------------------------------
+                */
+
+                $matchTime = Carbon::createFromFormat('H:i', $time)->format('H:i:s');
+
+                /*
+                |--------------------------------------------------------------------------
+                | Resolve teams or slots
+                |--------------------------------------------------------------------------
+                */
+
+                [$homeTeamId, $homeSlot] = $this->resolveTeam(
+                    $teamName1,
+                    $slot1,
+                    $tournament->id,
+                    $stage,
+                    $groupsCache
+                );
+
+                [$awayTeamId, $awaySlot] = $this->resolveTeam(
+                    $teamName2,
+                    $slot2,
+                    $tournament->id,
+                    $stage,
+                    $groupsCache
+                );
 
                 Game::updateOrCreate(
 
@@ -97,11 +156,18 @@ class WorldCupSeeder extends Seeder
 
                     [
                         'tournament_id' => $tournament->id,
-                        'home_team_id' => $homeTeam,
-                        'away_team_id' => $awayTeam,
+
+                        'home_team_id' => $homeTeamId,
+                        'away_team_id' => $awayTeamId,
+
+                        'home_slot' => $homeSlot,
+                        'away_slot' => $awaySlot,
+
                         'stage' => $stage,
                         'venue' => $venue,
-                        'match_date' => $matchDate
+
+                        'match_date' => $matchDate,
+                        'match_time' => $matchTime
                     ]
                 );
             }
@@ -117,31 +183,74 @@ class WorldCupSeeder extends Seeder
         }
     }
 
-    private function getTeam($teamName, $slot, $tournamentId)
+    private function resolveTeam($teamName, $slot, $tournamentId, $stage, &$groupsCache)
     {
         if (!$slot) {
-            return null;
+            return [null, null];
         }
 
-        $groupLetter = substr($slot, 0, 1);
+        /*
+        |--------------------------------------------------------------------------
+        | Knockout stage → keep slot reference
+        |--------------------------------------------------------------------------
+        */
 
-        $group = Group::firstOrCreate([
-            'name' => $groupLetter,
-            'tournament_id' => $tournamentId
-        ]);
+        if ($stage !== 'group') {
+
+            return [null, $slot];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Group stage → resolve team normally
+        |--------------------------------------------------------------------------
+        */
+
+        $groupLetter = substr($slot, 0, 1);
+        $position = intval(substr($slot, 1));
+
+        /*
+        |--------------------------------------------------------------------------
+        | Use cached group
+        |--------------------------------------------------------------------------
+        */
+
+        if (!isset($groupsCache[$groupLetter])) {
+
+            $groupsCache[$groupLetter] = Group::firstOrCreate([
+
+                'name' => $groupLetter,
+                'tournament_id' => $tournamentId
+
+            ]);
+        }
+
+        $group = $groupsCache[$groupLetter];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create team if needed
+        |--------------------------------------------------------------------------
+        */
 
         $team = Team::firstOrCreate(
 
             [
-                'name' => $teamName
+                'name' => $teamName,
+                'type' => 'national'
             ],
 
             [
-                'short_code' => $slot,
                 'group_id' => $group->id,
-                'type' => 'national'
+                'group_position' => $position
             ]
         );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Attach team to tournament
+        |--------------------------------------------------------------------------
+        */
 
         DB::table('tournament_team')->updateOrInsert([
 
@@ -150,6 +259,6 @@ class WorldCupSeeder extends Seeder
 
         ]);
 
-        return $team->id;
+        return [$team->id, null];
     }
 }

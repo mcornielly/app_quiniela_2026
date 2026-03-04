@@ -7,20 +7,35 @@ use Illuminate\Database\Eloquent\Model;
 class Game extends Model
 {
     protected $fillable = [
+
         'tournament_id',
         'match_number',
+
+        // teams
         'home_team_id',
         'away_team_id',
+
+        // slot references (1A, W74, etc)
+        'home_slot',
+        'away_slot',
+
+        // match info
         'stage',
         'venue',
         'match_date',
+        'match_time',
+
+        // results
         'home_score',
         'away_score',
+        'winner_team_id',
+
         'status'
     ];
 
     protected $casts = [
-        'match_date' => 'datetime',
+        'match_date' => 'date',
+        'match_time' => 'datetime:H:i'
     ];
 
     /*
@@ -44,6 +59,11 @@ class Game extends Model
         return $this->belongsTo(Team::class, 'away_team_id');
     }
 
+    public function winnerTeam()
+    {
+        return $this->belongsTo(Team::class, 'winner_team_id');
+    }
+
     public function predictions()
     {
         return $this->hasMany(Prediction::class);
@@ -60,6 +80,22 @@ class Game extends Model
         return $this->status === 'finished';
     }
 
+    public function isGroupStage()
+    {
+        return $this->stage === 'group';
+    }
+
+    public function isKnockout()
+    {
+        return $this->stage !== 'group';
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Determine winner
+    |--------------------------------------------------------------------------
+    */
+
     public function winner()
     {
         if (!$this->isFinished()) {
@@ -71,6 +107,29 @@ class Game extends Model
         }
 
         if ($this->away_score > $this->home_score) {
+            return $this->awayTeam;
+        }
+
+        return null;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Determine loser (used for Third Place match)
+    |--------------------------------------------------------------------------
+    */
+
+    public function loser()
+    {
+        if (!$this->isFinished()) {
+            return null;
+        }
+
+        if ($this->home_score < $this->away_score) {
+            return $this->homeTeam;
+        }
+
+        if ($this->away_score < $this->home_score) {
             return $this->awayTeam;
         }
 
