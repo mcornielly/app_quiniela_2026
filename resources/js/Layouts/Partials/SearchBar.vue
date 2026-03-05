@@ -19,8 +19,7 @@ function emitAction(type) {
 }
 </script>
 <template>
-    <div class="items-center justify-between block sm:flex md:divide-x md:divide-gray-100 dark:divide-gray-700">
-        <div class="flex items-center mb-4 sm:mb-0">
+    <div class="flex items-center mb-4 sm:mb-0">
         <!-- 🔍 Search input -->
         <form class="sm:pr-3" @submit.prevent>
             <label for="search" class="sr-only">Search</label>
@@ -83,7 +82,6 @@ function emitAction(type) {
                     </svg>
                 </a>
             </div>
-        </div>
         </div>
     </div>
 </template>

@@ -237,7 +237,7 @@ class WorldCupSeeder extends Seeder
 
             [
                 'name' => $teamName,
-                'type' => 'national'
+                'type' => 'international'
             ],
 
             [

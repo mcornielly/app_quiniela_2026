@@ -29,8 +29,8 @@ return new class extends Migration
 
             $table->unsignedTinyInteger('group_position')->nullable();
 
-            $table->enum('type', ['national', 'club'])
-                ->default('national');
+            $table->enum('type', ['international','national', 'club'])
+                ->default('international');
 
             $table->unique(['name', 'type']);
 
