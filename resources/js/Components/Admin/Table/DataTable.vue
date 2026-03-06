@@ -6,14 +6,8 @@ import 'flowbite'
 
 const props = defineProps({
     rows: Array,
-    actions: {
-        type: Object,
-        default: () => ({
-            show: true,
-            edit: true,
-            delete: true
-        })
-    }
+    columns: Array,
+    actions: Object
 })
 
 const emit = defineEmits(['selection-change', 'edit', 'delete'])
@@ -56,6 +50,7 @@ watch(() => props.rows, () => {
             <div class="inline-block min-w-full align-middle">
                 <table class="min-w-full divide-y divide-gray-200 table-fixed dark:divide-gray-600">
                     <TableHead
+                        :columns="columns"
                         :allSelected="allSelected"
                         @toggle-all="toggleSelectAll"
                     />
@@ -64,6 +59,7 @@ watch(() => props.rows, () => {
                             v-for="row in rows"
                             :key="row.id"
                             :row="row"
+                            :columns="columns"
                             :actions="actions"
                             :selected="selected.includes(row.id)"
                             @toggle="toggleRow"

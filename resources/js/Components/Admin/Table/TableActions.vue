@@ -5,7 +5,14 @@ import { EyeIcon } from '@heroicons/vue/24/outline'
 const props = defineProps({
     row: Object,
     entityName: String,
-    actions: Object
+    actions: {
+        type: Object,
+        default: () => ({
+            show: true,
+            edit: true,
+            delete: true
+        })
+    },
 })
 
 const emit = defineEmits(['edit','delete','view'])

@@ -11,7 +11,7 @@ import SearchBar from '@/Layouts/Partials/SearchBar.vue'
 import DataTable from '@/Components/Admin/Table/DataTable.vue'
 import Pagination from '@/Components/Admin/Table/Pagination.vue'
 import FormDrawer from '@/Components/Admin/Drawer/FormDrawer.vue'
-import {{model}}Form from '@/Components/Admin/FormDawer/{{model}}Form.vue'
+import {{model}}Form from '@/Components/Admin/FormDrawer/{{model}}Form.vue'
 import debounce from 'lodash/debounce'
 import 'flowbite'
 
@@ -24,7 +24,7 @@ const props = defineProps({
 
 // Column configuration (can be adjusted after generation)
 const columns = [
-    { key: 'name', label: '{{model}}' }
+    {{columns}}
 ]
 
 // Reactive state
@@ -191,7 +191,7 @@ const handleCreate = () => {
                     @close="selectedItem = null"
                 >
                     <{{model}}Form
-                        :{{route.slice(0,-1)}}="selectedItem"
+                        :{{routeSingular}}="selectedItem"
                         @close="selectedItem = null"
                     />
                 </FormDrawer>

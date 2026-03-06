@@ -39,12 +39,13 @@ class MakeAdminCrud extends Command
 
         $columns = Schema::getColumnListing($table);
 
-        $columns = collect($columns)->reject(function ($col) {
-            return in_array($col, ['id', 'created_at', 'updated_at']);
-        });
+        $columns = collect($columns)
+            ->reject(fn($col) => in_array($col, ['id','created_at','updated_at']))
+            ->values()
+            ->toArray();
 
         $this->generateController($modelClass, $models, $route, $routeSingular);
-        $this->generateIndex($modelClass, $models, $route, $columns);
+        $this->generateIndex($modelClass, $models, $route, $routeSingular, $columns);
         $this->generateForm($modelClass, $routeSingular, $route, $columns);
 
         $this->info("Admin CRUD for {$modelClass} generated successfully.");
@@ -70,7 +71,7 @@ class MakeAdminCrud extends Command
         File::put($path, $stub);
     }
 
-    protected function generateIndex($model, $models, $route, $columns)
+    protected function generateIndex($model, $models, $route, $routeSingular, $columns)
     {
         $stub = File::get(resource_path('stubs/admin-index.stub'));
 
@@ -78,14 +79,14 @@ class MakeAdminCrud extends Command
 
         foreach ($columns as $column) {
 
-            $label = strtoupper(str_replace('_', ' ', $column));
+            $label = Str::title(str_replace('_',' ',$column));
 
             $tableColumns .= "{ key: '{$column}', label: '{$label}' },\n";
         }
 
         $stub = str_replace(
-            ['{{model}}', '{{models}}', '{{route}}', '{{columns}}'],
-            [$model, $models, $route, $tableColumns],
+            ['{{model}}', '{{models}}', '{{route}}', '{{routeSingular}}', '{{columns}}'],
+            [$model, $models, $route, $routeSingular, $tableColumns],
             $stub
         );
 
@@ -109,52 +110,56 @@ class MakeAdminCrud extends Command
         $inputs = '';
 
         foreach ($columns as $column) {
+            // FIX optional chaining JS
+            $formFields .= "{$column}: props.{$routeSingular}?.{$column} || '',\n";
 
-            $formFields .= "{$column}: props.{$routeSingular}?->{$column} || '',\n";
-
+            // Mejor label automático
             $label = Str::title(str_replace('_', ' ', $column));
+
+            // limpiar palabras comunes
+            $label = str_replace([' Id', ' Path', ' Code'], ['', ' Path', ' Code'], $label);
 
             if (Str::endsWith($column, '_id')) {
 
+                $relation = Str::plural(str_replace('_id','',$column));
+
                 $inputs .= "
+                    <div>
+                        <label class=\"block mb-2 text-sm font-medium text-gray-900 dark:text-white\">
+                            {$label}
+                        </label>
+                        <select
+                            v-model=\"form.{$column}\"
+                            class=\"bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                            focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5
+                            dark:bg-gray-700 dark:border-gray-600 dark:text-white\"
+                        >
+                            <option value=\"\">Select {$label}</option>
 
-<div>
-<label class=\"block mb-2 text-sm font-medium text-gray-900 dark:text-white\">
-{$label}
-</label>
+                            <option
+                                v-for=\"item in {$relation}\"
+                                :key=\"item.id\"
+                                :value=\"item.id\"
+                            >
+                                {{ item.name }}
+                            </option>
 
-<select
-v-model=\"form.{$column}\"
-class=\"bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5
-dark:bg-gray-700 dark:border-gray-600 dark:text-white\">
-
-<option value=\"\">Select {$label}</option>
-
-</select>
-</div>
-
-";
-
+                        </select>
+                    </div>
+                ";
             } else {
-
                 $inputs .= "
-
-<div>
-<label class=\"block mb-2 text-sm font-medium text-gray-900 dark:text-white\">
-{$label}
-</label>
-
-<input
-v-model=\"form.{$column}\"
-type=\"text\"
-class=\"bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5
-dark:bg-gray-700 dark:border-gray-600 dark:text-white\">
-</div>
-
-";
-
+                    <div>
+                        <label class=\"block mb-2 text-sm font-medium text-gray-900 dark:text-white\">
+                            {$label}
+                        </label>
+                        <input
+                            v-model=\"form.{$column}\"
+                            type=\"text\"
+                            class=\"bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white\"
+                        >
+                    </div>
+                ";
             }
         }
 
@@ -170,6 +175,9 @@ dark:bg-gray-700 dark:border-gray-600 dark:text-white\">
             $this->warn("Form already exists.");
             return;
         }
+
+        // Asegurar que el directorio existe antes de escribir el archivo
+        File::ensureDirectoryExists(dirname($path));
 
         File::put($path, $stub);
     }
