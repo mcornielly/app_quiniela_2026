@@ -1,0 +1,91 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use Inertia\Inertia;
+use Inertia\Response;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use App\Models\{{model}};
+
+class {{model}}Controller extends Controller
+{
+    public function index(): Response
+    {
+        $search = request('search');
+
+        ${{route}} = {{model}}::query()
+            ->when($search, function ($query) use ($search) {
+
+                $query->where(function ($q) use ($search) {
+
+                    $q->where('name', 'like', "%{$search}%");
+
+                });
+
+            })
+            ->orderBy('name')
+            ->paginate(10)
+            ->withQueryString();
+
+        return Inertia::render('Admin/{{models}}/Index', [
+            'filters' => request()->only('search'),
+            '{{route}}' => ${{route}}
+        ]);
+    }
+
+    /**
+     * Store new {{model}}
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required','string','max:255']
+        ]);
+
+        {{model}}::create($validated);
+
+        return redirect()->back()->with('success','{{model}} created successfully');
+    }
+
+    /**
+     * Update {{model}}
+     */
+    public function update(Request $request, {{model}} ${{routeSingular}})
+    {
+        $validated = $request->validate([
+            'name' => ['required','string','max:255']
+        ]);
+
+        ${{routeSingular}}->update($validated);
+
+        return redirect()->back()->with('success','{{model}} updated successfully');
+    }
+
+    /**
+     * Delete single {{model}}
+     */
+    public function destroy({{model}} ${{routeSingular}})
+    {
+        ${{routeSingular}}->delete();
+
+        return redirect()->back()->with('success','{{model}} deleted successfully');
+    }
+
+    /**
+     * Delete multiple {{models}}
+     */
+    public function bulkDelete(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => ['required','array'],
+            'ids.*' => ['exists:{{route}},id']
+        ]);
+
+        $deleted = {{model}}::whereIn('id', $validated['ids'])->delete();
+
+        return back()->with([
+            'success' => "$deleted {{route}} deleted successfully"
+        ]);
+    }
+}

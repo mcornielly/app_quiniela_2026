@@ -55,11 +55,12 @@ Route::middleware(['auth', 'verified', 'admin'])
     Route::delete('teams/bulk-delete', [TeamController::class, 'bulkDelete'])
         ->name('teams.bulkDelete');
 
-    Route::resource('teams', TeamController::class)
-        ->only(['index','store','update','destroy']);
+    Route::resource('teams', TeamController::class)->only(['index','store','update','destroy']);
 
-    Route::get('/flags', fn () => Inertia::render('Admin/Flags/Index'))
-        ->name('flags.index');
+    Route::delete('countries/bulk-delete', [CountryController::class, 'bulkDelete'])
+        ->name('countries.bulkDelete');
+
+    Route::resource('countries', CountryController::class)->only(['index','store','update','destroy']);
 
     Route::get('/groups', fn () => Inertia::render('Admin/Groups/Index'))
         ->name('groups.index');
