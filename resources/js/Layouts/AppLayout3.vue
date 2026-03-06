@@ -1,12 +1,15 @@
 <script setup>
 import { Link, usePage, Head } from '@inertiajs/vue3'
-import { onMounted } from 'vue'
+import { onMounted, watch } from 'vue'
 import { initFlowbite } from 'flowbite'
 import { router } from '@inertiajs/vue3'
 // Inicializar Flowbite para dropdowns, sidebar, etc.
 import 'flowbite'
 import Navbar from './Partials/Navbar.vue'
 import Sidebar from './Partials/Sidebar.vue'
+
+const page = usePage()
+const { props } = usePage()
 
 defineProps({
     title: String,
@@ -22,7 +25,23 @@ onMounted(() => {
 router.on('navigate', () => {
     initFlowbite()
 })
-const { props } = usePage()
+
+
+watch(
+    () => page.props.flash,
+    (flash) => {
+
+        if(flash.success){
+            notifySuccess(flash.success)
+        }
+
+        if(flash.error){
+            notifyError(flash.error)
+        }
+
+    },
+    { immediate: true }
+)
 </script>
 
 <template>

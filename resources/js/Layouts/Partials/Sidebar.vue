@@ -6,8 +6,7 @@ import 'flowbite'
 
 const page = usePage()
 const openGroup = ref(null)
-// Esto mostrará todas las rutas disponibles en Ziggy
-console.log(Ziggy.routes);
+
 const toggleGroup = (group) => {
   // si el grupo ya está abierto → ciérralo
   // si no, abre este y cierra cualquier otro

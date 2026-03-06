@@ -17,6 +17,7 @@ function emitSearch() {
 function emitAction(type) {
     emit('action', type)
 }
+
 </script>
 <template>
     <div class="flex items-center mb-4 sm:mb-0">

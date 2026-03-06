@@ -1,3 +1,17 @@
+# Admin System Architecture
+
+This administrative system is built using:
+
+-   Laravel
+-   Inertia.js
+-   Vue 3
+-   TailwindCSS
+-   Flowbite
+-   Element Plus (notifications)
+
+
+
+
 # ⚽ World Cup Pool System
 
 Sistema de **quiniela del Mundial** desarrollado en **Laravel** que permite gestionar torneos, registrar partidos, calcular tablas de grupos automáticamente y administrar predicciones de usuarios. Diseñado específicamente para soportar el **formato del Mundial 2026 (48 equipos)**.
@@ -261,6 +275,337 @@ Este seeder crea automáticamente:
 - Estadísticas del torneo
 
 ---
+
+The goal of the architecture is to enable **fast CRUD development**
+while maintaining consistent UX, reusable logic, and a scalable
+structure.
+
+
+------------------------------------------------------------------------
+
+# CRUD Architecture Pattern
+
+All admin modules follow the same structure.
+
+    Admin
+     ├── Module
+     │    └── Index.vue
+     │
+    Components
+     └── Admin
+          ├── Drawer
+          │    ├── FormDrawer.vue
+          │    └── DeleteDrawer.vue
+          │
+          └── FormDrawer
+               └── ModuleForm.vue
+
+Example implemented module:
+
+    Teams
+     ├── Index.vue
+     └── TeamForm.vue
+
+------------------------------------------------------------------------
+
+# Drawer Based CRUD
+
+The system uses **Drawers instead of separate pages** for CRUD actions.
+
+### Advantages
+
+-   Better UX
+-   Faster workflows
+-   Less navigation
+-   Consistent UI across modules
+
+------------------------------------------------------------------------
+
+## Create
+
+    Add new Team
+     ↓
+    FormDrawer
+     ↓
+    TeamForm
+     ↓
+    POST admin.teams.store
+
+------------------------------------------------------------------------
+
+## Update
+
+    Update Team
+     ↓
+    FormDrawer
+     ↓
+    TeamForm (props.team)
+     ↓
+    PUT admin.teams.update
+
+------------------------------------------------------------------------
+
+## Delete
+
+    Delete Team
+     ↓
+    DeleteDrawer
+     ↓
+    DELETE admin.teams.destroy
+
+------------------------------------------------------------------------
+
+# Reusable Form Components
+
+Forms are designed to work for both **create and update**.
+
+Example:
+
+``` javascript
+const isEdit = !!props.team
+```
+
+This allows one component to handle both cases.
+
+------------------------------------------------------------------------
+
+# Global Notifications
+
+Notifications are centralized in:
+
+    /resources/js/Utils/notify.js
+
+Available helpers:
+
+    notifySuccess()
+    notifyError()
+    notifyWarning()
+
+Example:
+
+``` javascript
+notifySuccess('Team created successfully')
+notifyError('Error creating team')
+```
+
+------------------------------------------------------------------------
+
+# Server Flash Messages
+
+Laravel shares flash messages through Inertia.
+
+Middleware:
+
+    HandleInertiaRequests.php
+
+Example:
+
+``` php
+'flash' => [
+    'success' => session('success'),
+    'error' => session('error')
+]
+```
+
+------------------------------------------------------------------------
+
+# Search System
+
+Search uses **debounce** to avoid excessive requests.
+
+``` javascript
+debounce(handleSearch, 400)
+```
+
+------------------------------------------------------------------------
+
+# Data Tables
+
+Reusable table components:
+
+    DataTable.vue
+    Pagination.vue
+    ActionTable.vue
+
+Available row actions:
+
+    view
+    edit
+    delete
+
+Actions emit events to the parent component.
+
+------------------------------------------------------------------------
+
+# Bulk Actions
+
+Bulk delete flow:
+
+    Select rows
+     ↓
+    Bulk Delete
+     ↓
+    Controller
+     ↓
+    router.reload()
+
+Example:
+
+``` javascript
+router.reload({ only: ['teams'] })
+```
+
+------------------------------------------------------------------------
+
+# Dynamic Form Data
+
+Forms receive dynamic data from backend.
+
+Controller:
+
+``` php
+'groups' => Group::orderBy('name')->get(),
+'types' => Team::types()
+```
+
+------------------------------------------------------------------------
+
+# Enum Handling
+
+Enum values come from the model instead of hardcoding in Vue.
+
+Example:
+
+``` php
+Team::types()
+```
+
+------------------------------------------------------------------------
+
+# Dark Mode System
+
+Dark mode features:
+
+-   stored in localStorage
+-   detects OS preference
+-   persistent between sessions
+-   Tailwind compatible
+
+Flow:
+
+    First visit
+     ↓
+    detect prefers-color-scheme
+     ↓
+    user changes theme
+     ↓
+    saved to localStorage
+     ↓
+    persists between sessions
+
+------------------------------------------------------------------------
+
+# Theme Toggle UX
+
+The icon always represents **the available action**.
+
+  Current Theme   Icon
+  --------------- ------
+  Light           🌙
+  Dark            ☀️
+
+------------------------------------------------------------------------
+
+# Performance Improvements
+
+### Debounced Search
+
+Reduces unnecessary API requests.
+
+### Lazy Reload
+
+``` javascript
+router.reload({ only: ['teams'] })
+```
+
+### Drawer UI
+
+Faster interactions with fewer page transitions.
+
+------------------------------------------------------------------------
+
+# Future Improvements
+
+Planned enhancements:
+
+-   Form validation UI
+-   Optimistic UI updates
+-   CRUD generator
+-   Permissions and roles
+-   Reusable form inputs
+-   Global modal manager
+
+------------------------------------------------------------------------
+
+# Goal of the Architecture
+
+Enable developers to create new admin modules quickly.
+
+Typical CRUD creation:
+
+    1 create model
+    1 create controller
+    1 create form
+    1 create index
+
+Estimated time: **\~5 minutes per CRUD**.
+
+------------------------------------------------------------------------
+
+# Current Modules
+
+    Teams
+
+------------------------------------------------------------------------
+
+# Planned Modules
+
+    Players
+    Countries
+    Leagues
+    Matches
+    Stadiums
+    Groups
+
+------------------------------------------------------------------------
+
+# System Philosophy
+
+The system follows these principles:
+
+-   Reusability
+-   Consistency
+-   Fast UX
+-   Decoupled components
+-   Reactive frontend
+-   Clean backend
+
+# String Utilities
+
+Common text helpers are located in:
+
+resources/js/Utils/format.js
+
+Example functions:
+
+capitalize()
+singular()
+
+Example usage:
+
+import { singular } from '@/Utils/format'
+
+Add New {{ singular(title) }}
 
 # Autor
 

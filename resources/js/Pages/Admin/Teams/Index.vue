@@ -1,93 +1,124 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { router } from '@inertiajs/vue3'
+import { route } from 'ziggy-js'
+import { confirmDelete, notifySuccess, notifyError } from '@/Utils/notify'
+import { singular } from '@/Utils/format'
+import DeleteDrawer from '@/Components/Admin/Drawer/DeleteDrawer.vue'
 import AdminLayout from '@/Layouts/AppLayout3.vue'
 import Header from '@/Layouts/Partials/Header.vue'
 import SearchBar from '@/Layouts/Partials/SearchBar.vue'
 import DataTable from '@/Components/Admin/Table/DataTable.vue'
-import CreateDrawer from '@/Components/Admin/Table/CreateDrawer.vue' // A crear
-import EditDrawer from '@/Components/Admin/Table/EditDrawer.vue' // A crear
+import Pagination from '@/Components/Admin/Table/Pagination.vue'
+import FormDrawer from '@/Components/Admin/Drawer/FormDrawer.vue'
+import TeamForm from '@/Components/Admin/FormDawer/TeamForm.vue'
+import debounce from 'lodash/debounce'
+import 'flowbite'
 
 const title = 'Teams'
 
 const props = defineProps({
-    filters: { type: Object, required: true }
+    filters: Object,
+    teams: Object,
+    groups: Array,
+    types: Array
 })
+
+// Definir columnas de la tabla
+const columns = [
+    { key: 'name', label: 'TEAM' },
+    { key: 'group', label: 'GROUP' },
+    { key: 'type', label: 'TYPE' },
+    { key: 'group_position', label: 'POSITION' }
+]
 
 // Estado reactivo
-const teams = ref([])
 const loading = ref(false)
-const searchQuery = ref('')
+const searchQuery = ref(props.filters?.search || '')
 const showCreateDrawer = ref(false)
 const selectedTeam = ref(null)
+const selectedTeams = ref([])
+const teamToDelete = ref(null)
 
-// Métodos para manejar acciones
-const fetchTeams = async () => {
-    loading.value = true
-    try {
-        // Aquí iría tu llamada API
-        // const response = await axios.get('/api/teams')
-        // teams.value = response.data
+// Acciones para la tabla
+const actions = {
+    show: false,
+    edit: true,
+    delete: true
+}
 
-        // Datos de ejemplo
-        teams.value = [
-            { id: 1, name: 'Mexico', group: { name: 'A' }, type: 'national', group_position: 1 },
-            { id: 2, name: 'Sweden', group: { name: 'A' }, type: 'national', group_position: 2 },
-        ]
-    } catch (error) {
-        console.error('Error fetching teams:', error)
-    } finally {
-        loading.value = false
+// Función para manejar la búsqueda con debounce
+const handleSearch = debounce((query) => {
+    router.get(
+        route('admin.teams.index'),
+        { search: query },
+        { preserveState: true, replace: true }
+    )
+
+}, 400)
+
+// Funciones para manejar acciones de crear, editar y eliminar
+const handleToolbarAction = (action) => {
+    if(action === 'deleteSelected'){
+        console.log('toolbar action:', action)
+        deleteSelected()
     }
 }
 
-// Handlers para acciones de la tabla
-const handleView = (row) => {
-    console.log('View:', row)
-    // router.visit(`/admin/teams/${row.id}`)
-}
-
-const handleEdit = (row) => {
-    selectedTeam.value = row
-    // Aquí abrirías el drawer de edición
-    console.log('Edit:', row)
-}
-
-const handleDelete = (row) => {
-    console.log('Delete:', row)
-    // Aquí abrirías el drawer de confirmación de eliminación
-}
-
-const handleSearch = (query) => {
-    searchQuery.value = query
-    console.log('Searching:', query)
-    // Aquí iría la lógica de búsqueda
-}
-
-const handleCreate = (newTeam) => {
-    console.log('Create:', newTeam)
-    teams.value.push(newTeam)
-    showCreateDrawer.value = false
-}
-
-const handleUpdate = (updatedTeam) => {
-    console.log('Update:', updatedTeam)
-    const index = teams.value.findIndex(t => t.id === updatedTeam.id)
-    if (index !== -1) {
-        teams.value[index] = updatedTeam
+// Eliminar equipos seleccionados
+const deleteSelected = async () => {
+    if(selectedTeams.value.length === 0){
+        notifyError("No teams selected")
+        return
     }
-    selectedTeam.value = null
+    try{
+        await confirmDelete(`Delete ${selectedTeams.value.length} teams?`)
+        router.delete(route('admin.teams.bulkDelete'), {
+            data: {
+                ids: selectedTeams.value
+            },
+            preserveScroll: true,
+            onSuccess: () => {
+                notifySuccess("Teams deleted")
+                selectedTeams.value = []
+                router.reload() //
+            }
+        })
+    }catch(e){
+        console.log('Delete cancelled')
+        // cancelado
+    }
 }
 
-const handleDeleteConfirm = (teamToDelete) => {
-    console.log('Delete confirm:', teamToDelete)
-    teams.value = teams.value.filter(t => t.id !== teamToDelete.id)
-    selectedTeam.value = null
+// Eliminar un solo equipo
+const confirmDeleteTeam = (team) => {
+
+    router.delete(route('admin.teams.destroy', team.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            notifySuccess('Team deleted')
+            teamToDelete.value = null
+        }
+    })
+
 }
 
-// Cargar datos al montar el componente
-onMounted(() => {
-    fetchTeams()
-})
+const handleSelectionChange = (ids) => {
+    selectedTeams.value = ids
+}
+
+const openEdit = (team) => {
+    selectedTeam.value = team
+}
+
+const openDelete = (team) => {
+    teamToDelete.value = team
+}
+
+const handleCreate = () => {
+    router.reload()
+}
+
 </script>
 
 <template>
@@ -101,6 +132,7 @@ onMounted(() => {
                         <SearchBar
                             :initial-query="filters?.search"
                             @search="handleSearch"
+                            @action="handleToolbarAction"
                             :title="title"
                         />
                         <button
@@ -108,7 +140,7 @@ onMounted(() => {
                             class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
                             type="button"
                         >
-                            Add new {{ title }}
+                            Add New {{ singular(title) }}
                         </button>
                     </div>
                 </div>
@@ -124,35 +156,68 @@ onMounted(() => {
                 <div class="overflow-x-auto">
                     <div class="inline-block min-w-full align-middle">
                         <div class="overflow-hidden shadow">
+                            <!-- DataTable -->
                             <DataTable
-                                :rows="teams"
-                                @view="handleView"
-                                @edit="handleEdit"
-                                @delete="handleDelete"
+                                :rows="teams.data"
+                                :columns="columns"
+                                :actions="actions"
+                                @selection-change="handleSelectionChange"
+                                @edit="openEdit"
+                                @delete="openDelete"
                             />
+                            <!-- Mensaje cuando no hay datos -->
+                            <div v-if="teams.data.length === 0" class="py-12 text-center text-gray-500 dark:text-gray-400">
+                                No teams found.
+                            </div>
+
+                            <Pagination :meta="teams" />
                         </div>
                     </div>
                 </div>
 
-                <!-- Mensaje cuando no hay datos -->
-                <div v-if="teams.length === 0" class="py-12 text-center text-gray-500 dark:text-gray-400">
-                    No teams found.
-                </div>
-
-                <!-- Componentes de drawers -->
-                <CreateDrawer
+                <!-- Drawer para crear nuevo equipo -->
+                <FormDrawer
+                    title="Add Teams"
                     :show="showCreateDrawer"
                     @close="showCreateDrawer = false"
-                    @create="handleCreate"
-                />
+                >
 
-                <EditDrawer
-                    v-if="selectedTeam"
+                    <TeamForm
+                        :groups="groups"
+                        :types="types"
+                        @saved="handleCreate"
+                        @close="showCreateDrawer = false"
+                    />
+                </FormDrawer>
+
+                <!-- Drawer para actualizar equipo -->
+                <FormDrawer
+                    title="Update Team"
                     :show="!!selectedTeam"
-                    :team="selectedTeam"
                     @close="selectedTeam = null"
-                    @update="handleUpdate"
-                />
+                >
+                    <TeamForm
+                        :team="selectedTeam"
+                        :groups="groups"
+                        :types="types"
+                        @close="selectedTeam = null"
+                    />
+                </FormDrawer>
+
+                <!-- Drawer para confirmar eliminación de equipo -->
+                <FormDrawer
+                    :show="!!teamToDelete"
+                    title="Delete Team"
+                    @close="teamToDelete = null"
+                >
+                    <DeleteDrawer
+                        :show="!!teamToDelete"
+                        entityName="Team"
+                        :item="teamToDelete"
+                        @close="teamToDelete = null"
+                        @confirm="confirmDeleteTeam"
+                    />
+                </FormDrawer>
             </div>
         </main>
     </AdminLayout>

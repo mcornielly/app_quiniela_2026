@@ -9,6 +9,7 @@ import { ZiggyVue } from 'ziggy-js';
 
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+import 'element-plus/theme-chalk/dark/css-vars.css'
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 

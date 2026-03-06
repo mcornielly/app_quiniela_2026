@@ -52,9 +52,11 @@ Route::middleware(['auth', 'verified', 'admin'])
     | Pages (Inertia)
     |--------------------------------------------------------------------------
     */
+    Route::delete('teams/bulk-delete', [TeamController::class, 'bulkDelete'])
+        ->name('teams.bulkDelete');
 
-    Route::get('/teams', fn () => Inertia::render('Admin/Teams/Index'))
-        ->name('teams.index');
+    Route::resource('teams', TeamController::class)
+        ->only(['index','store','update','destroy']);
 
     Route::get('/flags', fn () => Inertia::render('Admin/Flags/Index'))
         ->name('flags.index');

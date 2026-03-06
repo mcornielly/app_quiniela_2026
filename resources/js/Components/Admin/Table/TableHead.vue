@@ -1,15 +1,26 @@
+<script setup>
+
+const props = defineProps({
+    allSelected: Boolean,
+})
+
+const emit = defineEmits(['toggle-all'])
+
+const toggle = (event) => {
+    emit('toggle-all', event.target.checked)
+}
+</script>
 <template>
     <thead class="bg-gray-100 dark:bg-gray-700">
         <tr>
             <th scope="col" class="p-4">
                 <div class="flex items-center">
-                    <input type="checkbox"
-                        class="w-4 h-4 border-gray-300 rounded bg-gray-50
-                        focus:ring-3 focus:ring-primary-300
-                        dark:focus:ring-primary-600
-                        dark:ring-offset-gray-800
-                        dark:bg-gray-700
-                        dark:border-gray-600">
+                    <input
+                        ref="checkbox"
+                        type="checkbox"
+                        :checked="allSelected"
+                        @change="toggle"
+                        class="w-4 h-4 text-blue-600 accent-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600">
                 </div>
             </th>
 

@@ -5,54 +5,66 @@ import { onMounted, onBeforeUnmount } from 'vue'
 let onClick = null
 
 onMounted(() => {
-  const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon')
-  const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon')
-  const themeToggleBtn = document.getElementById('theme-toggle')
 
-  // Si aún no existe (por un render condicional), salimos sin romper nada
-  if (!themeToggleDarkIcon || !themeToggleLightIcon || !themeToggleBtn) return
+    const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon')
+    const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon')
+    const themeToggleBtn = document.getElementById('theme-toggle')
 
-  // Set icon initial state
-  const isDark =
-    localStorage.getItem('color-theme') === 'dark' ||
-    (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    if (!themeToggleDarkIcon || !themeToggleLightIcon || !themeToggleBtn) return
 
-  if (isDark) themeToggleLightIcon.classList.remove('hidden')
-  else themeToggleDarkIcon.classList.remove('hidden')
+    // Detectar tema inicial
+    const isDark =
+        localStorage.getItem('color-theme') === 'dark' ||
+        (!localStorage.getItem('color-theme') &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches)
 
-  onClick = () => {
-    themeToggleDarkIcon.classList.toggle('hidden')
-    themeToggleLightIcon.classList.toggle('hidden')
-
-    const stored = localStorage.getItem('color-theme')
-
-    if (stored) {
-      if (stored === 'light') {
+    // Aplicar tema al HTML
+    if (isDark) {
         document.documentElement.classList.add('dark')
-        localStorage.setItem('color-theme', 'dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-        localStorage.setItem('color-theme', 'light')
-      }
+
+        // mostrar sol (para volver a light)
+        themeToggleLightIcon.classList.remove('hidden')
+        themeToggleDarkIcon.classList.add('hidden')
     } else {
-      if (document.documentElement.classList.contains('dark')) {
         document.documentElement.classList.remove('dark')
-        localStorage.setItem('color-theme', 'light')
-      } else {
-        document.documentElement.classList.add('dark')
-        localStorage.setItem('color-theme', 'dark')
-      }
-    }
-  }
 
-  themeToggleBtn.addEventListener('click', onClick)
+        // mostrar luna (para ir a dark)
+        themeToggleDarkIcon.classList.remove('hidden')
+        themeToggleLightIcon.classList.add('hidden')
+    }
+
+    onClick = () => {
+
+        const isDarkNow = document.documentElement.classList.contains('dark')
+
+        if (isDarkNow) {
+
+            document.documentElement.classList.remove('dark')
+            localStorage.setItem('color-theme', 'light')
+
+            themeToggleDarkIcon.classList.remove('hidden')
+            themeToggleLightIcon.classList.add('hidden')
+
+        } else {
+
+            document.documentElement.classList.add('dark')
+            localStorage.setItem('color-theme', 'dark')
+
+            themeToggleLightIcon.classList.remove('hidden')
+            themeToggleDarkIcon.classList.add('hidden')
+
+        }
+    }
+
+    themeToggleBtn.addEventListener('click', onClick)
+
 })
 
 onBeforeUnmount(() => {
-  const themeToggleBtn = document.getElementById('theme-toggle')
-  if (themeToggleBtn && onClick) {
-    themeToggleBtn.removeEventListener('click', onClick)
-  }
+    const themeToggleBtn = document.getElementById('theme-toggle')
+    if (themeToggleBtn && onClick) {
+        themeToggleBtn.removeEventListener('click', onClick)
+    }
 })
 </script>
 <template>
