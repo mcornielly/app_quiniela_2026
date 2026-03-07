@@ -1,5 +1,6 @@
 <script setup>
 import TableActions from './TableActions.vue'
+import { imageUrl } from '@/Utils/image'
 
 const props = defineProps({
     row: {
@@ -16,6 +17,17 @@ const emit = defineEmits(['toggle', 'edit', 'delete'])
 const toggle = () => {
     emit('toggle', props.row.id)
 }
+
+const imageFields = [
+    'flag',
+    'flag_path',
+    'logo',
+    'image',
+    'avatar',
+    'photo'
+]
+
+const isImageField = (key) => imageFields.includes(key)
 </script>
 
 <template>
@@ -38,13 +50,26 @@ const toggle = () => {
             :key="column.key"
             class="px-6 py-4 text-gray-900 whitespace-nowrap dark:text-white"
         >
-            <span v-if="typeof row[column.key] === 'object' && row[column.key] !== null">
+
+            <!-- 🖼 IMAGE FIELDS -->
+            <img
+                v-if="isImageField(column.key) && row[column.key]"
+                :src="imageUrl(row[column.key])"
+                class="w-8 h-8 object-contain rounded"
+            />
+
+            <!-- 🔗 RELATION OBJECT -->
+            <span
+                v-else-if="typeof row[column.key] === 'object' && row[column.key] !== null"
+            >
                 {{ row[column.key].name ?? '—' }}
             </span>
 
+            <!-- 🧾 NORMAL FIELD -->
             <span v-else>
                 {{ row[column.key] ?? '—' }}
             </span>
+
         </td>
 
         <!-- actions -->

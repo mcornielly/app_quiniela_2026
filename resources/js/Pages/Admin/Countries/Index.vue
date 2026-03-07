@@ -24,9 +24,9 @@ const props = defineProps({
 
 // Column configuration (can be adjusted after generation)
 const columns = [
-    { key: 'name', label: 'Name' },
-{ key: 'code', label: 'Code' },
-{ key: 'flag_path', label: 'Flag Path' },
+        { key: 'name', label: 'Name' },
+    { key: 'code', label: 'Code' },
+    { key: 'flag_path', label: 'Flag Path' },
 
 ]
 

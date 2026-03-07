@@ -63,8 +63,11 @@ Route::middleware(['auth', 'verified', 'admin'])
 
     Route::resource('countries', CountryController::class)->only(['index','store','update','destroy']);
 
-    Route::get('/groups', fn () => Inertia::render('Admin/Groups/Index'))
-        ->name('groups.index');
+    Route::delete('groups/bulk-delete', [GroupController::class, 'bulkDelete'])
+        ->name('groups.bulkDelete');
+
+    Route::resource('groups', GroupController::class)->only(['index','store','update','destroy']);
+
 
     Route::get('/calendar', fn () => Inertia::render('Admin/Calendar/Index'))
         ->name('calendar.index');

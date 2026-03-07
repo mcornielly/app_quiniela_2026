@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class MakeAdminCrud extends Command
 {
-    protected $signature = 'make:admin-crud {model}';
+    protected $signature = 'make:admin-crud {model} {--smart}';
 
     protected $description = 'Generate Admin CRUD (Controller + Index + Form)';
 
@@ -40,13 +40,15 @@ class MakeAdminCrud extends Command
         $columns = Schema::getColumnListing($table);
 
         $columns = collect($columns)
-            ->reject(fn($col) => in_array($col, ['id','created_at','updated_at']))
+            ->reject(fn($col) => in_array($col, ['id', 'created_at', 'updated_at']))
             ->values()
             ->toArray();
 
+        $smart = $this->option('smart');
+
         $this->generateController($modelClass, $models, $route, $routeSingular);
         $this->generateIndex($modelClass, $models, $route, $routeSingular, $columns);
-        $this->generateForm($modelClass, $routeSingular, $route, $columns);
+        $this->generateForm($modelClass, $routeSingular, $route, $columns, $table, $smart);
 
         $this->info("Admin CRUD for {$modelClass} generated successfully.");
     }
@@ -78,10 +80,9 @@ class MakeAdminCrud extends Command
         $tableColumns = '';
 
         foreach ($columns as $column) {
+            $label = Str::title(str_replace('_', ' ', $column));
 
-            $label = Str::title(str_replace('_',' ',$column));
-
-            $tableColumns .= "{ key: '{$column}', label: '{$label}' },\n";
+            $tableColumns .= "    { key: '{$column}', label: '{$label}' },\n";
         }
 
         $stub = str_replace(
@@ -102,70 +103,97 @@ class MakeAdminCrud extends Command
         File::put($path, $stub);
     }
 
-    protected function generateForm($model, $routeSingular, $route, $columns)
+    protected function generateForm($model, $routeSingular, $route, $columns, $table, $smart)
     {
         $stub = File::get(resource_path('stubs/admin-form.stub'));
 
         $formFields = '';
         $inputs = '';
 
-        foreach ($columns as $column) {
-            // FIX optional chaining JS
-            $formFields .= "{$column}: props.{$routeSingular}?.{$column} || '',\n";
+        $imageFields = ['flag', 'flag_path', 'logo', 'image', 'avatar', 'photo'];
 
-            // Mejor label automático
+        $imports = "
+            import TextInput from '@/Components/Admin/Inputs/TextInput.vue'
+            import NumberInput from '@/Components/Admin/Inputs/NumberInput.vue'
+            import SelectInput from '@/Components/Admin/Inputs/SelectInput.vue'
+            import TextareaInput from '@/Components/Admin/Inputs/TextareaInput.vue'
+            import CheckboxInput from '@/Components/Admin/Inputs/CheckboxInput.vue'
+            import ImageUpload from '@/Components/Admin/Inputs/ImageUpload.vue'
+            ";
+
+        foreach ($columns as $column) {
+            $formFields .= "    {$column}: props.{$routeSingular}?.{$column} || '',\n";
+
             $label = Str::title(str_replace('_', ' ', $column));
 
-            // limpiar palabras comunes
-            $label = str_replace([' Id', ' Path', ' Code'], ['', ' Path', ' Code'], $label);
+            $type = $this->detectColumnType($table, $column);
 
-            if (Str::endsWith($column, '_id')) {
+            $smartType = $smart ? $this->detectSmartType($column) : null;
 
-                $relation = Str::plural(str_replace('_id','',$column));
-
+            if ($smartType === 'relation' || Str::endsWith($column, '_id')) {
                 $inputs .= "
-                    <div>
-                        <label class=\"block mb-2 text-sm font-medium text-gray-900 dark:text-white\">
-                            {$label}
-                        </label>
-                        <select
-                            v-model=\"form.{$column}\"
-                            class=\"bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-                            focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5
-                            dark:bg-gray-700 dark:border-gray-600 dark:text-white\"
-                        >
-                            <option value=\"\">Select {$label}</option>
-
-                            <option
-                                v-for=\"item in {$relation}\"
-                                :key=\"item.id\"
-                                :value=\"item.id\"
-                            >
-                                {{ item.name }}
-                            </option>
-
-                        </select>
-                    </div>
-                ";
+                    <SelectInput
+                        v-model=\"form.{$column}\"
+                        label=\"{$label}\"
+                    />";
+            } elseif ($smartType === 'image') {
+                $inputs .= "
+                    <ImageUpload
+                        v-model=\"form.{$column}\"
+                        label=\"{$label}\"
+                        :preview=\"{$routeSingular}?.{$column}\"
+                    />";
+            } elseif ($smartType === 'boolean' || $type === 'boolean') {
+                $inputs .= "
+                    <CheckboxInput
+                        v-model=\"form.{$column}\"
+                        label=\"{$label}\"
+                    />";
+            } elseif ($type === 'text') {
+                $inputs .= "
+                    <TextareaInput
+                        v-model=\"form.{$column}\"
+                        label=\"{$label}\"
+                    />";
+            } elseif (in_array($type, ['integer', 'bigint', 'decimal', 'float'])) {
+                $inputs .= "
+                    <NumberInput
+                        v-model=\"form.{$column}\"
+                        label=\"{$label}\"
+                    />";
+            } elseif ($type === 'date') {
+                $inputs .= "
+                    <TextInput
+                        v-model=\"form.{$column}\"
+                        label=\"{$label}\"
+                        type=\"date\"
+                    />";
             } else {
                 $inputs .= "
-                    <div>
-                        <label class=\"block mb-2 text-sm font-medium text-gray-900 dark:text-white\">
-                            {$label}
-                        </label>
-                        <input
-                            v-model=\"form.{$column}\"
-                            type=\"text\"
-                            class=\"bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white\"
-                        >
-                    </div>
-                ";
+                    <TextInput
+                        v-model=\"form.{$column}\"
+                        label=\"{$label}\"
+                    />";
             }
         }
 
         $stub = str_replace(
-            ['{{model}}', '{{route}}', '{{routeSingular}}', '{{formFields}}', '{{inputs}}'],
-            [$model, $route, $routeSingular, $formFields, $inputs],
+            [
+                '{{model}}',
+                '{{route}}',
+                '{{routeSingular}}',
+                '{{formFields}}',
+                '{{inputs}}',
+                '{{imports}}'
+            ],
+            [
+                $model,
+                $route,
+                $routeSingular,
+                $formFields,
+                $inputs,
+                $imports
+            ],
             $stub
         );
 
@@ -176,9 +204,36 @@ class MakeAdminCrud extends Command
             return;
         }
 
-        // Asegurar que el directorio existe antes de escribir el archivo
         File::ensureDirectoryExists(dirname($path));
 
         File::put($path, $stub);
+    }
+
+    protected function detectColumnType($table, $column)
+    {
+        try {
+            return Schema::getColumnType($table, $column);
+        } catch (\Exception $e) {
+            return 'string';
+        }
+    }
+
+    protected function detectSmartType($column)
+    {
+        $images = ['flag','flag_path','logo','image','avatar','photo'];
+
+        if (Str::endsWith($column, '_id')) {
+            return 'relation';
+        }
+
+        if (in_array($column, $images)) {
+            return 'image';
+        }
+
+        if ($column === 'active' || $column === 'enabled') {
+            return 'boolean';
+        }
+
+        return null;
     }
 }
