@@ -7,6 +7,7 @@ import ImageUpload from '@/Components/Admin/Inputs/ImageUpload.vue'
 
 
 const page = usePage()
+const errors = page.props.errors
 
 const props = defineProps({
     tournament: Object
@@ -20,7 +21,7 @@ const form = ref({
     name: props.tournament?.name || '',
     year: props.tournament?.year || '',
     host_countries: props.tournament?.host_countries || '',
-    logo: props.tournament?.logo || '',
+    logo: props.tournament?.logo ?? null,
     deadline_at: props.tournament?.deadline_at || '',
     status: props.tournament?.status || '',
     type: props.tournament?.type || '',
@@ -42,9 +43,12 @@ const submit = () => {
     }
 
     if (isEdit) {
-        router.put(
+        router.post(
             route('admin.tournaments.update', props.tournament.id),
-            form.value,
+            {
+                ...form.value,
+                _method: 'put'
+            },
             options
         )
     } else {
@@ -58,40 +62,45 @@ const submit = () => {
 </script>
 
 <template>
-    <form @submit.prevent="submit" class="space-y-4">
+    <form @submit.prevent="submit" class="space-y-4 pb-24">
 
-                    <TextInput
-                        v-model="form.name"
-                        label="Name"
-                    />
-                    <TextInput
-                        v-model="form.year"
-                        label="Year"
-                    />
-                    <TextInput
-                        v-model="form.host_countries"
-                        label="Host Countries"
-                    />
-                    <ImageUpload
-                        v-model="form.logo"
-                        label="Logo"
-                        :preview="tournament?.logo"
-                    />
-                    <TextInput
-                        v-model="form.deadline_at"
-                        label="Deadline At"
-                    />
-                    <TextInput
-                        v-model="form.status"
-                        label="Status"
-                    />
-                    <TextInput
-                        v-model="form.type"
-                        label="Type"
-                    />
+        <TextInput
+            v-model="form.name"
+            label="Name"
+            :error="errors.name"
+        />
+        <TextInput
+            v-model="form.year"
+            label="Year"
+        />
+        <TextInput
+            v-model="form.host_countries"
+            label="Host Countries"
+        />
+        <ImageUpload
+            v-model="form.logo"
+            label="Logo"
+            :preview="tournament?.logo"
+        />
+        <span v-if="errors.logo" class="text-sm text-red-600">
+            {{ errors.logo }}
+        </span>
+
+        <TextInput
+            v-model="form.deadline_at"
+            label="Deadline At"
+        />
+        <TextInput
+            v-model="form.status"
+            label="Status"
+        />
+        <TextInput
+            v-model="form.type"
+            label="Type"
+        />
 
         <!-- Buttons -->
-        <div class="bottom-0 left-0 flex justify-center w-full pb-4 space-x-4 md:px-4 md:absolute">
+        <div class="fixed bottom-0 right-0 flex justify-center w-full max-w-xs pb-4 space-x-4 md:px-4">
             <button type="submit"
                 class="text-white w-full justify-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
                 {{ isEdit ? 'Update' : 'Add Tournament' }}

@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\Tournament;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\Tournament;
+use Illuminate\Support\Facades\Storage;
 
 class TournamentController extends Controller
 {
@@ -40,8 +41,19 @@ class TournamentController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required','string','max:255']
+            'name' => ['required','string','max:255'],
+            'year' => ['nullable','integer'],
+            'host_countries' => ['nullable','string'],
+            'logo' => ['nullable','image','mimes:png,jpg,jpeg,svg,webp','max:2048'],
+            'deadline_at' => ['nullable','date'],
+            'status' => ['nullable','string'],
+            'type' => ['nullable','string'],
         ]);
+
+        // Upload logo
+        if ($request->hasFile('logo')) {
+            $validated['logo'] = $request->file('logo')->store('tournaments','public');
+        }
 
         Tournament::create($validated);
 
@@ -54,12 +66,29 @@ class TournamentController extends Controller
     public function update(Request $request, Tournament $tournament)
     {
         $validated = $request->validate([
-            'name' => ['required','string','max:255']
+            'name' => ['required','string','max:255'],
+            'year' => ['nullable','integer'],
+            'host_countries' => ['nullable'],
+            'logo' => ['nullable','image','mimes:png,jpg,jpeg,svg,webp','max:2048'],
+            'deadline_at' => ['nullable','date'],
+            'status' => ['nullable','string'],
+            'type' => ['nullable','string'],
         ]);
+
+        // subir nueva imagen
+        if ($request->hasFile('logo')) {
+
+            // borrar logo anterior
+            if ($tournament->logo) {
+                Storage::disk('public')->delete($tournament->logo);
+            }
+
+            $validated['logo'] = $request->file('logo')->store('tournaments', 'public');
+        }
 
         $tournament->update($validated);
 
-        return redirect()->back()->with('success','Tournament updated successfully');
+        return back()->with('success','Tournament updated successfully');
     }
 
     /**

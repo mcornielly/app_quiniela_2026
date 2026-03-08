@@ -55,7 +55,9 @@ const emit = defineEmits(['close'])
                 </div>
 
                 <!-- FORM SLOT -->
-                <slot />
+                <div class="flex-1 overflow-y-auto">
+                    <slot />
+                </div>
 
             </div>
         </Transition>

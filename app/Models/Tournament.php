@@ -9,6 +9,8 @@ class Tournament extends Model
     protected $fillable = [
         'name',
         'year',
+        'host_countries',
+        'logo',
         'deadline_at',
         'status',
         'type'
@@ -16,6 +18,7 @@ class Tournament extends Model
 
     protected $casts = [
         'deadline_at' => 'datetime',
+        'host_countries' => 'array',
     ];
 
     /*

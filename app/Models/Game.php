@@ -171,4 +171,21 @@ class Game extends Model
     {
         return $this->isFinished() && !$this->isDraw();
     }
+
+    public function score()
+    {
+        if (!$this->hasResult()) {
+            return null;
+        }
+
+        return "{$this->home_score} - {$this->away_score}";
+    }
+
+public function hasStarted()
+{
+    $kickoff = $this->match_date->copy()
+        ->setTimeFromTimeString($this->match_time);
+
+    return now()->greaterThanOrEqualTo($kickoff);
+}
 }

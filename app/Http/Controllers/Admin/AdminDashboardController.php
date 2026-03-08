@@ -10,6 +10,8 @@ class AdminDashboardController extends Controller
 {
     public function index(): Response
     {
-        return Inertia::render('Admin/Dashboard');
+        return Inertia::render('Admin/Dashboard', [
+            'filters' => []
+        ]);
     }
 }

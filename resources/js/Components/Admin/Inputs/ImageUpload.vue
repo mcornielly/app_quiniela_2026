@@ -4,13 +4,19 @@ import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 
 const props = defineProps({
-    modelValue: File,
-    preview: String
+    modelValue: {
+        type: [File, String],
+        default: null
+    },
+    preview: {
+        type: String,
+        default: ''
+    }
 })
 
 const emit = defineEmits(['update:modelValue'])
 
-const imageUrl = ref(props.preview || '')
+const imageUrl = ref(props.preview ?? props.modelValue ?? '')
 
 const beforeUpload = (file) => {
     const allowed = ['image/jpeg', 'image/png', 'image/svg+xml', 'image/webp']
@@ -46,7 +52,9 @@ const handleUpload = (file) => {
     >
         <img
             v-if="imageUrl"
-            :src="imageUrl.startsWith('http') ? imageUrl : '/storage/' + imageUrl"
+            :src="imageUrl.startsWith('http') || imageUrl.startsWith('blob')
+            ? imageUrl
+            : '/storage/' + imageUrl"
             class="avatar"
         />
 
