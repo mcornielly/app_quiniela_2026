@@ -1,6 +1,7 @@
 <script setup>
 import TableActions from './TableActions.vue'
 import { imageUrl } from '@/Utils/image'
+import { formatDate } from '@/Utils/format'
 
 const props = defineProps({
     row: {
@@ -26,6 +27,14 @@ const imageFields = [
     'avatar',
     'photo'
 ]
+
+const dateFields = [
+    'match_date',
+    'created_at',
+    'updated_at'
+]
+
+const isDateField = (key) => dateFields.includes(key)
 
 const isImageField = (key) => imageFields.includes(key)
 </script>
@@ -63,6 +72,11 @@ const isImageField = (key) => imageFields.includes(key)
                 v-else-if="typeof row[column.key] === 'object' && row[column.key] !== null"
             >
                 {{ row[column.key].name ?? '—' }}
+            </span>
+
+            <!-- 📅 DATE FIELD -->
+            <span v-else-if="isDateField(column.key)">
+                {{ formatDate(row[column.key]) }}
             </span>
 
             <!-- 🧾 NORMAL FIELD -->

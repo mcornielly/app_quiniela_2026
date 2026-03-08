@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\TournamentController;
 use App\Http\Controllers\Admin\CountryController;
 use App\Http\Controllers\Admin\GroupController;
+use App\Http\Controllers\Admin\GameController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\GameResultController;
@@ -74,15 +75,16 @@ Route::middleware(['auth', 'verified', 'admin'])
 
     Route::resource('groups', GroupController::class)->only(['index','store','update','destroy']);
 
+    Route::delete('games/bulk-delete', [GameController::class, 'bulkDelete'])
+        ->name('games.bulkDelete');
+
+    Route::resource('games', GameController::class)->only(['index','store','update','destroy']);
 
     Route::get('/calendar', fn () => Inertia::render('Admin/Calendar/Index'))
         ->name('calendar.index');
 
     Route::get('/pools', fn () => Inertia::render('Admin/Pools/Index'))
         ->name('pools.index');
-
-    Route::get('/games', fn () => Inertia::render('Admin/Games/Index'))
-        ->name('games.index');
 
     Route::get('/predictions', fn () => Inertia::render('Admin/Predictions/Index'))
         ->name('predictions.index');
