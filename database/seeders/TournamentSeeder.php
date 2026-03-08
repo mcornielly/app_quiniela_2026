@@ -10,19 +10,17 @@ class TournamentSeeder extends Seeder
 {
     public function run(): void
     {
-        Tournament::updateOrCreate(
-
-            [
-                'year' => 2026
-            ],
-
-            [
-                'name' => 'FIFA World Cup 2026',
-                'deadline_at' => Carbon::parse('2026-06-11 19:00:00'),
-                'status' => 'live',
-                'type' => 'world_cup'
-            ]
-
-        );
+        Tournament::create([
+            'name' => 'FIFA World Cup',
+            'year' => 2026,
+            'host_countries' => json_encode([
+                'United States',
+                'Mexico',
+                'Canada'
+            ]),
+            'deadline_at' => '2026-06-10 23:59:59',
+            'status' => 'draft',
+            'type' => 'world_cup'
+        ]);
     }
 }

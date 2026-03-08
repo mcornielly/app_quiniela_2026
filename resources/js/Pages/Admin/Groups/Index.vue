@@ -24,8 +24,8 @@ const props = defineProps({
 
 // Column configuration (can be adjusted after generation)
 const columns = [
-    { key: 'tournament_id', label: 'Tournament Id' },
-{ key: 'name', label: 'Name' },
+    { key: 'tournament', label: 'Tournament' },
+    { key: 'name', label: 'Name' },
 
 ]
 

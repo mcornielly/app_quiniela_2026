@@ -14,7 +14,7 @@ class GroupController extends Controller
     {
         $search = request('search');
 
-        $groups = Group::query()
+        $groups = Group::with('tournament')
             ->when($search, function ($query) use ($search) {
 
                 $query->where(function ($q) use ($search) {

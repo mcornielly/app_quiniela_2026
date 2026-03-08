@@ -126,6 +126,10 @@ class MakeAdminCrud extends Command
 
             $label = Str::title(str_replace('_', ' ', $column));
 
+            if (Str::endsWith($column, '_id')) {
+                $label = Str::title(str_replace('_id', '', $column));
+            }
+
             $type = $this->detectColumnType($table, $column);
 
             $smartType = $smart ? $this->detectSmartType($column) : null;

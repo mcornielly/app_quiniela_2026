@@ -1,9 +1,8 @@
 <script setup>
-{{imports}}
-
 import { ref } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import { notifySuccess, notifyError } from '@/Utils/notify'
+{{imports}}
 
 const page = usePage()
 
@@ -16,7 +15,7 @@ const emit = defineEmits(['close'])
 const isEdit = !!props.{{routeSingular}}
 
 const form = ref({
-{{formFields}}
+    {{formFields}}
 })
 
 const submit = () => {

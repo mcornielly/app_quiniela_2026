@@ -15,7 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->unsignedSmallInteger('year')->unique();
-            $table->timestamp('deadline_at')->nullable(); // fecha límite global
+            $table->json('host_countries')->nullable();
+            $table->string('logo')->nullable();
+            $table->timestamp('deadline_at')->nullable(); // fecha límite quiniela
             $table->string('status')->default('draft'); // draft|live|finished
             $table->string('type')->default('world_cup');
             $table->timestamps();
