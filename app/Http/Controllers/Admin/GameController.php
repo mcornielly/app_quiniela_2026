@@ -7,6 +7,7 @@ use Inertia\Response;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Game;
+use App\Models\Team;
 use App\Models\Tournament;
 
 
@@ -18,27 +19,32 @@ class GameController extends Controller
         $search = request('search');
 
         $games = Game::query()
-            ->with(['tournament', 'homeTeam', 'awayTeam']) // Eager load relationships
-            ->when($search, function ($query) use ($search) {
+                ->with([
+                    'tournament',
+                    'homeTeam.group',
+                    'awayTeam.group'
+                ])
+                ->when($search, function ($query) use ($search) {
+                    $query->where('venue', 'like', "%{$search}%");
+                })
+                ->orderBy('match_number')
+                ->paginate(10)
+                ->through(function ($game) {
 
-                $query->where(function ($q) use ($search) {
+                    $game->match_date = $game->match_date?->format('Y-m-d');
+                    $game->match_time = $game->match_time;
 
-                    $q->where('name', 'like', "%{$search}%");
-
-                });
-
-            })
-            ->orderBy('match_number')
-            ->paginate(10)
-            ->withQueryString();
+                    return $game;
+            });
 
         $tournaments = Tournament::select('id','name')->get();
-
+        $teams = Team::select('id', 'name')->orderBy('name')->get();
 
         return Inertia::render('Admin/Games/Index', [
             'filters' => request()->only('search'),
             'games' => $games,
             'tournaments' => $tournaments,
+            'teams' => $teams,
         ]);
     }
 

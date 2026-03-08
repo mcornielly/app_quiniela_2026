@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FormatsDates;
 use Illuminate\Database\Eloquent\Model;
 
 class Game extends Model
 {
+    use FormatsDates;
+
     protected $fillable = [
 
         'tournament_id',
@@ -35,7 +38,13 @@ class Game extends Model
 
     protected $casts = [
         'match_date' => 'date',
-        'match_time' => 'datetime:H:i'
+        'match_time' => 'string',
+    ];
+
+    protected $appends = [
+        'match_date_input',
+        'match_time_input',
+        'group_name',
     ];
 
     /*
@@ -181,11 +190,26 @@ class Game extends Model
         return "{$this->home_score} - {$this->away_score}";
     }
 
-public function hasStarted()
-{
-    $kickoff = $this->match_date->copy()
-        ->setTimeFromTimeString($this->match_time);
+    public function hasStarted()
+    {
+        $kickoff = $this->match_date->copy()
+            ->setTimeFromTimeString($this->match_time);
 
-    return now()->greaterThanOrEqualTo($kickoff);
-}
+        return now()->greaterThanOrEqualTo($kickoff);
+    }
+
+    public function getMatchDateInputAttribute()
+    {
+        return $this->match_date?->format('Y-m-d');
+    }
+
+    public function getMatchTimeInputAttribute()
+    {
+        return $this->match_time;
+    }
+
+    public function getGroupNameAttribute()
+    {
+        return $this->homeTeam?->group?->name;
+    }
 }

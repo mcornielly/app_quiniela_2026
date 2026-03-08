@@ -110,7 +110,7 @@ const emit = defineEmits(['confirm','close'])
                     Are you sure you want to delete
 
                     <span class="font-semibold text-gray-900 dark:text-white">
-                        {{ item?.name }}
+                        {{ item.name || item.title || 'this ' + entityName }}
                     </span> ?
 
                 </p>

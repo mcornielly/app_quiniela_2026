@@ -22,13 +22,15 @@ const props = defineProps({
     filters: Object,
     games: Object,
     tournaments: Array,
-
+    teams: Array
 })
 
 // Column configuration (can be adjusted after generation)
 const columns = [
-    { key: 'tournament', label: 'Tournament' },
+    // { key: 'tournament', label: 'Tournament' },
     { key: 'match_number', label: 'Match Number' },
+    { key: 'group_name', label: 'Group' },
+    { key: 'stage', label: 'Stage' },
     { key: 'home_team', label: 'Home Team' },
     { key: 'away_team', label: 'Away Team' },
     // { key: 'home_slot', label: 'Home Slot' },
@@ -36,7 +38,6 @@ const columns = [
     // { key: 'home_score', label: 'Home Score' },
     // { key: 'away_score', label: 'Away Score' },
     // { key: 'winner_team_id', label: 'Winner Team Id' },
-    { key: 'stage', label: 'Stage' },
     { key: 'venue', label: 'Venue' },
     { key: 'match_date', label: 'Match Date', format: formatDate },
     { key: 'match_time', label: 'Match Time' },
@@ -196,8 +197,8 @@ const handleCreate = () => {
                     @close="showCreateDrawer = false"
                 >
                     <GameForm
-                                :tournaments="tournaments"
-
+                        :tournaments="tournaments"
+                        :teams="teams"
                         @saved="handleCreate"
                         @close="showCreateDrawer = false"
                     />
@@ -210,6 +211,7 @@ const handleCreate = () => {
                 >
                     <GameForm
                         :tournaments="tournaments"
+                        :teams="teams"
                         :game="selectedItem"
                         @close="selectedItem = null"
                     />
