@@ -8,7 +8,8 @@ import SelectInput from '@/Components/Admin/Inputs/SelectInput.vue'
 const page = usePage()
 
 const props = defineProps({
-    group: Object
+    group: Object,
+    tournaments: Array
 })
 
 const emit = defineEmits(['close'])
@@ -17,10 +18,11 @@ const isEdit = !!props.group
 
 const form = ref({
     tournament_id: props.group?.tournament_id || '',
+    tournament: props.group?.tournament || '',
     name: props.group?.name || '',
-
 })
-
+console.log('Tournaments:', props.tournaments)
+console.log('Form tournament_id:', form.value.tournament_id)
 const submit = () => {
     const options = {
         onSuccess: () => {
@@ -56,6 +58,7 @@ const submit = () => {
 
         <SelectInput
             v-model="form.tournament_id"
+            :options="tournaments"
             label="Tournament"
         />
         <TextInput

@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\Group;
+use App\Models\Tournament;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\Group;
 
 class GroupController extends Controller
 {
@@ -30,7 +31,8 @@ class GroupController extends Controller
 
         return Inertia::render('Admin/Groups/Index', [
             'filters' => request()->only('search'),
-            'groups' => $groups
+            'groups' => $groups,
+            'tournaments' => Tournament::orderBy('name')->get(),
         ]);
     }
 
@@ -40,6 +42,7 @@ class GroupController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'tournament_id' => ['required','exists:tournaments,id'],
             'name' => ['required','string','max:255']
         ]);
 
@@ -54,6 +57,7 @@ class GroupController extends Controller
     public function update(Request $request, Group $group)
     {
         $validated = $request->validate([
+            'tournament_id' => ['required','exists:tournaments,id'],
             'name' => ['required','string','max:255']
         ]);
 

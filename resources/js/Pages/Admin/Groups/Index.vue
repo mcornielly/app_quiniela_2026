@@ -19,7 +19,8 @@ const title = 'Groups'
 
 const props = defineProps({
     filters: Object,
-    groups: Object
+    groups: Object,
+    tournaments: Object
 })
 
 // Column configuration (can be adjusted after generation)
@@ -182,6 +183,7 @@ const handleCreate = () => {
                     @close="showCreateDrawer = false"
                 >
                     <GroupForm
+                        :tournaments="tournaments"
                         @saved="handleCreate"
                         @close="showCreateDrawer = false"
                     />
@@ -193,6 +195,7 @@ const handleCreate = () => {
                     @close="selectedItem = null"
                 >
                     <GroupForm
+                        :tournaments="tournaments"
                         :group="selectedItem"
                         @close="selectedItem = null"
                     />
