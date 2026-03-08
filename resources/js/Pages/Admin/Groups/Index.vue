@@ -20,7 +20,8 @@ const title = 'Groups'
 const props = defineProps({
     filters: Object,
     groups: Object,
-    tournaments: Object
+    tournaments: Array,
+
 })
 
 // Column configuration (can be adjusted after generation)

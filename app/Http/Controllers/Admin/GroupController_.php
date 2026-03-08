@@ -4,12 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use App\Models\Group;
 use App\Models\Tournament;
-
-
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
 class GroupController extends Controller
 {
@@ -17,8 +15,7 @@ class GroupController extends Controller
     {
         $search = request('search');
 
-        $groups = Group::query()
-            ->with(['tournament'])
+        $groups = Group::with('tournament')
             ->when($search, function ($query) use ($search) {
 
                 $query->where(function ($q) use ($search) {
@@ -32,15 +29,10 @@ class GroupController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $tournaments = Tournament::select('id','name')->get();
-
-
         return Inertia::render('Admin/Groups/Index', [
             'filters' => request()->only('search'),
             'groups' => $groups,
-            'tournaments' => $tournaments,
-
-
+            'tournaments' => Tournament::orderBy('name')->get(),
         ]);
     }
 
@@ -50,6 +42,7 @@ class GroupController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'tournament_id' => ['required','exists:tournaments,id'],
             'name' => ['required','string','max:255']
         ]);
 
@@ -64,6 +57,7 @@ class GroupController extends Controller
     public function update(Request $request, Group $group)
     {
         $validated = $request->validate([
+            'tournament_id' => ['required','exists:tournaments,id'],
             'name' => ['required','string','max:255']
         ]);
 

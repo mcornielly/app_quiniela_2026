@@ -9,7 +9,8 @@ const page = usePage()
 
 const props = defineProps({
     group: Object,
-    tournaments: Array
+        tournaments: Array,
+
 })
 
 const emit = defineEmits(['close'])
@@ -17,12 +18,11 @@ const emit = defineEmits(['close'])
 const isEdit = !!props.group
 
 const form = ref({
-    tournament_id: props.group?.tournament_id || '',
-    tournament: props.group?.tournament || '',
+        tournament_id: props.group?.tournament_id || '',
     name: props.group?.name || '',
+
 })
-console.log('Tournaments:', props.tournaments)
-console.log('Form tournament_id:', form.value.tournament_id)
+
 const submit = () => {
     const options = {
         onSuccess: () => {
@@ -56,15 +56,15 @@ const submit = () => {
 <template>
     <form @submit.prevent="submit" class="space-y-4">
 
-        <SelectInput
-            v-model="form.tournament_id"
-            :options="tournaments"
-            label="Tournament"
-        />
-        <TextInput
-            v-model="form.name"
-            label="Name"
-        />
+                    <SelectInput
+                        v-model="form.tournament_id"
+                        label="Tournament"
+                        :options="tournaments"
+                    />
+                    <TextInput
+                        v-model="form.name"
+                        label="Name"
+                    />
 
         <!-- Buttons -->
         <div class="bottom-0 left-0 flex justify-center w-full pb-4 space-x-4 md:px-4 md:absolute">

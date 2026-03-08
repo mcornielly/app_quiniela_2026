@@ -5,6 +5,7 @@
 // use App\Http\Controllers\RankingController;
 // use App\Http\Controllers\RulesController;
 use App\Http\Controllers\Admin\TeamController;
+use App\Http\Controllers\Admin\TournamentController;
 use App\Http\Controllers\Admin\CountryController;
 use App\Http\Controllers\Admin\GroupController;
 use App\Http\Controllers\ProfileController;
@@ -53,6 +54,11 @@ Route::middleware(['auth', 'verified', 'admin'])
     | Pages (Inertia)
     |--------------------------------------------------------------------------
     */
+    Route::delete('tournaments/bulk-delete', [TournamentController::class, 'bulkDelete'])
+        ->name('tournaments.bulkDelete');
+
+    Route::resource('tournaments', TournamentController::class)->only(['index','store','update','destroy']);
+
     Route::delete('teams/bulk-delete', [TeamController::class, 'bulkDelete'])
         ->name('teams.bulkDelete');
 

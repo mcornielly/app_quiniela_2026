@@ -19,7 +19,8 @@ const title = '{{models}}'
 
 const props = defineProps({
     filters: Object,
-    {{route}}: Object
+    {{route}}: Object,
+    {{relationProps}}
 })
 
 // Column configuration (can be adjusted after generation)
@@ -180,6 +181,7 @@ const handleCreate = () => {
                     @close="showCreateDrawer = false"
                 >
                     <{{model}}Form
+                        {{formRelationProps}}
                         @saved="handleCreate"
                         @close="showCreateDrawer = false"
                     />
@@ -191,6 +193,7 @@ const handleCreate = () => {
                     @close="selectedItem = null"
                 >
                     <{{model}}Form
+                        {{formRelationProps}}
                         :{{routeSingular}}="selectedItem"
                         @close="selectedItem = null"
                     />

@@ -6,19 +6,15 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\Group;
 use App\Models\Tournament;
 
-
-
-class GroupController extends Controller
+class TournamentController extends Controller
 {
     public function index(): Response
     {
         $search = request('search');
 
-        $groups = Group::query()
-            ->with(['tournament'])
+        $tournaments = Tournament::query()
             ->when($search, function ($query) use ($search) {
 
                 $query->where(function ($q) use ($search) {
@@ -32,20 +28,14 @@ class GroupController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $tournaments = Tournament::select('id','name')->get();
-
-
-        return Inertia::render('Admin/Groups/Index', [
+        return Inertia::render('Admin/Tournaments/Index', [
             'filters' => request()->only('search'),
-            'groups' => $groups,
-            'tournaments' => $tournaments,
-
-
+            'tournaments' => $tournaments
         ]);
     }
 
     /**
-     * Store new Group
+     * Store new Tournament
      */
     public function store(Request $request)
     {
@@ -53,49 +43,49 @@ class GroupController extends Controller
             'name' => ['required','string','max:255']
         ]);
 
-        Group::create($validated);
+        Tournament::create($validated);
 
-        return redirect()->back()->with('success','Group created successfully');
+        return redirect()->back()->with('success','Tournament created successfully');
     }
 
     /**
-     * Update Group
+     * Update Tournament
      */
-    public function update(Request $request, Group $group)
+    public function update(Request $request, Tournament $tournament)
     {
         $validated = $request->validate([
             'name' => ['required','string','max:255']
         ]);
 
-        $group->update($validated);
+        $tournament->update($validated);
 
-        return redirect()->back()->with('success','Group updated successfully');
+        return redirect()->back()->with('success','Tournament updated successfully');
     }
 
     /**
-     * Delete single Group
+     * Delete single Tournament
      */
-    public function destroy(Group $group)
+    public function destroy(Tournament $tournament)
     {
-        $group->delete();
+        $tournament->delete();
 
-        return redirect()->back()->with('success','Group deleted successfully');
+        return redirect()->back()->with('success','Tournament deleted successfully');
     }
 
     /**
-     * Delete multiple Groups
+     * Delete multiple Tournaments
      */
     public function bulkDelete(Request $request)
     {
         $validated = $request->validate([
             'ids' => ['required','array'],
-            'ids.*' => ['exists:groups,id']
+            'ids.*' => ['exists:tournaments,id']
         ]);
 
-        $deleted = Group::whereIn('id', $validated['ids'])->delete();
+        $deleted = Tournament::whereIn('id', $validated['ids'])->delete();
 
         return back()->with([
-            'success' => "$deleted groups deleted successfully"
+            'success' => "$deleted tournaments deleted successfully"
         ]);
     }
 }

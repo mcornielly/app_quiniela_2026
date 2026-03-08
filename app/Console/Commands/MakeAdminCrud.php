@@ -46,24 +46,79 @@ class MakeAdminCrud extends Command
 
         $smart = $this->option('smart');
 
-        $this->generateController($modelClass, $models, $route, $routeSingular);
+        $this->generateController($modelClass, $models, $route, $routeSingular, $columns, $smart);
         $this->generateIndex($modelClass, $models, $route, $routeSingular, $columns);
         $this->generateForm($modelClass, $routeSingular, $route, $columns, $table, $smart);
 
         $this->info("Admin CRUD for {$modelClass} generated successfully.");
     }
 
-    protected function generateController($model, $models, $route, $routeSingular)
+    protected function generateController($model, $models, $route, $routeSingular, $columns, $smart)
     {
+        $relations = '';
+        $relationsData = '';
+        $relationImports = '';
+        $withRelations = [];
+        $generatedRelations = [];
+
+        if ($smart) {
+
+            foreach ($columns as $column) {
+
+                $relationModel = $this->detectRelationModel($column);
+
+                if ($relationModel && !in_array($relationModel, $generatedRelations)) {
+
+                    $generatedRelations[] = $relationModel;
+
+                    $relationName = Str::camel(Str::replace('_id','',$column));
+                    $withRelations[] = $relationName;
+
+                    $relationPlural = Str::camel(Str::plural($relationModel));
+
+                    $relationImports .= "use App\\Models\\{$relationModel};\n";
+
+                    $relations .= "\${$relationPlural} = {$relationModel}::select('id','name')->get();\n";
+
+                    $relationsData .= "'{$relationPlural}' => \${$relationPlural},\n";
+                }
+            }
+        }
+
+        $withString = '';
+
+        if(count($withRelations)){
+            $withString = "->with(['" . implode("','", $withRelations) . "'])";
+        }
+
         $stub = File::get(resource_path('stubs/admin-controller.stub'));
 
         $stub = str_replace(
-            ['{{model}}', '{{models}}', '{{route}}', '{{routeSingular}}'],
-            [$model, $models, $route, $routeSingular],
+            [
+                '{{model}}',
+                '{{models}}',
+                '{{route}}',
+                '{{routeSingular}}',
+                '{{relations}}',
+                '{{relationsData}}',
+                '{{relationImports}}',
+                '{{withRelations}}'
+            ],
+            [
+                $model,
+                $models,
+                $route,
+                $routeSingular,
+                $relations,
+                $relationsData,
+                $relationImports,
+                $withString
+            ],
             $stub
         );
 
         $path = app_path("Http/Controllers/Admin/{$model}Controller.php");
+
 
         if (File::exists($path)) {
             $this->warn("Controller already exists.");
@@ -75,19 +130,63 @@ class MakeAdminCrud extends Command
 
     protected function generateIndex($model, $models, $route, $routeSingular, $columns)
     {
+        $relationProps = '';
+        $formRelationProps = '';
+        $generatedRelations = [];
+
         $stub = File::get(resource_path('stubs/admin-index.stub'));
 
         $tableColumns = '';
 
         foreach ($columns as $column) {
+
+            $relationModel = $this->detectRelationModel($column);
+
+            if ($relationModel) {
+
+                $relationName = Str::camel(Str::replace('_id', '', $column));
+                $relationPlural = Str::camel(Str::plural($relationModel));
+
+                if (!in_array($relationModel, $generatedRelations)) {
+
+                    $generatedRelations[] = $relationModel;
+
+                    $relationProps .= "    {$relationPlural}: Array,\n";
+                    $formRelationProps .= "        :{$relationPlural}=\"{$relationPlural}\"\n";
+                }
+
+                $label = Str::title($relationName);
+
+
+                $tableColumns .= "    { key: '{$relationName}', label: '{$label}' },\n";
+
+                continue;
+            }
+
             $label = Str::title(str_replace('_', ' ', $column));
 
             $tableColumns .= "    { key: '{$column}', label: '{$label}' },\n";
         }
 
         $stub = str_replace(
-            ['{{model}}', '{{models}}', '{{route}}', '{{routeSingular}}', '{{columns}}'],
-            [$model, $models, $route, $routeSingular, $tableColumns],
+            [
+                '{{model}}',
+                '{{models}}',
+                '{{route}}',
+                '{{routeSingular}}',
+                '{{columns}}',
+                '{{relationProps}}',
+                '{{formRelationProps}}'
+            ],
+            [
+                $model,
+                $models,
+                $route,
+                $routeSingular,
+                $tableColumns,
+                $relationProps,
+                $formRelationProps
+            ],
             $stub
         );
 
@@ -109,8 +208,8 @@ class MakeAdminCrud extends Command
 
         $formFields = '';
         $inputs = '';
-
-        $imageFields = ['flag', 'flag_path', 'logo', 'image', 'avatar', 'photo'];
+        $relationProps = '';
+        $generatedRelations = [];
 
         $imports = "
             import TextInput from '@/Components/Admin/Inputs/TextInput.vue'
@@ -122,25 +221,41 @@ class MakeAdminCrud extends Command
             ";
 
         foreach ($columns as $column) {
+
+            $relationModel = $smart ? $this->detectRelationModel($column) : null;
+
+            if ($relationModel && !in_array($relationModel, $generatedRelations)) {
+
+                $generatedRelations[] = $relationModel;
+
+                $relationPlural = Str::camel(Str::plural($relationModel));
+
+                $relationProps .= "    {$relationPlural}: Array,\n";
+            }
             $formFields .= "    {$column}: props.{$routeSingular}?.{$column} || '',\n";
 
             $label = Str::title(str_replace('_', ' ', $column));
 
-            if (Str::endsWith($column, '_id')) {
-                $label = Str::title(str_replace('_id', '', $column));
+            if ($relationModel) {
+
+                $relationPlural = Str::camel(Str::plural($relationModel));
+                $label = Str::title(Str::replace('_id','',$column));
+
+                $inputs .= "
+                    <SelectInput
+                        v-model=\"form.{$column}\"
+                        label=\"{$label}\"
+                        :options=\"{$relationPlural}\"
+                    />";
+
+                continue;
             }
 
             $type = $this->detectColumnType($table, $column);
 
             $smartType = $smart ? $this->detectSmartType($column) : null;
 
-            if ($smartType === 'relation' || Str::endsWith($column, '_id')) {
-                $inputs .= "
-                    <SelectInput
-                        v-model=\"form.{$column}\"
-                        label=\"{$label}\"
-                    />";
-            } elseif ($smartType === 'image') {
+            if ($smartType === 'image') {
                 $inputs .= "
                     <ImageUpload
                         v-model=\"form.{$column}\"
@@ -188,7 +303,8 @@ class MakeAdminCrud extends Command
                 '{{routeSingular}}',
                 '{{formFields}}',
                 '{{inputs}}',
-                '{{imports}}'
+                '{{imports}}',
+                '{{relationProps}}'
             ],
             [
                 $model,
@@ -196,7 +312,8 @@ class MakeAdminCrud extends Command
                 $routeSingular,
                 $formFields,
                 $inputs,
-                $imports
+                $imports,
+                $relationProps
             ],
             $stub
         );
@@ -239,5 +356,16 @@ class MakeAdminCrud extends Command
         }
 
         return null;
+    }
+
+    protected function detectRelationModel($column)
+    {
+        if (!Str::endsWith($column, '_id')) {
+            return null;
+        }
+
+        $model = Str::studly(Str::before($column, '_id'));
+
+        return class_exists("App\\Models\\{$model}") ? $model : null;
     }
 }
