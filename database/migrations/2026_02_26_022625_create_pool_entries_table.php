@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('name'); // "Mi Quiniela #1"
             $table->string('status')->default('draft'); // draft|complete|paid_locked|live|finished
             $table->unsignedTinyInteger('completion_percent')->default(0);
+            $table->integer('exact_hits')->default(0);
+            $table->integer('correct_results')->default(0);
             $table->unsignedInteger('total_points')->default(0);
 
             $table->decimal('entry_fee', 8, 2)->default(15);

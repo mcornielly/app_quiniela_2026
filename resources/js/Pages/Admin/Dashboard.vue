@@ -1,180 +1,59 @@
 <script setup>
-import AdminLayout from '@/Layouts/AppLayout3.vue';
-import { computed, ref } from "vue";
-import { Head, Link } from '@inertiajs/vue3';
+import AdminLayout from '@/Layouts/AppLayout3.vue'
+import { computed, ref } from "vue"
+import { Head, Link } from '@inertiajs/vue3'
 
-const title = 'Dashboard';
+const title = 'Dashboard'
 
 const props = defineProps({
-    filters: { type: Object, required: true }
+    todayResults: Array,
+    upcomingGames: Array,
+    groups: Array,
+    standings: Array,
+    ranking: Array,
+    tournament: Object,
 })
 
+/*
+|--------------------------------------------------------------------------
+| UI State
+|--------------------------------------------------------------------------
+*/
 
-/**
- * Template-only (mock data).
- * - Resultados del día
- * - Próximos juegos
- * - Grupos (tabla por grupo)
- * - Quiniela 2026 (Top 15) + link a lista completa
- */
+const selectedGroup = ref(props.groups?.[0]?.id ?? null)
 
-// --- Tournament (WC 2026 example groups from your image) ---
-const tournament = ref({
-    id: 1,
-    name: "World Cup 2026",
-    season: "2026",
-    timezone: "America/New_York",
-    groups: [
-        { key: "A", name: "Grupo A", teams: ["México", "Korea del Sur", "Sudáfrica", "Repechaje UEFA"] },
-        { key: "B", name: "Grupo B", teams: ["Canadá", "Suiza", "Qatar", "Repechaje UEFA"] },
-        { key: "C", name: "Grupo C", teams: ["Brasil", "Marruecos", "Escocia", "Haití"] },
-        { key: "D", name: "Grupo D", teams: ["Estados Unidos", "Australia", "Paraguay", "Repechaje UEFA"] },
-        { key: "E", name: "Grupo E", teams: ["Alemania", "Ecuador", "Costa de Marfil", "Curazao"] },
-        { key: "F", name: "Grupo F", teams: ["Países Bajos", "Japón", "Túnez", "Repechaje UEFA"] },
-        { key: "G", name: "Grupo G", teams: ["Bélgica", "Irán", "Egipto", "Nueva Zelanda"] },
-        { key: "H", name: "Grupo H", teams: ["España", "Uruguay", "Arabia Saudita", "Cabo Verde"] },
-        { key: "I", name: "Grupo I", teams: ["Francia", "Senegal", "Noruega", "Repechaje"] },
-        { key: "J", name: "Grupo J", teams: ["Argentina", "Austria", "Argelia", "Jordania"] },
-        { key: "K", name: "Grupo K", teams: ["Portugal", "Colombia", "Uzbekistán", "Repechaje"] },
-        { key: "L", name: "Grupo L", teams: ["Inglaterra", "Croacia", "Panamá", "Ghana"] },
-    ],
-});
+/*
+|--------------------------------------------------------------------------
+| Group Matches
+|--------------------------------------------------------------------------
+| (cuando el backend envíe matches)
+*/
 
-// --- Mock schedule / matches (calendar) ---
-const matches = ref([
-    // Today results
-    {
-        id: 101,
-        stage: "Grupos",
-        group: "A",
-        date: "2026-06-12",
-        time: "19:00",
-        home: "México",
-        away: "Sudáfrica",
-        status: "FT",
-        scoreHome: 2,
-        scoreAway: 1,
-        venue: "Estadio Azteca",
-    },
-    {
-        id: 102,
-        stage: "Grupos",
-        group: "B",
-        date: "2026-06-12",
-        time: "21:00",
-        home: "Canadá",
-        away: "Qatar",
-        status: "FT",
-        scoreHome: 1,
-        scoreAway: 1,
-        venue: "BC Place",
-    },
+const groupMatches = computed(() => {
+    if (!props.todayResults) return []
 
-    // Upcoming
-    {
-        id: 201,
-        stage: "Grupos",
-        group: "C",
-        date: "2026-06-13",
-        time: "18:00",
-        home: "Brasil",
-        away: "Escocia",
-        status: "NS",
-        scoreHome: null,
-        scoreAway: null,
-        venue: "SoFi Stadium",
-    },
-    {
-        id: 202,
-        stage: "Grupos",
-        group: "D",
-        date: "2026-06-13",
-        time: "20:00",
-        home: "Estados Unidos",
-        away: "Australia",
-        status: "NS",
-        scoreHome: null,
-        scoreAway: null,
-        venue: "MetLife Stadium",
-    },
-    {
-        id: 203,
-        stage: "Grupos",
-        group: "E",
-        date: "2026-06-14",
-        time: "17:00",
-        home: "Alemania",
-        away: "Ecuador",
-        status: "NS",
-        scoreHome: null,
-        scoreAway: null,
-        venue: "NRG Stadium",
-    },
-]);
+    return props.todayResults.filter(
+        m => m.group_id === selectedGroup.value
+    )
+})
 
-// --- Quiniela participants (top 15) ---
-const quiniela = ref({
-    id: 9001,
-    name: "Quiniela 2026",
-    participants: Array.from({ length: 22 }).map((_, i) => ({
-        id: i + 1,
-        name: `Participante ${String(i + 1).padStart(2, "0")}`,
-        points: Math.max(0, 42 - i * 2),
-        exacts: Math.max(0, 12 - Math.floor(i / 2)),
-        hits: Math.max(0, 18 - Math.floor(i / 1.5)),
-        updatedAt: "hoy 3:20pm",
-    })),
-});
-
-// --- UI state ---
-const selectedGroup = ref("A");
-
-// Helpers
-const today = "2026-06-12";
-
-const todayResults = computed(() => matches.value.filter((m) => m.date === today && m.status === "FT"));
-const upcoming = computed(() => matches.value.filter((m) => m.status !== "FT").slice(0, 6));
-const top15 = computed(() =>
-    [...quiniela.value.participants].sort((a, b) => b.points - a.points).slice(0, 15)
-    );
-
-    // Basic group standings mock (template). Later you will replace with backend-calculated standings.
-    const standingsByGroup = computed(() => {
-    const base = {};
-    tournament.value.groups.forEach((g) => {
-        base[g.key] = g.teams.map((t, idx) => ({
-        team: t,
-        played: 1,
-        won: idx === 0 ? 1 : 0,
-        draw: idx === 1 ? 1 : 0,
-        lost: idx > 1 ? 1 : 0,
-        gf: 2 - Math.min(idx, 2),
-        ga: 1 + Math.min(idx, 2),
-        gd: (2 - Math.min(idx, 2)) - (1 + Math.min(idx, 2)),
-        pts: idx === 0 ? 3 : idx === 1 ? 1 : 0,
-        }));
-    });
-    return base;
-});
-
-const selectedStandings = computed(() => standingsByGroup.value[selectedGroup.value] || []);
-
-const groupMatches = computed(() =>
-    matches.value.filter((m) => m.group === selectedGroup.value).slice(0, 8)
-);
+/*
+|--------------------------------------------------------------------------
+| Helpers
+|--------------------------------------------------------------------------
+*/
 
 const badgeByStatus = (status) => {
-    if (status === "FT") return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-    if (status === "LIVE") return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
-    return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
-    };
+    if (status === "FT") return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+    if (status === "LIVE") return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+    return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+}
 
-    const statusLabel = (status) => {
-    if (status === "FT") return "Final";
-    if (status === "LIVE") return "En vivo";
-    return "Próximo";
-};
-
+const statusLabel = (status) => {
+    if (status === "FT") return "Final"
+    if (status === "LIVE") return "En vivo"
+    return "Próximo"
+}
 </script>
 
 <template>
@@ -186,10 +65,10 @@ const badgeByStatus = (status) => {
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 class="text-xl font-semibold text-gray-900 dark:text-white">
-                        Dashboard — {{ quiniela.name }}
+                        Dashboard — Quiniela Mundial 2026
                         </h1>
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        {{ tournament.name }} · Temporada {{ tournament.season }} · Zona: {{ tournament.timezone }}
+                        {{ tournament.name }} - {{ tournament.year }}
                         </p>
                     </div>
 
@@ -225,33 +104,33 @@ const badgeByStatus = (status) => {
 
                     <div v-if="todayResults.length" class="space-y-3">
                         <div
-                        v-for="m in todayResults"
-                        :key="m.id"
+                        v-for="game in todayResults"
+                        :key="game.id"
                         class="flex flex-col gap-2 rounded-lg border border-gray-100 p-4 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between"
                         >
                         <div class="flex items-center gap-3">
                             <span
                             class="inline-flex items-center rounded px-2 py-1 text-xs font-medium"
-                            :class="badgeByStatus(m.status)"
+                            :class="badgeByStatus(game.status)"
                             >
-                            {{ statusLabel(m.status) }}
+                            {{ statusLabel(game.status) }}
                             </span>
 
                             <div>
                             <div class="text-sm font-semibold text-gray-900 dark:text-white">
-                                {{ m.home }}
+                                {{ game.home_team.name }}
                                 <span class="mx-2 text-gray-400">vs</span>
-                                {{ m.away }}
+                                {{ game.away_team.name }}
                             </div>
                             <div class="text-xs text-gray-500 dark:text-gray-400">
-                                Grupo {{ m.group }} · {{ m.venue }} · {{ m.time }}
+                                Grupo {{ game.group }} · {{ game.venue }} · {{ game.time }}
                             </div>
                             </div>
                         </div>
 
                         <div class="flex items-center justify-between gap-4 sm:justify-end">
                             <div class="text-lg font-bold text-gray-900 dark:text-white tabular-nums">
-                            {{ m.scoreHome }} - {{ m.scoreAway }}
+                            {{ game.home_score }} - {{ game.away_score }}
                             </div>
                             <Link
                             href="#"
@@ -281,39 +160,39 @@ const badgeByStatus = (status) => {
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead class="bg-gray-50 dark:bg-gray-700">
                             <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-300">
-                                Fecha
-                            </th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-300">
-                                Partido
-                            </th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-300">
-                                Grupo
-                            </th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-300">
-                                Sede
-                            </th>
-                            <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-300">
-                                Acción
-                            </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-300">
+                                    Fecha
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-300">
+                                    Partido
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-300">
+                                    Grupo
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-300">
+                                    Sede
+                                </th>
+                                <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-300">
+                                    Acción
+                                </th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
-                            <tr v-for="m in upcoming" :key="m.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <tr v-for="game in upcomingGames" :key="game.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
                             <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                                <div class="font-medium">{{ m.date }}</div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ m.time }}</div>
+                                <div class="font-medium">{{ game.match_date }}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ game.match_time }}</div>
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                                <span class="font-semibold">{{ m.home }}</span>
+                                <span class="font-semibold">{{ game.home_team.name }}</span>
                                 <span class="mx-2 text-gray-400">vs</span>
-                                <span class="font-semibold">{{ m.away }}</span>
+                                <span class="font-semibold">{{ game.away_team.name }}</span>
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
-                                Grupo {{ m.group }}
+                                Grupo {{ game.group }}
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
-                                {{ m.venue }}
+                                {{ game.venue }}
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <Link
@@ -339,7 +218,7 @@ const badgeByStatus = (status) => {
                             v-model="selectedGroup"
                             class="block rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                         >
-                            <option v-for="g in tournament.groups" :key="g.key" :value="g.key">
+                            <option v-for="g in groups" :key="g.key" :value="g.key">
                             {{ g.name }}
                             </option>
                         </select>
@@ -411,7 +290,10 @@ const badgeByStatus = (status) => {
                                 PJ
                             </th>
                             <th class="px-3 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-300">
-                                GD
+                                GF
+                            </th>
+                            <th class="px-3 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-300">
+                                GC
                             </th>
                             <th class="px-3 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-300">
                                 Pts
@@ -419,19 +301,22 @@ const badgeByStatus = (status) => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
-                            <tr v-for="row in selectedStandings" :key="row.team" class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td class="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                                {{ row.team }}
-                            </td>
-                            <td class="px-3 py-3 text-right text-sm text-gray-700 dark:text-gray-200 tabular-nums">
-                                {{ row.played }}
-                            </td>
-                            <td class="px-3 py-3 text-right text-sm text-gray-700 dark:text-gray-200 tabular-nums">
-                                {{ row.gd }}
-                            </td>
-                            <td class="px-3 py-3 text-right text-sm font-semibold text-gray-900 dark:text-white tabular-nums">
-                                {{ row.pts }}
-                            </td>
+                            <tr v-for="row in standings" :key="row.team_id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td class="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                                    {{ row.team.name }}
+                                </td>
+                                <td class="px-3 py-3 text-right text-sm text-gray-700 dark:text-gray-200 tabular-nums">
+                                    {{ row.played }}
+                                </td>
+                                <td class="px-3 py-3 text-right text-sm text-gray-700 dark:text-gray-200 tabular-nums">
+                                    {{ row.ga }}
+                                </td>
+                                <td class="px-3 py-3 text-right text-sm text-gray-700 dark:text-gray-200 tabular-nums">
+                                    {{ row.gd }}
+                                </td>
+                                <td class="px-3 py-3 text-right text-sm font-semibold text-gray-900 dark:text-white tabular-nums">
+                                    {{ row.points }}
+                                </td>
                             </tr>
                         </tbody>
                         </table>
@@ -475,7 +360,7 @@ const badgeByStatus = (status) => {
                         </thead>
                         <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
                             <tr
-                            v-for="(p, idx) in top15"
+                            v-for="(p, idx) in ranking"
                             :key="p.id"
                             class="hover:bg-gray-50 dark:hover:bg-gray-700"
                             >
@@ -485,11 +370,11 @@ const badgeByStatus = (status) => {
                             <td class="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">
                                 {{ p.name }}
                                 <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                Exactos: {{ p.exacts }} · Aciertos: {{ p.hits }}
+                                Exactos: {{ p.exact_hits }} · Aciertos: {{ p.correct_results }}
                                 </div>
                             </td>
                             <td class="px-3 py-3 text-right text-sm font-semibold text-gray-900 dark:text-white tabular-nums">
-                                {{ p.points }}
+                                {{ p.total_points }}
                             </td>
                             </tr>
                         </tbody>
@@ -521,7 +406,7 @@ const badgeByStatus = (status) => {
 
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <button
-                        v-for="g in tournament.groups"
+                        v-for="g in groups"
                         :key="g.key"
                         type="button"
                         @click="selectedGroup = g.key"
@@ -533,7 +418,7 @@ const badgeByStatus = (status) => {
                             <div class="text-xs text-gray-500 dark:text-gray-300">Ver</div>
                         </div>
                         <div class="mt-2 text-xs text-gray-600 dark:text-gray-200">
-                            <div v-for="t in g.teams" :key="t" class="truncate">• {{ t }}</div>
+                            <div v-for="team in g.teams" :key="team.id" class="truncate">• {{ team.name }}</div>
                         </div>
                         </button>
                     </div>

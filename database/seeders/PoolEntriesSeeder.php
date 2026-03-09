@@ -20,6 +20,8 @@ class PoolEntriesSeeder extends Seeder
                 'name' => "User {$userId} Pool",
                 'status' => 'active',
                 'completion_percent' => rand(60, 100),
+                'exact_hits' => 0,
+                'correct_results' => 0,
                 'total_points' => 0,
 
                 // payment simulation

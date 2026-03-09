@@ -19,6 +19,8 @@ class PoolEntry extends Model
         'name',
         'status',
         'completion_percent',
+        'exact_hits',
+        'correct_results',
         'total_points',
         'entry_fee',
         'paid_at',
@@ -28,6 +30,8 @@ class PoolEntry extends Model
     protected $casts = [
         'paid_at' => 'date',
         'completion_percent' => 'integer',
+        'exact_hits' => 'integer',
+        'correct_results' => 'integer',
         'total_points' => 'integer',
         'entry_fee' => 'decimal:2'
     ];

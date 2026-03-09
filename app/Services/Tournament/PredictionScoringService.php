@@ -48,11 +48,27 @@ class PredictionScoringService
     {
         DB::statement("
             UPDATE pool_entries e
-            SET total_points = (
-                SELECT COALESCE(SUM(p.points),0)
-                FROM predictions p
-                WHERE p.pool_entry_id = e.id
-            )
+            SET
+                total_points = (
+                    SELECT COALESCE(SUM(p.points),0)
+                    FROM predictions p
+                    WHERE p.pool_entry_id = e.id
+                ),
+
+                exact_hits = (
+                    SELECT COUNT(*)
+                    FROM predictions p
+                    WHERE p.pool_entry_id = e.id
+                    AND p.points = 5
+                ),
+
+                correct_results = (
+                    SELECT COUNT(*)
+                    FROM predictions p
+                    WHERE p.pool_entry_id = e.id
+                    AND p.points = 3
+                )
+
             WHERE e.tournament_id = ?
         ", [$tournamentId]);
     }

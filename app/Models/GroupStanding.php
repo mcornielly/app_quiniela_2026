@@ -25,4 +25,14 @@ class GroupStanding extends Model
         'position'
 
     ];
+
+    public function team()
+    {
+        return $this->belongsTo(Team::class);
+    }
+
+    public function group()
+    {
+        return $this->belongsTo(Group::class);
+    }
 }
