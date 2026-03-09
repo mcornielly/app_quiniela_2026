@@ -103,7 +103,6 @@ const submit = () => {
             label="Home Team"
             :options="teams"
         />
-
         <SelectInput
             v-model="form.away_team_id"
             label="Away Team"
@@ -117,15 +116,6 @@ const submit = () => {
             v-model="form.away_score"
             label="Away Score"
         />
-        <SelectInput
-            v-model="form.winner_team_id"
-            label="Winner"
-            :options="teams"
-        />
-        <!-- <TextInput
-            v-model="form.stage"
-            label="Stage"
-        /> -->
         <TextInput
             v-model="form.venue"
             label="Venue"
@@ -139,6 +129,15 @@ const submit = () => {
             v-model="form.match_time"
             label="Match Time"
         />
+        <!-- <SelectInput
+            v-model="form.winner_team_id"
+            label="Winner"
+            :options="teams"
+        /> -->
+        <!-- <TextInput
+            v-model="form.stage"
+            label="Stage"
+        /> -->
 
         <!-- Buttons -->
         <div class="fixed bottom-0 right-0 flex justify-center w-full max-w-xs pb-4 space-x-4 md:px-4">
