@@ -40,31 +40,48 @@ const form = ref({
 })
 
 const submit = () => {
+
     const options = {
         onSuccess: () => {
             const flash = page.props.flash
 
-            if (flash?.success) notifySuccess(flash.success)
+            // if (flash?.success) notifySuccess(flash.success)
             if (flash?.error) notifyError(flash.error)
 
             emit('close')
         },
-
         onError: () => notifyError('Validation error')
     }
 
-    if (isEdit) {
-        router.put(
-            route('admin.games.update', props.game.id),
-            form.value,
-            options
-        )
-    } else {
+    // si se están editando resultados
+    if (isEdit && form.value.home_score !== '' && form.value.away_score !== '') {
+
         router.post(
-            route('admin.games.store'),
-            form.value,
+            route('admin.games.result.update', props.game.id),
+            {
+                winner_team_id: form.value.winner_team_id,
+                home_score: form.value.home_score,
+                away_score: form.value.away_score
+            },
             options
         )
+
+    } else {
+
+        if (isEdit) {
+            router.put(
+                route('admin.games.update', props.game.id),
+                form.value,
+                options
+            )
+        } else {
+            router.post(
+                route('admin.games.store'),
+                form.value,
+                options
+            )
+        }
+
     }
 }
 </script>

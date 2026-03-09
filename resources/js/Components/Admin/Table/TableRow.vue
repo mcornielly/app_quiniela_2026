@@ -31,7 +31,8 @@ const imageFields = [
 const dateFields = [
     'match_date',
     'created_at',
-    'updated_at'
+    'updated_at',
+    'paid_at'
 ]
 
 const isDateField = (key) => dateFields.includes(key)
@@ -42,7 +43,8 @@ const isImageField = (key) => imageFields.includes(key)
 <template>
     <tr class="border-b hover:bg-gray-100 dark:hover:bg-gray-700 dark:border-gray-700">
         <!-- checkbox -->
-        <td class="w-4 p-4">
+        <td v-if="actions.checkbox"
+            class="w-4 p-4">
             <div class="flex items-center">
                 <input
                     :checked="selected"
@@ -87,7 +89,9 @@ const isImageField = (key) => imageFields.includes(key)
         </td>
 
         <!-- actions -->
-        <td class="px-6 py-4 space-x-2 whitespace-nowrap">
+        <td
+            v-if="actions.show || actions.edit || actions.delete"
+            class="px-6 py-4 space-x-2 whitespace-nowrap">
             <TableActions
                 :row="row"
                 :actions="actions"

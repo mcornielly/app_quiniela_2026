@@ -48,6 +48,40 @@ class GameController extends Controller
         ]);
     }
 
+    public function calendar(): Response
+    {
+        $search = request('search');
+
+        $games = Game::query()
+                ->with([
+                    'tournament',
+                    'homeTeam.group',
+                    'awayTeam.group'
+                ])
+                ->when($search, function ($query) use ($search) {
+                    $query->where('venue', 'like', "%{$search}%");
+                })
+                ->orderBy('match_number')
+                ->paginate(10)
+                ->through(function ($game) {
+
+                    $game->match_date = $game->match_date?->format('Y-m-d');
+                    $game->match_time = $game->match_time;
+
+                    return $game;
+            });
+
+        $tournaments = Tournament::select('id','name')->get();
+        $teams = Team::select('id', 'name')->orderBy('name')->get();
+
+        return Inertia::render('Admin/Games/Calendar', [
+            'filters' => request()->only('search'),
+            'games' => $games,
+            'tournaments' => $tournaments,
+            'teams' => $teams,
+        ]);
+    }
+
     /**
      * Store new Game
      */

@@ -179,7 +179,7 @@ const badgeByStatus = (status) => {
 
 <template>
     <AdminLayout :title="title">
-        <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div class="min-h-screen bg-gray-50 dark:bg-gray-900" style="will-change: auto">
             <!-- Header -->
             <div class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
                 <div class="w-full px-4 py-5 sm:px-6 lg:px-8 2xl:px-10">

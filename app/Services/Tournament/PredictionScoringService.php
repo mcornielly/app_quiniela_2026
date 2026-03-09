@@ -13,23 +13,39 @@ class PredictionScoringService
             return;
         }
 
-        $predictions = $game->predictions;
+        $predictions = $game->predictions()->with('poolEntry')->get();
 
         foreach ($predictions as $prediction) {
 
             $points = $this->calculatePoints($game, $prediction);
 
-            $prediction->points = $points;
-            $prediction->save();
+            // actualizar puntos de la predicción
+            $prediction->update([
+                'points' => $points
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Recalculate pool entry total points
+            |--------------------------------------------------------------------------
+            */
+
+            $entry = $prediction->poolEntry;
+
+            if ($entry) {
+                $entry->update([
+                    'total_points' => $entry->predictions()->sum('points')
+                ]);
+            }
         }
     }
 
     private function calculatePoints(Game $game, Prediction $prediction)
     {
         /*
-        |---------------------------------------------------------
-        | Exact score (5 points)
-        |---------------------------------------------------------
+        |--------------------------------------------------------------------------
+        | Exact score → 5 points
+        |--------------------------------------------------------------------------
         */
 
         if (
@@ -40,9 +56,9 @@ class PredictionScoringService
         }
 
         /*
-        |---------------------------------------------------------
+        |--------------------------------------------------------------------------
         | Determine predicted result type
-        |---------------------------------------------------------
+        |--------------------------------------------------------------------------
         */
 
         $predictedResult = $this->getResultType(
@@ -50,15 +66,12 @@ class PredictionScoringService
             $prediction->away_score
         );
 
-        $realResult = $this->getResultType(
-            $game->home_score,
-            $game->away_score
-        );
+        $realResult = $game->result_type;
 
         /*
-        |---------------------------------------------------------
-        | Correct result (winner or draw) -> 3 points
-        |---------------------------------------------------------
+        |--------------------------------------------------------------------------
+        | Correct result → 3 points
+        |--------------------------------------------------------------------------
         */
 
         if ($predictedResult === $realResult) {

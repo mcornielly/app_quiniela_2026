@@ -16,6 +16,8 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CalendarController;
 use App\Http\Controllers\Admin\MatchController;
 use App\Http\Controllers\Admin\PoolEntriesController;
+use App\Http\Controllers\Admin\PoolEntryController as AdminPoolEntryController;
+use App\Http\Controllers\PoolEntryController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -78,13 +80,15 @@ Route::middleware(['auth', 'verified', 'admin'])
     Route::delete('games/bulk-delete', [GameController::class, 'bulkDelete'])
         ->name('games.bulkDelete');
 
+            Route::post('/games/{game}/score', [GameResultController::class, 'updateScore'])
+                        ->name('games.result.update');
+
     Route::resource('games', GameController::class)->only(['index','store','update','destroy']);
 
-    Route::get('/calendar', fn () => Inertia::render('Admin/Calendar/Index'))
-        ->name('calendar.index');
+    Route::get('/calendar', [GameController::class, 'calendar'])->name('calendar.index');
 
-    Route::get('/pools', fn () => Inertia::render('Admin/Pools/Index'))
-        ->name('pools.index');
+    Route::resource('/pools', AdminPoolEntryController::class)->only(['index']);
+
 
     Route::get('/predictions', fn () => Inertia::render('Admin/Predictions/Index'))
         ->name('predictions.index');
@@ -118,14 +122,14 @@ Route::middleware(['auth', 'verified', 'admin'])
 
 });
 
-// Route::middleware(['auth', 'verified'])->group(function () {
-//     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-//     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
-//     Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
-//     Route::get('/rules', [RulesController::class, 'index'])->name('rules.index');
-//     Route::get('/rankings', [RankingController::class, 'index'])->name('rankings.index');
-//     Route::get('/my-pools', [PoolEntryController::class, 'index'])->name('pools.index');
-//     Route::get('/pools/create', [PoolEntryController::class, 'create'])->name('pools.create');
-// });
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+    // Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
+    // Route::get('/rules', [RulesController::class, 'index'])->name('rules.index');
+    // Route::get('/rankings', [RankingController::class, 'index'])->name('rankings.index');
+    // Route::get('/my-pools', [PoolEntryController::class, 'index'])->name('pools.index');
+    Route::get('/pools/create', [PoolEntryController::class, 'create'])->name('pools.create');
+});
 
 require __DIR__.'/auth.php';

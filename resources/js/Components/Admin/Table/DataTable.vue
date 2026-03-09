@@ -50,6 +50,7 @@ watch(() => props.rows, () => {
             <div class="inline-block min-w-full align-middle">
                 <table class="min-w-full divide-y divide-gray-200 table-fixed dark:divide-gray-600">
                     <TableHead
+                        :actions="actions"
                         :columns="columns"
                         :allSelected="allSelected"
                         @toggle-all="toggleSelectAll"

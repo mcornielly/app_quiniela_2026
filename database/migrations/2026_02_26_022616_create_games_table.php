@@ -79,6 +79,19 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('teams')
                 ->nullOnDelete();
+            $table->string('result_type', 10)->nullable();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Game status
+            |--------------------------------------------------------------------------
+            */
+
+            $table->enum('status', [
+                'scheduled',
+                'in_progress',
+                'finished'
+            ])->default('scheduled');
 
             /*
             |--------------------------------------------------------------------------
@@ -116,6 +129,7 @@ return new class extends Migration
 
             $table->index(['tournament_id', 'stage']);
             $table->index('match_number');
+            $table->index('status');
         });
     }
 

@@ -3,18 +3,18 @@ import { Link, usePage, Head } from '@inertiajs/vue3'
 import { onMounted, watch } from 'vue'
 import { initFlowbite } from 'flowbite'
 import { router } from '@inertiajs/vue3'
+import { notifySuccess, notifyError } from '@/Utils/notify'
 // Inicializar Flowbite para dropdowns, sidebar, etc.
 import 'flowbite'
 import Navbar from './Partials/Navbar.vue'
 import Sidebar from './Partials/Sidebar.vue'
 
 const page = usePage()
-const { props } = usePage()
 
-defineProps({
+const props = defineProps({
     title: String,
-});
-
+    flash: Object
+})
 // initialize components based on data attribute selectors
 onMounted(() => {
     initFlowbite();

@@ -41,7 +41,8 @@ const itemToDelete = ref(null)
 const actions = {
     show: false,
     edit: true,
-    delete: true
+    delete: true,
+    checkbox : true,
 }
 
 const handleSearch = debounce((query) => {

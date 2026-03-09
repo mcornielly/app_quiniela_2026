@@ -25,9 +25,9 @@ class BracketProgressionService
         $loserSlot  = "RU{$matchNumber}";
 
         /*
-        |---------------------------------------------------------
+        |--------------------------------------------------------------------------
         | Find next games referencing this match
-        |---------------------------------------------------------
+        |--------------------------------------------------------------------------
         */
 
         $nextGames = Game::where(function ($q) use ($winnerSlot, $loserSlot) {
@@ -50,7 +50,13 @@ class BracketProgressionService
     {
         $teamId = $this->resolver->resolveSlot($slot);
 
-        if (!$teamId) {
+        /*
+        |--------------------------------------------------------------------------
+        | If slot cannot be resolved yet
+        |--------------------------------------------------------------------------
+        */
+
+        if ($teamId === null) {
             return;
         }
 

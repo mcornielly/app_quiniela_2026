@@ -3,6 +3,7 @@
 const props = defineProps({
     columns: Array,
     allSelected: Boolean,
+    actions: Object
 })
 
 const emit = defineEmits(['toggle-all'])
@@ -15,7 +16,9 @@ const toggle = (event) => {
     <thead class="bg-gray-100 dark:bg-gray-700">
         <tr>
             <!-- checkbox -->
-            <th scope="col" class="p-4">
+            <th
+                v-if="actions.checkbox"
+                scope="col" class="p-4">
                 <div class="flex items-center">
                     <input
                         ref="checkbox"
@@ -39,6 +42,7 @@ const toggle = (event) => {
 
             <!-- actions -->
             <th
+                v-if="actions.show || actions.edit || actions.delete"
                 scope="col"
                 class="px-6 py-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400"
             >

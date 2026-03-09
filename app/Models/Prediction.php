@@ -16,6 +16,12 @@ class Prediction extends Model
 
     ];
 
+    protected $casts = [
+        'home_score' => 'integer',
+        'away_score' => 'integer',
+        'points' => 'integer',
+    ];
+
     public function entry()
     {
         return $this->belongsTo(PoolEntry::class, 'pool_entry_id');
@@ -24,5 +30,10 @@ class Prediction extends Model
     public function game()
     {
         return $this->belongsTo(Game::class);
+    }
+
+    public function poolEntry()
+    {
+        return $this->belongsTo(PoolEntry::class);
     }
 }

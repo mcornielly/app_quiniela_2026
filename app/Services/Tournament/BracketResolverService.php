@@ -15,9 +15,9 @@ class BracketResolverService
         }
 
         /*
-        |-------------------------------------------------------
+        |--------------------------------------------------------------------------
         | Winner of match (W74)
-        |-------------------------------------------------------
+        |--------------------------------------------------------------------------
         */
 
         if (preg_match('/^W(\d+)$/', $slot, $matches)) {
@@ -30,9 +30,9 @@ class BracketResolverService
         }
 
         /*
-        |-------------------------------------------------------
+        |--------------------------------------------------------------------------
         | Runner-up of match (RU101)
-        |-------------------------------------------------------
+        |--------------------------------------------------------------------------
         */
 
         if (preg_match('/^RU(\d+)$/', $slot, $matches)) {
@@ -41,7 +41,7 @@ class BracketResolverService
 
             $game = Game::where('match_number', $matchNumber)->first();
 
-            if (!$game || !$game->winner_team_id) {
+            if (!$game || $game->winner_team_id === null) {
                 return null;
             }
 
@@ -53,9 +53,9 @@ class BracketResolverService
         }
 
         /*
-        |-------------------------------------------------------
+        |--------------------------------------------------------------------------
         | Group slot (1A, 2B, 3C)
-        |-------------------------------------------------------
+        |--------------------------------------------------------------------------
         */
 
         if (preg_match('/^([1-3])([A-Z])$/', $slot, $matches)) {
@@ -77,9 +77,9 @@ class BracketResolverService
         }
 
         /*
-        |-------------------------------------------------------
+        |--------------------------------------------------------------------------
         | Best third place selector (3-ABCDF)
-        |-------------------------------------------------------
+        |--------------------------------------------------------------------------
         */
 
         if (preg_match('/^3\-([A-Z]+)/', $slot, $matches)) {
@@ -96,17 +96,21 @@ class BracketResolverService
     {
         $standings = GroupStanding::whereIn('group_id', function ($q) use ($groups) {
 
-            $q->select('id')
-                ->from('groups')
-                ->whereIn('name', $groups);
+                $q->select('id')
+                    ->from('groups')
+                    ->whereIn('name', $groups);
 
-        })
-        ->where('position', 3)
-        ->orderByDesc('points')
-        ->orderByDesc('gd')
-        ->orderByDesc('gf')
-        ->get();
+            })
+            ->where('position', 3)
+            ->orderByDesc('points')
+            ->orderByDesc('gd')
+            ->orderByDesc('gf')
+            ->get();
 
-        return $standings->first()?->team_id;
+        if ($standings->isEmpty()) {
+            return null;
+        }
+
+        return $standings->first()->team_id;
     }
 }

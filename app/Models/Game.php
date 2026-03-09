@@ -39,6 +39,8 @@ class Game extends Model
     protected $casts = [
         'match_date' => 'date',
         'match_time' => 'string',
+        'home_score' => 'integer',
+        'away_score' => 'integer',
     ];
 
     protected $appends = [

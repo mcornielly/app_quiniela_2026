@@ -21,6 +21,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('completion_percent')->default(0);
             $table->unsignedInteger('total_points')->default(0);
 
+            $table->decimal('entry_fee', 8, 2)->default(15);
             $table->timestamp('paid_at')->nullable();
             $table->string('payment_ref')->nullable();
 
@@ -28,6 +29,7 @@ return new class extends Migration
 
             $table->index(['tournament_id', 'status']);
             $table->index(['user_id', 'tournament_id']);
+            $table->unique(['tournament_id','user_id']);
         });
     }
 

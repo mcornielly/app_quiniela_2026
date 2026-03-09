@@ -11,7 +11,7 @@ trait FormatsDates
         if (!$date) {
             return null;
         }
-        dd($date);
+
         return Carbon::parse($date)->format('Y-m-d');
     }
 

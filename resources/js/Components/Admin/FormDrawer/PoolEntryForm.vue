@@ -1,0 +1,123 @@
+<script setup>
+import { ref } from 'vue'
+import { router, usePage } from '@inertiajs/vue3'
+import { notifySuccess, notifyError } from '@/Utils/notify'
+
+            import TextInput from '@/Components/Admin/Inputs/TextInput.vue'
+            import NumberInput from '@/Components/Admin/Inputs/NumberInput.vue'
+            import SelectInput from '@/Components/Admin/Inputs/SelectInput.vue'
+            import TextareaInput from '@/Components/Admin/Inputs/TextareaInput.vue'
+            import CheckboxInput from '@/Components/Admin/Inputs/CheckboxInput.vue'
+            import ImageUpload from '@/Components/Admin/Inputs/ImageUpload.vue'
+            
+
+const page = usePage()
+
+const props = defineProps({
+    pool_entry: Object,
+        tournaments: Array,
+    users: Array,
+
+})
+
+const emit = defineEmits(['close'])
+
+const isEdit = !!props.pool_entry
+
+const form = ref({
+        tournament_id: props.pool_entry?.tournament_id || '',
+    user_id: props.pool_entry?.user_id || '',
+    name: props.pool_entry?.name || '',
+    status: props.pool_entry?.status || '',
+    completion_percent: props.pool_entry?.completion_percent || '',
+    total_points: props.pool_entry?.total_points || '',
+    paid_at: props.pool_entry?.paid_at || '',
+    payment_ref: props.pool_entry?.payment_ref || '',
+
+})
+
+const submit = () => {
+    const options = {
+        onSuccess: () => {
+            const flash = page.props.flash
+
+            if (flash?.success) notifySuccess(flash.success)
+            if (flash?.error) notifyError(flash.error)
+
+            emit('close')
+        },
+
+        onError: () => notifyError('Validation error')
+    }
+
+    if (isEdit) {
+        router.put(
+            route('admin.pool_entries.update', props.pool_entry.id),
+            form.value,
+            options
+        )
+    } else {
+        router.post(
+            route('admin.pool_entries.store'),
+            form.value,
+            options
+        )
+    }
+}
+</script>
+
+<template>
+    <form @submit.prevent="submit" class="space-y-4">
+        
+                    <SelectInput
+                        v-model="form.tournament_id"
+                        label="Tournament"
+                        :options="tournaments"
+                    />
+                    <SelectInput
+                        v-model="form.user_id"
+                        label="User"
+                        :options="users"
+                    />
+                    <TextInput
+                        v-model="form.name"
+                        label="Name"
+                    />
+                    <TextInput
+                        v-model="form.status"
+                        label="Status"
+                    />
+                    <TextInput
+                        v-model="form.completion_percent"
+                        label="Completion Percent"
+                    />
+                    <TextInput
+                        v-model="form.total_points"
+                        label="Total Points"
+                    />
+                    <TextInput
+                        v-model="form.paid_at"
+                        label="Paid At"
+                    />
+                    <TextInput
+                        v-model="form.payment_ref"
+                        label="Payment Ref"
+                    />
+
+        <!-- Buttons -->
+        <div class="bottom-0 left-0 flex justify-center w-full pb-4 space-x-4 md:px-4 md:absolute">
+            <button type="submit"
+                class="text-white w-full justify-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
+                {{ isEdit ? 'Update' : 'Add PoolEntry' }}
+            </button>
+            <button type="button"
+                @click="emit('close')"
+                class="inline-flex w-full justify-center text-gray-500 items-center bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">
+                <svg aria-hidden="true" class="w-5 h-5 -ml-1 sm:mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                Cancel
+            </button>
+        </div>
+    </form>
+</template>

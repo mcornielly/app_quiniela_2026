@@ -3,6 +3,7 @@
 namespace App\Services\Tournament;
 
 use App\Models\Game;
+use App\Models\Group;
 use App\Models\Team;
 use App\Models\GroupStanding;
 
@@ -17,12 +18,13 @@ class GroupStandingsService
         foreach ($teams as $team) {
 
             $games = Game::where(function ($q) use ($team) {
-                $q->where('home_team_id', $team->id)
+                    $q->where('home_team_id', $team->id)
                     ->orWhere('away_team_id', $team->id);
-            })
-            ->where('stage', 'group')
-            ->whereNotNull('home_score')
-            ->get();
+                })
+                ->where('stage', 'group')
+                ->whereNotNull('home_score')
+                ->whereNotNull('away_score')
+                ->get();
 
             $stats = [
                 'team_id' => $team->id,
@@ -81,13 +83,12 @@ class GroupStandingsService
         }
 
         /*
-        |---------------------------------------------------------
+        |--------------------------------------------------------------------------
         | Sort standings
-        |---------------------------------------------------------
+        |--------------------------------------------------------------------------
         */
 
         usort($table, function ($a, $b) {
-
             return
                 $b['points'] <=> $a['points']
                 ?: $b['gd'] <=> $a['gd']
@@ -95,16 +96,17 @@ class GroupStandingsService
         });
 
         /*
-        |---------------------------------------------------------
-        | Save standings in database
-        |---------------------------------------------------------
+        |--------------------------------------------------------------------------
+        | Save standings
+        |--------------------------------------------------------------------------
         */
-
+        $group = Group::findOrFail($groupId);
         foreach ($table as $index => $row) {
 
             GroupStanding::updateOrCreate(
 
                 [
+                    'tournament_id' => $group->tournament_id,
                     'team_id' => $row['team_id'],
                     'group_id' => $groupId
                 ],

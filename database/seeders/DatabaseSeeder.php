@@ -28,6 +28,8 @@ class DatabaseSeeder extends Seeder
             CountriesSeeder::class,
             TournamentSeeder::class,
             WorldCupSeeder::class,
+            PoolEntriesSeeder::class,
+            PredictionsSeeder::class,
         ]);
     }
 }

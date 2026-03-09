@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
 import { confirmDelete, notifySuccess, notifyError } from '@/Utils/notify'
-import { singular } from '@/Utils/format'
+import { singular, formatDate } from '@/Utils/format'
 import DeleteDrawer from '@/Components/Admin/Drawer/DeleteDrawer.vue'
 import AdminLayout from '@/Layouts/AppLayout3.vue'
 import Header from '@/Layouts/Partials/Header.vue'
@@ -11,27 +11,30 @@ import SearchBar from '@/Layouts/Partials/SearchBar.vue'
 import DataTable from '@/Components/Admin/Table/DataTable.vue'
 import Pagination from '@/Components/Admin/Table/Pagination.vue'
 import FormDrawer from '@/Components/Admin/Drawer/FormDrawer.vue'
-import TournamentForm from '@/Components/Admin/FormDrawer/TournamentForm.vue'
+import PoolEntryForm from '@/Components/Admin/FormDrawer/PoolEntryForm.vue'
 import debounce from 'lodash/debounce'
 import 'flowbite'
 
-const title = 'Tournaments'
+const title = 'PoolEntries'
 
 const props = defineProps({
     filters: Object,
-    tournaments: Object
+    pool_entries: Object,
+    tournaments: Array,
+    users: Array,
 })
 
 // Column configuration (can be adjusted after generation)
 const columns = [
+    { key: 'tournament', label: 'Tournament' },
+    { key: 'user', label: 'User' },
     { key: 'name', label: 'Name' },
-    { key: 'year', label: 'Year' },
-    { key: 'host_countries', label: 'Host Countries' },
-    { key: 'logo', label: 'Logo' },
-    { key: 'deadline_at', label: 'Deadline At' },
     { key: 'status', label: 'Status' },
-    { key: 'type', label: 'Type' },
-
+    { key: 'completion_percent', label: 'Completion Percent' },
+    { key: 'total_points', label: 'Total Points' },
+    { key: 'entry_fee', label: 'Entry Fee ($)' },
+    { key: 'payment_ref', label: 'Payment Ref' },
+    { key: 'paid_at', label: 'Paid At', type: 'date' }
 ]
 
 // Reactive state
@@ -44,15 +47,15 @@ const itemToDelete = ref(null)
 
 const actions = {
     show: false,
-    edit: true,
-    delete: true,
-    new: true,
-    checkbox : true,
+    edit: false,
+    delete: false,
+    new: false,
+    checkbox : false,
 }
 
 const handleSearch = debounce((query) => {
     router.get(
-        route('admin.tournaments.index'),
+        route('admin.pool_entries.index'),
         { search: query },
         { preserveState: true, replace: true }
     )
@@ -67,21 +70,21 @@ const handleToolbarAction = (action) => {
 const deleteSelected = async () => {
 
     if(selectedItems.value.length === 0){
-        notifyError("No tournaments selected")
+        notifyError("No pool_entries selected")
         return
     }
 
     try{
 
-        await confirmDelete(`Delete ${selectedItems.value.length} tournaments?`)
+        await confirmDelete(`Delete ${selectedItems.value.length} pool_entries?`)
 
-        router.delete(route('admin.tournaments.bulkDelete'), {
+        router.delete(route('admin.pool_entries.bulkDelete'), {
             data: {
                 ids: selectedItems.value
             },
             preserveScroll: true,
             onSuccess: () => {
-                notifySuccess("Tournaments deleted")
+                notifySuccess("PoolEntries deleted")
                 selectedItems.value = []
                 router.reload()
             }
@@ -94,10 +97,10 @@ const deleteSelected = async () => {
 
 const confirmDeleteItem = (item) => {
 
-    router.delete(route('admin.tournaments.destroy', item.id), {
+    router.delete(route('admin.pool_entries.destroy', item.id), {
         preserveScroll: true,
         onSuccess: () => {
-            notifySuccess('Tournament deleted')
+            notifySuccess('PoolEntry deleted')
             itemToDelete.value = null
         }
     })
@@ -141,7 +144,7 @@ const handleCreate = () => {
                         />
 
                         <button
-                            v-if = "actions.new"
+                            v-if="actions.new"
                             @click="showCreateDrawer = true"
                             class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
                             type="button"
@@ -165,7 +168,7 @@ const handleCreate = () => {
                         <div class="overflow-hidden shadow">
 
                             <DataTable
-                                :rows="tournaments.data"
+                                :rows="pool_entries.data"
                                 :columns="columns"
                                 :actions="actions"
                                 @selection-change="handleSelectionChange"
@@ -173,11 +176,11 @@ const handleCreate = () => {
                                 @delete="openDelete"
                             />
 
-                            <div v-if="tournaments.data.length === 0" class="py-12 text-center text-gray-500 dark:text-gray-400">
-                                No tournaments found.
+                            <div v-if="pool_entries.data.length === 0" class="py-12 text-center text-gray-500 dark:text-gray-400">
+                                No pool_entries found.
                             </div>
 
-                            <Pagination :meta="tournaments" />
+                            <Pagination :meta="pool_entries" />
 
                         </div>
 
@@ -185,35 +188,41 @@ const handleCreate = () => {
                 </div>
 
                 <FormDrawer
-                    title="Add Tournament"
+                    title="Add PoolEntry"
                     :show="showCreateDrawer"
                     @close="showCreateDrawer = false"
                 >
-                    <TournamentForm
+                    <PoolEntryForm
+                                :tournaments="tournaments"
+        :users="users"
+
                         @saved="handleCreate"
                         @close="showCreateDrawer = false"
                     />
                 </FormDrawer>
 
                 <FormDrawer
-                    title="Update Tournament"
+                    title="Update PoolEntry"
                     :show="!!selectedItem"
                     @close="selectedItem = null"
                 >
-                    <TournamentForm
-                        :tournament="selectedItem"
+                    <PoolEntryForm
+                                :tournaments="tournaments"
+        :users="users"
+
+                        :pool_entry="selectedItem"
                         @close="selectedItem = null"
                     />
                 </FormDrawer>
 
                 <FormDrawer
                     :show="!!itemToDelete"
-                    title="Delete Tournament"
+                    title="Delete PoolEntry"
                     @close="itemToDelete = null"
                 >
                     <DeleteDrawer
                         :show="!!itemToDelete"
-                        entityName="Tournament"
+                        entityName="PoolEntry"
                         :item="itemToDelete"
                         @close="itemToDelete = null"
                         @confirm="confirmDeleteItem"
