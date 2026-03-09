@@ -4,6 +4,7 @@ namespace App\Services\Tournament;
 
 use App\Models\Game;
 use App\Models\Prediction;
+use Illuminate\Support\Facades\DB;
 
 class PredictionScoringService
 {
@@ -13,7 +14,8 @@ class PredictionScoringService
             return;
         }
 
-        $predictions = $game->predictions()->with('poolEntry')->get();
+        // $predictions = $game->predictions()->with('poolEntry')->get();
+        $predictions = $game->predictions()->get();
 
         foreach ($predictions as $prediction) {
 
@@ -30,14 +32,29 @@ class PredictionScoringService
             |--------------------------------------------------------------------------
             */
 
-            $entry = $prediction->poolEntry;
+            // $entry = $prediction->poolEntry;
 
-            if ($entry) {
-                $entry->update([
-                    'total_points' => $entry->predictions()->sum('points')
-                ]);
-            }
+            // if ($entry) {
+            //     $entry->update([
+            //         'total_points' => $entry->predictions()->sum('points')
+            //     ]);
+            // }
+            // recalcular leaderboard una sola vez
+            $this->recalculatePoolEntries($game->tournament_id);
         }
+    }
+
+    private function recalculatePoolEntries($tournamentId)
+    {
+        DB::statement("
+            UPDATE pool_entries e
+            SET total_points = (
+                SELECT COALESCE(SUM(p.points),0)
+                FROM predictions p
+                WHERE p.pool_entry_id = e.id
+            )
+            WHERE e.tournament_id = ?
+        ", [$tournamentId]);
     }
 
     private function calculatePoints(Game $game, Prediction $prediction)
