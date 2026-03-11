@@ -29,7 +29,7 @@ Route::get('/', function () {
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
     ]);
-});
+})->name('welcome');
 
 
 Route::middleware('auth')->group(function () {
@@ -122,8 +122,17 @@ Route::middleware(['auth', 'verified', 'admin'])
 
 });
 
+Route::get('/quiniela-2026', function () {
+    return Inertia::render('Quiniela/TournamentPredictionView');
+});
+
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', fn() => Inertia::render('Dashboard'))->name('dashboard');
+    Route::get('/quiniela/matches', fn() => Inertia::render('Matches'))->name('matches.index');
+    Route::get('/quiniela/groups', fn() => Inertia::render('Groups'))->name('groups.index');
+    Route::get('/quiniela/leaderboard', fn() => Inertia::render('Leaderboard'))->name('leaderboard');
+    Route::get('/quiniela/predictions', fn() => Inertia::render('Predictions/Index'))->name('predictions.index');
+    
     // Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
     // Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
     // Route::get('/rules', [RulesController::class, 'index'])->name('rules.index');
