@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { Head, Link } from '@inertiajs/vue3'
+import CountdownTimer from '@/Components/CountdownTimer.vue'
 
 const props = defineProps({
     canLogin: Boolean,
@@ -62,29 +63,15 @@ const heroTexts = {
 
 const currentHeroText = computed(() => heroTexts[activeSection.value] || heroTexts['hero'])
 
-// Countdown
-const countdown = ref({
-    days: '00',
-    hours: '00',
-    minutes: '00',
-    seconds: '00'
-})
+// Back to top button
+const showScrollTop = ref(false)
 
-let countdownInterval = null
+const handleScroll = () => {
+    showScrollTop.value = window.scrollY > 300
+}
 
-const updateCountdown = () => {
-    const targetDate = new Date('2026-06-11T00:00:00').getTime()
-    const now = new Date().getTime()
-    const distance = targetDate - now
-
-    if (distance > 0) {
-        countdown.value = {
-            days: String(Math.floor(distance / (1000 * 60 * 60 * 24))).padStart(2, '0'),
-            hours: String(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))).padStart(2, '0'),
-            minutes: String(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0'),
-            seconds: String(Math.floor((distance % (1000 * 60)) / 1000)).padStart(2, '0')
-        }
-    }
+const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 // Particles
@@ -119,8 +106,12 @@ const animatePoints = () => {
 }
 
 onMounted(() => {
-    updateCountdown()
-    countdownInterval = setInterval(updateCountdown, 1000)
+    // Siempre iniciar en la parte superior al cargar/refrescar
+    window.scrollTo({ top: 0, behavior: 'instant' })
+
+    // Back to top scroll listener
+    window.addEventListener('scroll', handleScroll)
+
     generateParticles()
 
     // Intersection Observer for Scroll Reveal & Active Section
@@ -137,20 +128,21 @@ onMounted(() => {
 
     document.querySelectorAll('.reveal').forEach(el => scrollObserver.observe(el))
 
-    // Section Observer for Hero Text
-    const sectionObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting && entry.intersectionRatio > 0.4) {
-                activeSection.value = entry.target.id
-            }
-        })
-    }, { threshold: [0.4, 0.6] })
-
-    document.querySelectorAll('section[id], footer[id]').forEach(el => sectionObserver.observe(el))
+    // Dynamic Hero Text Rotation (Carousel)
+    const textKeys = Object.keys(heroTexts);
+    let currentTextIndex = 0;
+    
+    textRotationInterval = setInterval(() => {
+        currentTextIndex = (currentTextIndex + 1) % textKeys.length;
+        activeSection.value = textKeys[currentTextIndex];
+    }, 4000); // Rota cada 4 segundos
 })
 
+let textRotationInterval = null;
+
 onUnmounted(() => {
-    if (countdownInterval) clearInterval(countdownInterval)
+    if (textRotationInterval) clearInterval(textRotationInterval)
+    window.removeEventListener('scroll', handleScroll)
 })
 
 const results = [
@@ -210,9 +202,17 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
         <!-- NAVBAR -->
         <header class="fixed top-0 w-full z-50 glass-nav border-b border-light-white transition-all duration-300">
             <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                <a href="#hero" class="flex items-center gap-3 group relative">
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-neon-blue to-neon-violet shadow-neon flex items-center justify-center">
-                        <span class="text-white font-bold text-xs">26</span>
+                <a href="#hero" class="flex items-center gap-1.5 group relative">
+                    <div class="logo-ball-container w-10 h-10 rounded-full flex items-center justify-center relative flex-shrink-0">
+                        <!-- Glow aura detrás del balón -->
+                        <div class="absolute inset-0 rounded-full animate-pulse-slow" style="background: radial-gradient(circle, rgba(0,212,255,0.6) 0%, rgba(0,212,255,0) 70%); filter: blur(4px);"></div>
+                        <!-- Imagen del balón -->
+                        <img
+                            src="/balon.png"
+                            alt="Logo Quiniela"
+                            class="w-8 h-8 object-contain relative z-10 transition-all duration-300"
+                            style="filter: drop-shadow(0 0 8px rgba(0,212,255,0.9)) drop-shadow(0 0 2px rgba(0,212,255,0.6));"
+                        />
                     </div>
                     <span class="font-heading font-black text-xl tracking-wider text-white group-hover:text-neon-blue transition-colors">
                         QUINIELA<span class="text-neon-blue">PRO</span>
@@ -220,12 +220,12 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
                 </a>
 
                 <!-- Desktop Nav -->
-                <nav class="hidden md:flex gap-8 items-center bg-black/20 px-6 py-2 rounded-full border border-white/5 backdrop-blur-md">
+                <nav class="hidden md:flex gap-8 items-center">
                     <a
                         v-for="item in navigation"
                         :key="item.name"
                         :href="item.href"
-                        class="font-medium text-sm text-gray-300 hover:text-white hover:text-shadow-neon transition-all"
+                        class="font-medium text-sm text-gray-300 hover:text-neon-blue transition-colors duration-200 relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[2px] after:bg-neon-blue after:transition-all after:duration-300 hover:after:w-full"
                     >
                         {{ item.name }}
                     </a>
@@ -235,7 +235,7 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
                     <Link
                         v-if="canLogin"
                         :href="route('login')"
-                        class="text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+                        class="text-sm font-semibold text-gray-300 hover:text-neon-blue transition-colors duration-200 relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[2px] after:bg-neon-blue after:transition-all after:duration-300 hover:after:w-full"
                     >
                         Iniciar sesión
                     </Link>
@@ -292,21 +292,24 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
             <div class="absolute inset-0 bg-pattern opacity-10 mix-blend-overlay z-[-1]"></div>
 
             <!-- Contenido (se mantiene igual) -->
-            <div class="max-w-7xl mx-auto px-6 w-full relative">
+            <div class="max-w-7xl mx-auto px-6 w-full relative h-[750px] flex items-center justify-between">
                 <div class="max-w-2xl reveal slide-right delay-100">
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-panel border border-neon-blue/30 mb-6 group">
-                        <span class="w-2 h-2 rounded-full bg-neon-blue animate-pulse"></span>
-                        <span class="text-xs font-semibold text-neon-blue tracking-widest uppercase">Mundial 2026</span>
-                    </div>
+                    <!-- COUNTDOWN COMPONENT -->
+                    <CountdownTimer class="mb-20" />
 
-                    <h1 class="text-5xl sm:text-7xl font-black font-heading leading-[1.1] tracking-tight mb-6 transition-all duration-500 min-h-[160px]">
-                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 block">{{ currentHeroText.title }}</span>
-                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-violet text-shadow-glow block">
-                            {{ currentHeroText.highlight }}
-                        </span>
+                    <h1 class="text-5xl sm:text-7xl font-black font-heading leading-[1.1] tracking-tight mb-2 pointer-events-none">
+                        <span class="text-white block">{{ currentHeroText.title }}</span>
+                        <!-- El uso de grid permite superponer la animación sin romper la altura del contenedor -->
+                        <div class="grid">
+                            <transition name="slide-fade">
+                                <span :key="activeSection" class="text-neon-blue block [grid-area:1/1]">
+                                    {{ currentHeroText.highlight }}
+                                </span>
+                            </transition>
+                        </div>
                     </h1>
 
-                    <p class="text-lg md:text-xl text-gray-300 mb-10 font-light max-w-lg transition-all duration-500">
+                    <p class="text-lg md:text-xl text-gray-300 mb-10 font-light max-w-3xl transition-all duration-500">
                         {{ currentHeroText.subtitle }}
                     </p>
 
@@ -328,41 +331,6 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
             <!-- Overlay Decorative Elements -->
             <div class="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-neon-violet to-transparent opacity-50"></div>
         </section>
-
-        <!-- COUNTDOWN STRIP -->
-        <div class="relative z-20 max-w-5xl mx-auto px-6 -mt-16 sm:-mt-24 mb-20 reveal slide-up">
-            <div class="glass-panel border border-white/10 rounded-2xl p-6 sm:p-8 shadow-[0_0_50px_rgba(67,97,238,0.15)] backdrop-blur-xl relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-blue to-neon-violet"></div>
-                <div class="flex flex-col md:flex-row items-center justify-between gap-8">
-                    <div class="text-center md:text-left">
-                        <h3 class="font-heading font-bold text-2xl text-white mb-2">El Mundial comienza en:</h3>
-                        <p class="text-gray-400 text-sm">Norteamérica 2026 - Prepárate para la historia</p>
-                    </div>
-
-                    <div class="flex gap-4 sm:gap-6">
-                        <div class="countdown-box">
-                            <span class="number">{{ countdown.days }}</span>
-                            <span class="label">Días</span>
-                        </div>
-                        <div class="text-3xl font-bold text-gray-500 self-start mt-2">:</div>
-                        <div class="countdown-box">
-                            <span class="number">{{ countdown.hours }}</span>
-                            <span class="label">Horas</span>
-                        </div>
-                        <div class="text-3xl font-bold text-gray-500 self-start mt-2">:</div>
-                        <div class="countdown-box">
-                            <span class="number">{{ countdown.minutes }}</span>
-                            <span class="label">Min</span>
-                        </div>
-                        <div class="text-3xl font-bold text-gray-500 self-start mt-2">:</div>
-                        <div class="countdown-box">
-                            <span class="number">{{ countdown.seconds }}</span>
-                            <span class="label">Seg</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
 
         <!-- MAIN CONTENT WRAPPER -->
@@ -421,53 +389,124 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
             <section id="predict" class="py-24 px-6 relative">
                 <div class="absolute inset-0 bg-gradient-to-b from-transparent via-neon-violet/5 to-transparent skew-y-3 transform -z-10"></div>
 
+                <!-- Decos de fondo animadas -->
+                <div class="absolute top-10 right-10 w-72 h-72 rounded-full bg-neon-violet/10 blur-[80px] animate-pulse pointer-events-none"></div>
+                <div class="absolute bottom-10 left-10 w-64 h-64 rounded-full bg-neon-blue/8 blur-[60px] animate-pulse pointer-events-none" style="animation-delay: 1.5s;"></div>
+
                 <div class="max-w-6xl mx-auto">
                     <div class="grid lg:grid-cols-2 gap-16 items-center">
                         <div class="reveal slide-right">
-                            <h2 class="section-title text-left mb-6">Haz tu <span class="text-neon-violet">Pronóstico</span></h2>
-                            <p class="text-gray-300 mb-6 text-lg">
-                                Participa en el Duelo de Predicción. Acierta los resultados exactos o al ganador y acumula puntos. El resultado de tu ranking es la suma de los puntos ganados y perdidos en las últimas 5 partidas.
+
+
+                            <h2 class="section-title text-left mb-6">Crea tu <span class="text-neon-blue">Quiniela</span></h2>
+                            <p class="text-gray-300 mb-8 text-lg leading-relaxed">
+                                Predice los resultados exactos o el ganador de cada partido y acumula puntos. Mientras más precisión, más puntos ganas. ¡Tu posición en el ranking depende de ti!
                             </p>
 
-                            <div class="glass-panel p-6 rounded-xl border border-neon-violet/20 mb-8 max-w-sm relative overflow-hidden group">
-                                <div class="absolute inset-0 bg-neon-violet/5 group-hover:bg-neon-violet/10 transition-colors"></div>
-                                <div class="flex justify-between items-center relative z-10">
-                                    <div class="text-center flex-1 border-r border-white/10">
-                                        <p class="text-sm text-gray-400 mb-1">Puntos Ganados</p>
-                                        <p class="text-4xl font-black text-neon-blue">{{ pointsWon }}</p>
+                            <!-- Cards de puntos -->
+                            <div class="flex flex-wrap gap-4 mb-8">
+                                <!-- Exacto +5 Verde -->
+                                <div class="flex-1 min-w-[140px] glass-panel rounded-xl border border-green-500/25 p-5 group hover:border-green-500/50 transition-all duration-300">
+                                    <div class="w-8 h-8 rounded-lg bg-green-500/15 border border-green-500/30 flex items-center justify-center mb-3">
+                                        <svg class="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
                                     </div>
-                                    <div class="text-center flex-1">
-                                        <p class="text-sm text-gray-400 mb-1">Puntos Perdidos</p>
-                                        <p class="text-4xl font-black text-red-400">{{ pointsLost }}</p>
+                                    <p class="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Resultado Exacto</p>
+                                    <p class="text-4xl font-black text-green-400 leading-none">+5</p>
+                                    <p class="text-xs text-gray-500 mt-1">puntos</p>
+                                </div>
+
+                                <!-- Ganador +3 Azul Neon -->
+                                <div class="flex-1 min-w-[140px] glass-panel rounded-xl border border-[#00D4FF]/25 p-5 group hover:border-[#00D4FF]/60 hover:shadow-[0_0_20px_rgba(0,212,255,0.2)] transition-all duration-300">
+                                    <div class="w-8 h-8 rounded-lg bg-[#00D4FF]/15 border border-[#00D4FF]/30 flex items-center justify-center mb-3">
+                                        <svg class="w-4 h-4 text-[#00D4FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                        </svg>
                                     </div>
+                                    <p class="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Ganador Correcto</p>
+                                    <p class="text-4xl font-black text-[#00D4FF] leading-none">+3</p>
+                                    <p class="text-xs text-gray-500 mt-1">puntos</p>
+                                </div>
+
+                                <!-- Empate +3 Blanco -->
+                                <div class="flex-1 min-w-[140px] glass-panel rounded-xl border border-white/25 p-5 group hover:border-white/50 transition-all duration-300">
+                                    <div class="w-8 h-8 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center mb-3">
+                                        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h8M8 12h8m-8 5h8"/>
+                                        </svg>
+                                    </div>
+                                    <p class="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Empate Aprox.</p>
+                                    <p class="text-4xl font-black text-white leading-none">+3</p>
+                                    <p class="text-xs text-gray-500 mt-1">puntos</p>
                                 </div>
                             </div>
 
-                            <a href="#" class="btn-neon inline-flex px-8 py-4 text-lg">Empezar a pronosticar</a>
+                            <!-- Botón alineado a la izquierda -->
+                            <a href="#" class="btn-neon inline-flex items-center gap-2 px-8 py-4 text-lg font-bold">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Crear mi Quiniela
+                            </a>
+
                         </div>
 
                         <div class="relative reveal slide-left">
-                            <!-- Abstract 3D/Glass visual representation -->
-                            <div class="aspect-square relative flex items-center justify-center">
+                            <!-- Interactor de tarjetas explosivas -->
+                            <div class="aspect-square relative flex items-center justify-center group/cards">
                                 <div class="absolute inset-0 bg-gradient-to-tr from-neon-blue/20 to-neon-violet/20 rounded-full blur-3xl animate-pulse"></div>
-                                <div class="glass-panel w-64 h-80 rounded-2xl border border-white/20 absolute transform -rotate-12 shadow-2xl backdrop-blur-2xl flex flex-col items-center justify-center z-10 transition-transform duration-500 hover:-translate-y-4 hover:rotate-[-5deg]">
+                                
+                                <!-- Card 1: Resultado Exacto (+5 Verde) -->
+                                <div class="glass-panel w-64 h-80 rounded-2xl border border-green-500/20 absolute transform -rotate-12 shadow-2xl backdrop-blur-2xl flex flex-col items-center justify-center z-20 transition-all duration-700 ease-out group-hover/cards:-translate-x-16 group-hover/cards:-translate-y-12 group-hover/cards:-rotate-[15deg] group-hover/cards:border-green-500/50 group-hover/cards:shadow-[0_0_40px_rgba(34,197,94,0.3)]">
                                     <div class="w-16 h-1 rounded-full bg-white/20 mb-8"></div>
                                     <div class="text-center w-full px-6">
                                         <div class="flex justify-between items-center w-full mb-4">
-                                            <div class="w-10 h-10 rounded-full bg-blue-600/50"></div>
-                                            <div class="text-2xl font-bold">2 - 0</div>
-                                            <div class="w-10 h-10 rounded-full bg-red-600/50"></div>
+                                            <div class="w-10 h-10 rounded-lg bg-green-500/40 border border-green-500/50 shadow-[0_0_10px_rgba(34,197,94,0.4)]"></div>
+                                            <div class="text-2xl font-black text-white">2 - 0</div>
+                                            <div class="w-10 h-10 rounded-lg bg-red-500/40 border border-red-500/50"></div>
                                         </div>
-                                        <div class="h-2 w-full bg-white/10 rounded-full mb-2"></div>
-                                        <div class="h-2 w-3/4 bg-white/10 rounded-full mx-auto"></div>
+                                        <div class="space-y-2">
+                                            <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                                                <div class="h-full w-[80%] bg-green-500/40 rounded-full"></div>
+                                            </div>
+                                            <div class="h-2 w-3/4 bg-white/10 rounded-full mx-auto"></div>
+                                        </div>
                                     </div>
-                                    <div class="mt-8 px-6 py-2 rounded-full bg-neon-blue/20 text-neon-blue text-sm border border-neon-blue/30 font-bold">+3 Puntos</div>
+                                    <!-- +5 Exacto badge -->
+                                    <div class="mt-8 px-5 py-2 rounded-full bg-green-500/20 text-green-400 text-sm border border-green-500/30 font-black shadow-[0_0_15px_rgba(34,197,94,0.2)]">
+                                        +5 Exacto 🎯
+                                    </div>
                                 </div>
-                                <div class="glass-panel w-56 h-72 rounded-2xl border border-white/10 absolute transform rotate-12 translate-x-12 translate-y-12 shadow-xl opacity-60 z-0"></div>
+
+                                <!-- Card 2: Empate Aproximado (+3 Blanco) -->
+                                <div class="glass-panel w-64 h-80 rounded-2xl border border-white/10 absolute transform rotate-12 translate-x-12 translate-y-12 shadow-xl backdrop-blur-xl flex flex-col items-center justify-center z-10 transition-all duration-700 ease-out opacity-60 group-hover/cards:opacity-100 group-hover/cards:translate-x-24 group-hover/cards:translate-y-16 group-hover/cards:rotate-[20deg] group-hover/cards:border-white/40 group-hover/cards:shadow-[0_0_40px_rgba(255,255,255,0.15)]">
+                                    <div class="w-16 h-1 rounded-full bg-white/20 mb-8"></div>
+                                    <div class="text-center w-full px-6 opacity-0 group-hover/cards:opacity-100 transition-opacity duration-500 delay-200">
+                                        <div class="flex justify-between items-center w-full mb-4">
+                                            <div class="w-10 h-10 rounded-lg bg-blue-500/40 border border-blue-500/50"></div>
+                                            <div class="text-2xl font-black text-white">1 - 1</div>
+                                            <div class="w-10 h-10 rounded-lg bg-yellow-500/40 border border-yellow-500/50"></div>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                                                <div class="h-full w-[50%] bg-white/30 rounded-full"></div>
+                                            </div>
+                                            <div class="h-2 w-3/4 bg-white/10 rounded-full mx-auto"></div>
+                                        </div>
+                                    </div>
+                                    <!-- +3 Empate badge -->
+                                    <div class="mt-8 px-5 py-2 rounded-full bg-white/10 text-white text-sm border border-white/20 font-black opacity-0 group-hover/cards:opacity-100 transition-opacity duration-500 delay-300">
+                                        +3 Empate 🤝
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
                     </div>
                 </div>
+
+
             </section>
 
             <!-- LIVE MATCHES -->
@@ -697,6 +736,24 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
                 <p class="mt-2 md:mt-0">Diseñado con ❤️ para fanáticos del fútbol.</p>
             </div>
         </footer>
+
+        <!-- BACK TO TOP BUTTON -->
+        <transition name="fade-up">
+            <button
+                v-if="showScrollTop"
+                @click="scrollToTop"
+                class="back-to-top"
+                aria-label="Volver al inicio"
+                title="Volver al inicio"
+            >
+                <!-- Aura de glow detrás -->
+                <span class="back-to-top__glow"></span>
+                <!-- Ícono flecha arriba -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 19V5M5 12l7-7 7 7"/>
+                </svg>
+            </button>
+        </transition>
     </div>
 </template>
 
@@ -738,6 +795,18 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
 /* Utilities */
 .text-neon-blue {
     color: var(--color-neon-blue);
+}
+
+.hover\:text-neon-blue:hover {
+    color: var(--color-neon-blue);
+}
+
+.after\:bg-neon-blue::after {
+    background-color: var(--color-neon-blue);
+}
+
+.hover\:after\:w-full:hover::after {
+    width: 100%;
 }
 
 .bg-neon-blue {
@@ -955,6 +1024,7 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
 @keyframes slow-zoom {
     0% {
         transform: scale(1);
+
     }
     100% {
         transform: scale(1.1);
@@ -963,6 +1033,22 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
 
 .animate-slow-zoom {
     animation: slow-zoom 20s infinite alternate ease-in-out;
+}
+
+/* Logo ball glow animation */
+@keyframes pulse-slow {
+    0%, 100% {
+        opacity: 0.2;
+        transform: scale(0.9);
+    }
+    50% {
+        opacity: 0.45;
+        transform: scale(1.15);
+    }
+}
+
+.animate-pulse-slow {
+    animation: pulse-slow 3s ease-in-out infinite;
 }
 
 /* Ajustes para el contador dentro del hero */
@@ -987,5 +1073,95 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
     #hero .countdown-box .label {
         font-size: 0.6rem;
     }
+}
+
+/* Text slide fade animation */
+.slide-fade-enter-active {
+    transition: all 0.5s ease-out;
+}
+
+.slide-fade-leave-active {
+    transition: all 0.5s cubic-bezier(1, 0.5, 0.8, 1);
+}
+
+.slide-fade-enter-from {
+    transform: translateX(-40px);
+    opacity: 0;
+}
+
+.slide-fade-leave-to {
+    transform: translateX(40px);
+    opacity: 0;
+}
+
+/* ── Back to Top Button ── */
+.back-to-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 999;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(15, 12, 27, 0.75);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.7);
+    transition: color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+    overflow: visible;
+}
+
+.back-to-top svg {
+    width: 20px;
+    height: 20px;
+    position: relative;
+    z-index: 2;
+    transition: transform 0.25s ease;
+}
+
+.back-to-top__glow {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,212,255,0.25) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 1;
+}
+
+.back-to-top:hover {
+    color: #00D4FF;
+    border-color: rgba(0, 212, 255, 0.6);
+    box-shadow: 0 0 16px rgba(0, 212, 255, 0.45), 0 0 40px rgba(0, 212, 255, 0.15);
+    transform: translateY(-3px);
+}
+
+.back-to-top:hover .back-to-top__glow {
+    opacity: 1;
+}
+
+.back-to-top:hover svg {
+    transform: translateY(-2px);
+}
+
+.back-to-top:active {
+    transform: scale(0.92);
+}
+
+/* Transition: fade-up */
+.fade-up-enter-active,
+.fade-up-leave-active {
+    transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.fade-up-enter-from,
+.fade-up-leave-to {
+    opacity: 0;
+    transform: translateY(16px);
 }
 </style>
