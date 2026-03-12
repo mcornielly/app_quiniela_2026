@@ -11,6 +11,7 @@ const props = defineProps({
 const navigation = [
     { name: 'Inicio', href: '#hero' },
     { name: 'Resultados', href: '#results' },
+    { name: 'En Directo', href: '#live' },
     { name: 'Pronósticos', href: '#predict' },
     { name: 'Posiciones', href: '#standings' },
     { name: 'Contacto', href: '#footer' }
@@ -157,11 +158,30 @@ const liveMatches = [
 ]
 
 const standings = [
-    { pos: 1, name: 'Real Madrid', points: 156, trend: 'up' },
-    { pos: 2, name: 'Barcelona Elite', points: 142, trend: 'same' },
-    { pos: 3, name: 'Bayern Fans', points: 138, trend: 'up' },
-    { pos: 4, name: 'Boca Juniors AR', points: 130, trend: 'down' },
-    { pos: 5, name: 'River Plate Club', points: 125, trend: 'up' }
+    { pos: 1, name: 'Marcos C.', exact: 12, approx: 8, points: 72, trend: 'up' },
+    { pos: 2, name: 'Elena R.', exact: 10, approx: 12, points: 66, trend: 'same' },
+    { pos: 3, name: 'Daniel G.', exact: 9, approx: 11, points: 62, trend: 'up' },
+    { pos: 4, name: 'Sofia V.', exact: 8, approx: 14, points: 58, trend: 'down' },
+    { pos: 5, name: 'Javier M.', exact: 7, approx: 15, points: 54, trend: 'up' }
+]
+
+// Estado para controlar la vista de posiciones
+const standingView = ref('groups') // Por defecto 'groups'
+
+// Datos de Grupos A-L (Mundial 2026)
+const worldCupGroups = [
+    { name: 'A', teams: [{n: 'México', p: 4, g: '5-2'}, {n: 'Suiza', p: 4, g: '4-3'}, {n: 'Qatar', p: 1, g: '3-5'}, {n: 'Australia', p: 1, g: '3-6'}] },
+    { name: 'B', teams: [{n: 'Canadá', p: 7, g: '5-2'}, {n: 'Italia', p: 4, g: '4-2'}, {n: 'Ghana', p: 3, g: '3-5'}, {n: 'Panamá', p: 0, g: '1-6'}] },
+    { name: 'C', teams: [{n: 'Brasil', p: 9, g: '7-1'}, {n: 'España', p: 6, g: '5-3'}, {n: 'Egipto', p: 3, g: '2-4'}, {n: 'Corea', p: 0, g: '1-8'}] },
+    { name: 'D', teams: [{n: 'USA', p: 4, g: '3-3'}, {n: 'Portugal', p: 4, g: '3-3'}, {n: 'Marruecos', p: 4, g: '3-3'}, {n: 'Polonia', p: 3, g: '0-0'}] },
+    { name: 'E', teams: [{n: 'Curaçao', p: 4, g: '6-6'}, {n: 'Costa Rica', p: 4, g: '6-6'}, {n: 'Alemania', p: 4, g: '5-5'}, {n: 'Ecuador', p: 4, g: '5-5'}] },
+    { name: 'F', teams: [{n: 'Holanda', p: 4, g: '7-7'}, {n: 'Japón', p: 4, g: '7-7'}, {n: 'Túnez', p: 4, g: '7-7'}, {n: 'Nigeria', p: 4, g: '7-7'}] },
+    { name: 'G', teams: [{n: 'I.R. Irán', p: 4, g: '6-6'}, {n: 'Argelia', p: 4, g: '5-5'}, {n: 'Noruega', p: 4, g: '5-5'}, {n: 'Bélgica', p: 4, g: '4-4'}] },
+    { name: 'H', teams: [{n: 'S. Arabia', p: 9, g: '7-1'}, {n: 'Escocia', p: 3, g: '2-3'}, {n: 'Francia', p: 3, g: '1-3'}, {n: 'Uruguay', p: 3, g: '1-4'}] },
+    { name: 'I', teams: [{n: 'Senegal', p: 4, g: '5-5'}, {n: 'Croacia', p: 4, g: '5-5'}, {n: 'Eslovaquia', p: 4, g: '5-5'}, {n: 'Grecia', p: 3, g: '4-4'}] },
+    { name: 'J', teams: [{n: 'Austria', p: 5, g: '6-4'}, {n: 'Chile', p: 5, g: '6-4'}, {n: 'Jordania', p: 5, g: '6-4'}, {n: 'Argentina', p: 0, g: '2-8'}] },
+    { name: 'K', teams: [{n: 'Uzbekistan', p: 7, g: '4-0'}, {n: 'Camerún', p: 3, g: '2-2'}, {n: 'Dinamarca', p: 2, g: '2-4'}, {n: 'Colombia', p: 2, g: '2-4'}] },
+    { name: 'L', teams: [{n: 'Inglaterra', p: 5, g: '4-3'}, {n: 'Turquía', p: 4, g: '6-5'}, {n: 'Serbia', p: 4, g: '7-6'}, {n: 'Perú', p: 2, g: '3-6'}] },
 ]
 
 const techStack = [
@@ -510,53 +530,81 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
             </section>
 
             <!-- LIVE MATCHES -->
-            <section id="live" class="py-24 px-6">
-                <div class="max-w-5xl mx-auto">
-                    <div class="text-center mb-16 reveal slide-up flex flex-col items-center">
-                        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 font-bold text-sm tracking-widest mb-4">
-                            <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span> EN VIVO
-                        </div>
-                        <h2 class="section-title">Partidos <span class="text-white">en Directo</span></h2>
-                    </div>
+            <section id="live" class="py-24 px-6 relative overflow-hidden">
+                <!-- Background decoration -->
+                <div class="absolute -left-20 top-1/2 -translate-y-1/2 w-64 h-64 bg-red-500/10 rounded-full blur-[100px] pointer-events-none"></div>
 
-                    <div class="glass-panel overflow-hidden border border-white/10 rounded-2xl reveal slide-up">
-                        <table class="w-full text-left border-collapse min-w-[500px]">
-                            <thead>
-                                <tr class="bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-gray-400">
-                                    <th class="p-4 font-semibold">Partido</th>
-                                    <th class="p-4 font-semibold text-center">Tiempo</th>
-                                    <th class="p-4 font-semibold text-center">Goles</th>
-                                    <th class="p-4 font-semibold text-right">Detalles</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(match, i) in liveMatches" :key="i" class="border-b border-white/5 hover:bg-white/5 transition-colors group">
-                                    <td class="p-4">
-                                        <div class="flex items-center gap-4">
-                                            <span class="font-bold flex-1 text-right">{{ match.team1 }}</span>
-                                            <div class="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-lg border border-white/5 group-hover:border-neon-blue/40 transition-colors">
-                                                <span class="text-xl font-bold">{{ match.s1 }}</span>
-                                                <span class="text-gray-500">-</span>
-                                                <span class="text-xl font-bold">{{ match.s2 }}</span>
-                                            </div>
-                                            <span class="font-bold flex-1">{{ match.team2 }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="p-4 text-center">
-                                        <span class="text-red-400 font-bold animate-pulse">{{ match.min }}</span>
-                                    </td>
-                                    <td class="p-4 text-center">
-                                        <span class="text-gray-300 font-medium">{{ match.s1 + match.s2 }} Goles</span>
-                                    </td>
-                                    <td class="p-4 text-right">
-                                        <button class="text-neon-blue hover:text-white transition-colors text-sm font-semibold">Ver Resumen</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <div class="max-w-6xl mx-auto relative z-10">
+                    <div class="grid lg:grid-cols-12 gap-8 items-start">
+                        <!-- Left side: The Widget Image Card -->
+                        <div class="lg:col-span-4 reveal slide-left">
+                            <div class="glass-panel p-4 rounded-3xl border border-neon-blue/30 shadow-[0_0_30px_rgba(0,212,255,0.15)] relative group">
+                                <div class="absolute inset-0 bg-neon-blue/5 rounded-3xl group-hover:bg-neon-blue/10 transition-colors duration-500"></div>
+                                <img src="/widget.png" alt="Live Widget" class="relative z-10 w-full h-auto rounded-2xl shadow-2xl transition-transform duration-700 group-hover:scale-[1.02]" />
+                                <!-- Animated border/glow -->
+                                <div class="absolute -inset-1 bg-gradient-to-r from-neon-blue/20 to-transparent rounded-3xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                            </div>
+                        </div>
+
+                        <!-- Right side: The Table (narrower) -->
+                        <div class="lg:col-span-8 reveal slide-right delay-100">
+                            <!-- Section Title Centered Here -->
+                            <div class="mb-8 reveal slide-up flex flex-col items-center text-center">
+                                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 font-bold text-xs tracking-widest mb-4">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span> EN VIVO
+                                </div>
+                                <h2 class="section-title">
+                                    Partidos <span class="text-neon-blue">en Directo</span>
+                                </h2>
+                            </div>
+
+                            <div class="glass-panel overflow-hidden border border-white/10 rounded-2xl shadow-xl">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-white/5 border-b border-white/10 text-[10px] uppercase tracking-wider text-gray-400">
+                                            <th class="p-4 font-semibold">Partido</th>
+                                            <th class="p-4 font-semibold text-center">Tiempo</th>
+                                            <th class="p-4 font-semibold text-center">Goles</th>
+                                            <th class="p-4 font-semibold text-right">Detalles</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(match, i) in liveMatches" :key="i" class="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors group">
+                                            <td class="p-4">
+                                                <div class="flex items-center gap-3">
+                                                    <span class="font-bold text-sm min-w-[80px] text-right">{{ match.team1 }}</span>
+                                                    <div class="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-lg border border-white/5 group-hover:border-neon-blue/40 transition-colors">
+                                                        <span class="text-lg font-black text-white">{{ match.s1 }}</span>
+                                                        <span class="text-gray-500 text-xs">-</span>
+                                                        <span class="text-lg font-black text-white">{{ match.s2 }}</span>
+                                                    </div>
+                                                    <span class="font-bold text-sm min-w-[80px]">{{ match.team2 }}</span>
+                                                </div>
+                                            </td>
+                                            <td class="p-4 text-center">
+                                                <span class="text-red-400 text-xs font-black animate-pulse bg-red-400/10 px-2 py-1 rounded">{{ match.min }}</span>
+                                            </td>
+                                            <td class="p-4 text-center">
+                                                <span class="text-gray-400 text-xs font-medium">{{ match.s1 + match.s2 }} Goles</span>
+                                            </td>
+                                            <td class="p-4 text-right">
+                                                <button class="text-neon-blue hover:text-white transition-colors text-[11px] font-black uppercase tracking-wider">Ver Resumen</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-4 flex justify-end">
+                                <a href="#" class="text-[10px] text-gray-500 hover:text-neon-blue transition-colors font-bold uppercase tracking-widest flex items-center gap-2">
+                                    Ver todos los partidos en vivo
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
+
 
             <!-- BEST OF TOURNAMENT -->
             <section id="bests" class="py-24 px-6">
@@ -603,23 +651,45 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
             <section id="standings" class="py-24 px-6 relative">
                 <div class="absolute inset-0 bg-pattern opacity-5 mix-blend-overlay z-0 pointer-events-none"></div>
 
-                <div class="max-w-4xl mx-auto relative z-10">
-                    <div class="flex justify-between items-end mb-10 reveal slide-up">
-                        <h2 class="section-title mb-0">Tabla de <span class="text-white">Posiciones</span></h2>
-                        <button class="text-sm font-semibold text-neon-blue hover:text-white transition-colors pb-2 border-b border-neon-blue/30 hover:border-white">Ver completa</button>
+                <div class="max-w-6xl mx-auto relative z-10">
+                    <div class="text-center mb-16 reveal slide-up">
+                        <h2 class="section-title">Tabla de <span class="text-neon-blue">Posiciones</span></h2>
+                        <div class="flex justify-center gap-4 mt-8">
+                            <button 
+                                @click="standingView = 'groups'"
+                                :class="standingView === 'groups' ? 'bg-neon-blue text-black font-bold' : 'bg-white/5 text-gray-400 border border-white/10 hover:text-white'"
+                                class="px-6 py-2.5 rounded-full text-sm transition-all duration-300"
+                            >
+                                Grupos Mundial
+                            </button>
+                            <button 
+                                @click="standingView = 'ranking'"
+                                :class="standingView === 'ranking' ? 'bg-neon-blue text-black font-bold' : 'bg-white/5 text-gray-400 border border-white/10 hover:text-white'"
+                                class="px-6 py-2.5 rounded-full text-sm transition-all duration-300"
+                            >
+                                Ranking Quiniela
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="glass-panel rounded-2xl border border-white/10 overflow-hidden reveal slide-up">
-                        <div class="p-6 bg-white/5 border-b border-white/10 flex gap-4">
-                            <button class="px-4 py-2 rounded-lg bg-neon-blue text-black font-bold text-sm">Global</button>
-                            <button class="px-4 py-2 rounded-lg text-gray-400 hover:text-white font-medium text-sm transition-colors">Amigos</button>
+                    <!-- VISTA: RANKING GLOBAL -->
+                    <div v-show="standingView === 'ranking'" class="max-w-4xl mx-auto glass-panel rounded-2xl border border-white/10 overflow-hidden reveal slide-up">
+                        <div class="p-6 bg-white/5 border-b border-white/10 flex justify-between items-center">
+                            <div class="flex gap-4">
+                                <button class="px-4 py-2 rounded-lg bg-neon-blue/10 border border-neon-blue/20 text-neon-blue font-bold text-sm">Global</button>
+                                <button class="px-4 py-2 rounded-lg text-gray-400 hover:text-white font-medium text-sm transition-colors">Amigos</button>
+                            </div>
+                            <button class="text-xs font-bold text-neon-blue hover:underline">Ver completa</button>
                         </div>
 
                         <table class="w-full text-left collapse-table">
                             <thead>
-                                <tr class="text-xs uppercase tracking-wider text-gray-500 border-b border-white/5">
+                                <tr class="text-[10px] uppercase tracking-wider text-gray-500 border-b border-white/5">
                                     <th class="py-4 px-6 font-semibold w-16 text-center">Pos</th>
-                                    <th class="py-4 px-6 font-semibold">Jugador / Equipo</th>
+                                    <th class="py-4 px-6 font-semibold">Usuario</th>
+                                    <th class="py-4 px-4 font-semibold text-center text-green-400">Exactos</th>
+                                    <th class="py-4 px-4 font-semibold text-center text-[#00D4FF]">Aprox.</th>
+                                    <th class="py-4 px-4 font-semibold text-center">Total</th>
                                     <th class="py-4 px-6 font-semibold text-right">Pts</th>
                                     <th class="py-4 px-6 font-semibold w-16 text-center">Trend</th>
                                 </tr>
@@ -629,7 +699,7 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
                                     v-for="(row, i) in standings"
                                     :key="i"
                                     class="border-b border-white/5 hover:bg-white/5 transition-all group"
-                                    :class="{'bg-[#4361EE]/10': i === 0}"
+                                    :class="{'bg-neon-blue/5': i === 0}"
                                 >
                                     <td class="py-4 px-6 text-center font-bold text-lg" :class="{'text-yellow-400': i === 0, 'text-gray-300': i > 0}">
                                         {{ row.pos }}
@@ -637,7 +707,16 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
                                     <td class="py-4 px-6 font-semibold group-hover:text-neon-blue transition-colors">
                                         {{ row.name }}
                                     </td>
-                                    <td class="py-4 px-6 text-right font-black text-white">
+                                    <td class="py-4 px-4 text-center font-bold text-green-400/80">
+                                        {{ row.exact }}
+                                    </td>
+                                    <td class="py-4 px-4 text-center font-bold text-[#00D4FF]/80">
+                                        {{ row.approx }}
+                                    </td>
+                                    <td class="py-4 px-4 text-center font-medium text-gray-400">
+                                        {{ row.exact + row.approx }}
+                                    </td>
+                                    <td class="py-4 px-6 text-right font-black text-white text-lg">
                                         {{ row.points }}
                                     </td>
                                     <td class="py-4 px-6 text-center">
@@ -655,8 +734,41 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- VISTA: GRUPOS MUNDIAL -->
+                    <div v-show="standingView === 'groups'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 reveal slide-up">
+                        <div v-for="group in worldCupGroups" :key="group.name" class="glass-panel rounded-xl border border-white/10 overflow-hidden hover:border-neon-blue/30 transition-all duration-300 group">
+                            <div class="px-5 py-3 bg-white/5 border-b border-white/10 flex justify-between items-center">
+                                <span class="font-black text-lg tracking-wider">GRUPO <span class="text-neon-blue">{{ group.name }}</span></span>
+                                <span class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Mundial 2026</span>
+                            </div>
+                            <table class="w-full text-[12px]">
+                                <thead class="text-gray-500 border-b border-white/5">
+                                    <tr>
+                                        <th class="py-2 px-4 text-left font-semibold uppercase">Equipo</th>
+                                        <th class="py-2 px-4 text-center font-semibold">Pts</th>
+                                        <th class="py-2 px-4 text-right font-semibold">Goles</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(team, ti) in group.teams" :key="ti" class="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                                        <td class="py-2.5 px-4 font-semibold text-gray-300 flex items-center gap-2">
+                                            <span class="w-1.5 h-1.5 rounded-full" :class="ti < 2 ? 'bg-neon-blue' : 'bg-transparent'"></span>
+                                            {{ team.n }}
+                                        </td>
+                                        <td class="py-2.5 px-4 text-center font-bold" :class="ti < 2 ? 'text-white' : 'text-gray-500'">{{ team.p }}</td>
+                                        <td class="py-2.5 px-4 text-right text-gray-400 font-medium">{{ team.g }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="px-4 py-2 bg-neon-blue/5 flex items-center justify-center">
+                                <span class="text-[10px] text-neon-blue/60 font-bold uppercase tracking-widest">Octavos de Final (Zona Qualy)</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
+
 
             <!-- TECH STACK -->
             <section id="tech" class="py-20 px-6 border-t border-white/5 relative overflow-hidden">
