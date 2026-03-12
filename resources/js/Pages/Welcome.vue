@@ -277,21 +277,30 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
                 </button>
             </div>
 
-            <!-- Mobile Nav -->
-            <div v-if="isMobileMenuOpen" class="md:hidden glass-panel border-t border-white/10 p-4 absolute w-full top-20 left-0 flex flex-col gap-4">
-                <a
-                    v-for="item in navigation"
-                    :key="item.name"
-                    :href="item.href"
-                    @click="isMobileMenuOpen = false"
-                    class="font-medium text-base text-gray-300 hover:text-neon-blue transition-colors block p-2"
-                >
-                    {{ item.name }}
-                </a>
-                <div class="h-px bg-white/10 my-2"></div>
-                <Link :href="route('login')" class="block p-2 text-gray-300">Iniciar sesión</Link>
-                <Link :href="route('register')" class="btn-neon text-center mt-2 p-2">Regístrate</Link>
-            </div>
+            <!-- Mobile Nav (Curtain Effect) -->
+            <transition name="curtain">
+                <div v-if="isMobileMenuOpen" class="md:hidden fixed inset-0 z-[60] pt-20">
+                    <!-- Subtle dark overlay -->
+                    <div class="absolute inset-0 bg-black/60 backdrop-blur-[2px]" @click="isMobileMenuOpen = false"></div>
+                    
+                    <!-- The Curtain Panel -->
+                    <div class="relative bg-[#0f0c1b] border-b border-neon-blue/20 p-8 flex flex-col gap-5 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                        <a
+                            v-for="item in navigation"
+                            :key="item.name"
+                            :href="item.href"
+                            @click="isMobileMenuOpen = false"
+                            class="font-heading font-bold text-lg text-white hover:text-neon-blue transition-colors flex items-center justify-between group"
+                        >
+                            {{ item.name }}
+                            <svg class="w-4 h-4 text-neon-blue opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </a>
+                        <div class="h-px bg-white/5 my-2"></div>
+                        <Link @click="isMobileMenuOpen = false" :href="route('login')" class="text-white font-bold text-lg">Iniciar sesión</Link>
+                        <Link @click="isMobileMenuOpen = false" :href="route('register')" class="btn-neon text-center py-3 text-lg">Regístrate gratis</Link>
+                    </div>
+                </div>
+            </transition>
         </header>
 
         <!-- HERO BANNER -->
@@ -321,14 +330,18 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
 
             <!-- Contenido (se mantiene igual) -->
             <div class="max-w-7xl mx-auto px-6 w-full relative h-[750px] flex items-center justify-between">
-                <div class="max-w-2xl reveal slide-right delay-100">
-                    <!-- COUNTDOWN COMPONENT -->
-                    <CountdownTimer class="mb-20" />
+                <div class="max-w-2xl reveal slide-right delay-100 w-full text-center lg:text-left">
+                    <!-- COUNTDOWN COMPONENT - Más ancho y plano en móvil -->
+                    <div class="w-full flex justify-center lg:justify-start mb-10 lg:mb-20">
+                        <div class="w-full max-w-[95%] sm:max-w-xl px-1">
+                            <CountdownTimer />
+                        </div>
+                    </div>
 
-                    <h1 class="text-5xl sm:text-7xl font-black font-heading leading-[1.1] tracking-tight mb-2 pointer-events-none">
+                    <h1 class="text-5xl sm:text-7xl font-black font-heading leading-[1.1] tracking-tight mb-4 pointer-events-none">
                         <span class="text-white block">{{ currentHeroText.title }}</span>
                         <!-- El uso de grid permite superponer la animación sin romper la altura del contenedor -->
-                        <div class="grid">
+                        <div class="grid justify-center lg:justify-start">
                             <transition name="slide-fade">
                                 <span :key="activeSection" class="text-neon-blue block [grid-area:1/1]">
                                     {{ currentHeroText.highlight }}
@@ -337,18 +350,18 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
                         </div>
                     </h1>
 
-                    <p class="text-lg md:text-xl text-gray-300 mb-10 font-light max-w-3xl transition-all duration-500">
+                    <p class="text-xl md:text-2xl text-gray-300 mb-10 font-light max-w-3xl transition-all duration-500 leading-relaxed mx-auto lg:mx-0 px-4 lg:px-0">
                         {{ currentHeroText.subtitle }}
                     </p>
 
-                    <div class="flex flex-wrap gap-4">
-                        <a href="#predict" class="btn-neon text-lg py-3 px-8 group">
+                    <div class="grid grid-cols-2 lg:flex lg:flex-wrap gap-3 sm:gap-4 px-2 lg:px-0">
+                        <a href="#predict" class="btn-neon text-sm sm:text-lg py-3 px-1 sm:px-8 group flex items-center justify-center">
                             <span class="group-hover:scale-105 transition-transform inline-block">Comienza tu quiniela</span>
                         </a>
 
-                        <a href="#live" class="glass-btn text-lg py-3 px-8 flex items-center gap-2">
+                        <a href="#live" class="glass-btn text-sm sm:text-lg py-3 px-1 sm:px-8 flex items-center justify-center gap-2">
                             <span>Ver en vivo</span>
-                            <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
                             </svg>
                         </a>
@@ -423,11 +436,9 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
 
                 <div class="max-w-6xl mx-auto">
                     <div class="grid lg:grid-cols-2 gap-16 items-center">
-                        <div class="reveal slide-right">
-
-
-                            <h2 class="section-title text-left mb-6">Crea tu <span class="text-neon-blue">Quiniela</span></h2>
-                            <p class="text-gray-300 mb-8 text-lg leading-relaxed">
+                        <div class="reveal slide-right text-center lg:text-left">
+                            <h2 class="section-title mb-6">Crea tu <span class="text-neon-blue">Quiniela</span></h2>
+                            <p class="text-gray-300 mb-8 text-lg leading-relaxed max-w-2xl mx-auto lg:mx-0">
                                 Predice los resultados exactos o el ganador de cada partido y acumula puntos. Mientras más precisión, más puntos ganas. ¡Tu posición en el ranking depende de ti!
                             </p>
 
@@ -543,10 +554,21 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
                 <div class="absolute -left-20 top-1/2 -translate-y-1/2 w-64 h-64 bg-red-500/10 rounded-full blur-[100px] pointer-events-none"></div>
 
                 <div class="max-w-6xl mx-auto relative z-10">
-                    <div class="grid lg:grid-cols-12 gap-8 items-start">
-                        <!-- Left side: The Widget Image Card -->
-                        <div class="lg:col-span-4 reveal slide-left">
-                            <div class="glass-panel p-4 rounded-3xl border border-neon-blue/30 shadow-[0_0_30px_rgba(0,212,255,0.15)] relative group">
+                    <!-- Section Title Moved Above the Grid -->
+                    <div class="mb-16 reveal slide-up flex flex-col items-center text-center">
+                        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 font-bold text-xs tracking-widest mb-4">
+                            <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span> EN VIVO
+                        </div>
+                        <h2 class="section-title">
+                            Partidos <span class="text-neon-blue">en Directo</span>
+                        </h2>
+                        <p class="text-gray-400 mt-2 max-w-xl">Sigue la emoción de los encuentros en tiempo real con marcadores actualizados al minuto.</p>
+                    </div>
+
+                    <div class="grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+                        <!-- Left side: The Widget Image Card (Smaller) -->
+                        <div class="lg:col-span-4 lg:col-start-2 reveal slide-left">
+                            <div class="glass-panel p-4 rounded-3xl border border-neon-blue/30 shadow-[0_0_30px_rgba(0,212,255,0.15)] relative group max-w-sm mx-auto">
                                 <div class="absolute inset-0 bg-neon-blue/5 rounded-3xl group-hover:bg-neon-blue/10 transition-colors duration-500"></div>
                                 <img src="/widget.png" alt="Live Widget" class="relative z-10 w-full h-auto rounded-2xl shadow-2xl transition-transform duration-700 group-hover:scale-[1.02]" />
                                 <!-- Animated border/glow -->
@@ -554,17 +576,9 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
                             </div>
                         </div>
 
-                        <!-- Right side: The Table (narrower) -->
-                        <div class="lg:col-span-8 reveal slide-right delay-100">
-                            <!-- Section Title Centered Here -->
-                            <div class="mb-8 reveal slide-up flex flex-col items-center text-center">
-                                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 font-bold text-xs tracking-widest mb-4">
-                                    <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span> EN VIVO
-                                </div>
-                                <h2 class="section-title">
-                                    Partidos <span class="text-neon-blue">en Directo</span>
-                                </h2>
-                            </div>
+                        <!-- Right side: The Table -->
+                        <div class="lg:col-span-7 reveal slide-right delay-100">
+
 
                             <div class="glass-panel overflow-hidden border border-white/10 rounded-2xl shadow-xl">
                                 <table class="w-full text-left border-collapse">
@@ -1044,16 +1058,17 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
 /* Typography styles */
 .section-title {
     font-family: 'Montserrat', sans-serif;
-    font-size: 2.5rem;
+    font-size: 3.25rem;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: -0.02em;
     margin-bottom: 1.5rem;
+    line-height: 1;
 }
 
 @media (min-width: 768px) {
     .section-title {
-        font-size: 3.5rem;
+        font-size: 4.5rem;
     }
 }
 
@@ -1283,5 +1298,17 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
 .fade-up-leave-to {
     opacity: 0;
     transform: translateY(16px);
+}
+
+/* ── Curtain Transition (Mobile Menu) ── */
+.curtain-enter-active,
+.curtain-leave-active {
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.curtain-enter-from,
+.curtain-leave-to {
+    transform: translateY(-100%);
+    opacity: 0;
 }
 </style>

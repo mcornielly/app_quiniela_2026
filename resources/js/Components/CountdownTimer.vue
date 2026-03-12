@@ -44,16 +44,16 @@ onUnmounted(() => {
 
 <template>
     <div
-        class="countdown-widget glass-panel border border-white/10 rounded-2xl shadow-[0_0_30px_rgba(67,97,238,0.15)] inline-flex flex-col md:flex-row items-center gap-4"
-        :class="compact ? 'p-2 pr-4' : 'p-3 pr-5'"
+        class="countdown-widget glass-panel border border-white/10 rounded-2xl shadow-[0_0_30px_rgba(67,97,238,0.15)] flex flex-row items-center gap-3 sm:gap-4 overflow-hidden"
+        :class="compact ? 'p-1.5 px-3' : 'p-2 px-4 sm:p-3 sm:pr-5'"
     >
         <!-- Badge Mundial 2026 + Faltan -->
-        <div class="flex items-center gap-3 border-b md:border-b-0 md:border-r border-white/10 pb-3 md:pb-0 md:pr-4">
-            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neon-blue/10 border border-neon-blue/30">
-                <span class="w-2 h-2 rounded-full bg-neon-blue animate-pulse"></span>
-                <span class="text-xs font-bold text-neon-blue tracking-widest uppercase">Mundial 2026</span>
+        <div class="flex items-center gap-2 sm:gap-3 border-r border-white/10 pr-2 sm:pr-4">
+            <div class="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-neon-blue/10 border border-neon-blue/30 whitespace-nowrap">
+                <span class="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-neon-blue animate-pulse"></span>
+                <span class="text-[10px] sm:text-xs font-bold text-neon-blue tracking-widest uppercase">Mundial 2026</span>
             </div>
-            <span class="text-xs uppercase tracking-widest font-bold text-white hidden sm:block mr-1 mt-0.5">Faltan:</span>
+            <span class="text-[10px] sm:text-xs uppercase tracking-widest font-bold text-white hidden md:block mt-0.5">Faltan:</span>
         </div>
 
         <!-- Dígitos -->
