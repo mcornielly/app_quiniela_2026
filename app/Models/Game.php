@@ -32,6 +32,7 @@ class Game extends Model
         'home_score',
         'away_score',
         'winner_team_id',
+        'result_type',
 
         'status'
     ];

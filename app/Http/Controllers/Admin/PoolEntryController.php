@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
 use App\Models\PoolEntry;
 use App\Models\Tournament;
@@ -50,11 +51,13 @@ class PoolEntryController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => ['required','string','max:255']
-        ]);
+        $this->normalizePoolEntryPayload($request);
 
-        PoolEntry::create($validated);
+        $validated = $this->validatePoolEntry($request);
+
+        $payload = $this->applyPoolEntryDefaults($validated);
+
+        PoolEntry::create($payload);
 
         return redirect()->back()->with('success','PoolEntry created successfully');
     }
@@ -64,11 +67,13 @@ class PoolEntryController extends Controller
      */
     public function update(Request $request, PoolEntry $pool_entry)
     {
-        $validated = $request->validate([
-            'name' => ['required','string','max:255']
-        ]);
+        $this->normalizePoolEntryPayload($request);
 
-        $pool_entry->update($validated);
+        $validated = $this->validatePoolEntry($request, $pool_entry);
+
+        $payload = $this->applyPoolEntryDefaults($validated, $pool_entry);
+
+        $pool_entry->update($payload);
 
         return redirect()->back()->with('success','PoolEntry updated successfully');
     }
@@ -98,5 +103,51 @@ class PoolEntryController extends Controller
         return back()->with([
             'success' => "$deleted pool_entries deleted successfully"
         ]);
+    }
+
+    private function validatePoolEntry(Request $request, ?PoolEntry $poolEntry = null): array
+    {
+        return $request->validate([
+            'tournament_id' => ['required', 'exists:tournaments,id'],
+            'user_id' => [
+                'required',
+                'exists:users,id',
+                Rule::unique('pool_entries', 'user_id')
+                    ->ignore($poolEntry?->id)
+                    ->where(fn ($query) => $query->where('tournament_id', $request->input('tournament_id')))
+            ],
+            'name' => ['required', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'max:50'],
+            'completion_percent' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'total_points' => ['nullable', 'integer', 'min:0'],
+            'paid_at' => ['nullable', 'date'],
+            'payment_ref' => ['nullable', 'string', 'max:255'],
+        ]);
+    }
+
+    private function normalizePoolEntryPayload(Request $request): void
+    {
+        $nullableFields = [
+            'status',
+            'completion_percent',
+            'total_points',
+            'paid_at',
+            'payment_ref',
+        ];
+
+        foreach ($nullableFields as $field) {
+            if ($request->has($field) && $request->input($field) === '') {
+                $request->merge([$field => null]);
+            }
+        }
+    }
+
+    private function applyPoolEntryDefaults(array $data, ?PoolEntry $poolEntry = null): array
+    {
+        $data['status'] = $data['status'] ?? ($poolEntry?->status ?? 'draft');
+        $data['completion_percent'] = $data['completion_percent'] ?? 0;
+        $data['total_points'] = $data['total_points'] ?? 0;
+
+        return $data;
     }
 }

@@ -14,8 +14,13 @@ class PredictionScoringService
             return;
         }
 
-        // $predictions = $game->predictions()->with('poolEntry')->get();
         $predictions = $game->predictions()->get();
+
+        if ($predictions->isEmpty()) {
+            return;
+        }
+
+        $affectedEntries = [];
 
         foreach ($predictions as $prediction) {
 
@@ -26,51 +31,47 @@ class PredictionScoringService
                 'points' => $points
             ]);
 
-            /*
-            |--------------------------------------------------------------------------
-            | Recalculate pool entry total points
-            |--------------------------------------------------------------------------
-            */
-
-            // $entry = $prediction->poolEntry;
-
-            // if ($entry) {
-            //     $entry->update([
-            //         'total_points' => $entry->predictions()->sum('points')
-            //     ]);
-            // }
-            // recalcular leaderboard una sola vez
-            $this->recalculatePoolEntries($game->tournament_id);
+            $affectedEntries[] = $prediction->pool_entry_id;
         }
+
+        $this->recalculatePoolEntries($affectedEntries);
     }
 
-    private function recalculatePoolEntries($tournamentId)
+    private function recalculatePoolEntries(array $entryIds)
     {
+        $entryIds = array_values(array_unique(array_filter($entryIds)));
+
+        if (empty($entryIds)) {
+            return;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($entryIds), '?'));
+
         DB::statement("
-            UPDATE pool_entries e
+            UPDATE pool_entries
             SET
                 total_points = (
                     SELECT COALESCE(SUM(p.points),0)
                     FROM predictions p
-                    WHERE p.pool_entry_id = e.id
+                    WHERE p.pool_entry_id = pool_entries.id
                 ),
 
                 exact_hits = (
                     SELECT COUNT(*)
                     FROM predictions p
-                    WHERE p.pool_entry_id = e.id
+                    WHERE p.pool_entry_id = pool_entries.id
                     AND p.points = 5
                 ),
 
                 correct_results = (
                     SELECT COUNT(*)
                     FROM predictions p
-                    WHERE p.pool_entry_id = e.id
+                    WHERE p.pool_entry_id = pool_entries.id
                     AND p.points = 3
                 )
 
-            WHERE e.tournament_id = ?
-        ", [$tournamentId]);
+            WHERE id IN ($placeholders)
+        ", $entryIds);
     }
 
     private function calculatePoints(Game $game, Prediction $prediction)
