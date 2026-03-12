@@ -295,20 +295,28 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
         </header>
 
         <!-- HERO BANNER -->
-        <section id="hero" class="relative min-h-screen flex items-center pt-20 z-10 overflow-hidden isolate h-[750px]">
-            <!-- Hero Background Image - tamaño real, sin estirar -->
-            <div class="absolute inset-0 z-[-2] flex justify-end items-start w-full">
-                <img
-                    src="/hero_bg_color.jpeg"
-                    alt="Hero Background"
-                    class="h-[800px] w-auto max-w-none object-contain object-right"
-                    style="margin-top: 78px;"
-                />
+        <section id="hero" class="relative min-h-screen flex items-center pt-20 z-10 overflow-hidden isolate h-[750px] bg-[#0b0714]">
+            <!-- Fondo degradado base (azul oscuro profundo) para móviles y base visual -->
+            <div class="absolute inset-0 z-[-3] bg-gradient-to-br from-[#0b0714] via-[#060b28] to-[#0b0714]"></div>
+
+            <!-- Hero Background Image - visible solo en pantallas grandes para mejor UX móvil -->
+            <div class="absolute inset-0 z-[-2] hidden lg:flex justify-end items-start w-full">
+                <div class="relative h-full flex justify-end overflow-hidden">
+                    <!-- Overlay degradado sutil para fusionar el borde izquierdo de la imagen -->
+                    <div class="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-[#0b0714] to-transparent z-10"></div>
+                    
+                    <img
+                        src="/hero_bg_color.jpeg"
+                        alt="Hero Background"
+                        class="h-[800px] w-auto max-w-none object-contain object-right"
+                        style="margin-top: 78px;"
+                    />
+                </div>
             </div>
 
-            <!-- Gradient Overlay - ajustado para no cubrir toda la imagen -->
-            <div class="absolute inset-0 bg-gradient-to-r from-bg-base via-bg-base/80 to-transparent z-[-1]"></div>
-            <div class="absolute inset-0 bg-gradient-to-t from-bg-base via-transparent to-transparent z-[-1]"></div>
+            <!-- Gradient Overlays - fusionan el contenido con el fondo solo hasta la mitad -->
+            <div class="absolute inset-0 bg-gradient-to-r from-[#0b0714] via-[#0b0714] to-transparent to-70% z-[-1]"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-[#0b0714] via-transparent to-transparent z-[-1]"></div>
             <div class="absolute inset-0 bg-pattern opacity-10 mix-blend-overlay z-[-1]"></div>
 
             <!-- Contenido (se mantiene igual) -->
