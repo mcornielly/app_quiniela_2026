@@ -275,17 +275,23 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
         </header>
 
         <!-- HERO BANNER -->
-        <section id="hero" class="relative min-h-screen flex items-center pt-20 z-10 overflow-hidden isolate">
-            <!-- Hero Background Image & Overlays -->
-            <div class="absolute inset-0 z-[-2]">
-                <img src="/hero_bg_football.png" alt="Hero Background" class="w-full h-full object-cover object-center scale-105 animate-slow-zoom" />
+        <section id="hero" class="relative min-h-screen flex items-center pt-20 z-10 overflow-hidden isolate h-[750px]">
+            <!-- Hero Background Image - tamaño real, sin estirar -->
+            <div class="absolute inset-0 z-[-2] flex justify-end items-start w-full">
+                <img
+                    src="/hero_bg_color.jpeg"
+                    alt="Hero Background"
+                    class="h-[800px] w-auto max-w-none object-contain object-right"
+                    style="margin-top: 78px;"
+                />
             </div>
 
-            <!-- Gradient Overlay -->
-            <div class="absolute inset-0 bg-gradient-to-r from-bg-base/95 via-bg-base/80 to-transparent z-[-1]"></div>
+            <!-- Gradient Overlay - ajustado para no cubrir toda la imagen -->
+            <div class="absolute inset-0 bg-gradient-to-r from-bg-base via-bg-base/80 to-transparent z-[-1]"></div>
             <div class="absolute inset-0 bg-gradient-to-t from-bg-base via-transparent to-transparent z-[-1]"></div>
             <div class="absolute inset-0 bg-pattern opacity-10 mix-blend-overlay z-[-1]"></div>
 
+            <!-- Contenido (se mantiene igual) -->
             <div class="max-w-7xl mx-auto px-6 w-full relative">
                 <div class="max-w-2xl reveal slide-right delay-100">
                     <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-panel border border-neon-blue/30 mb-6 group">
@@ -357,6 +363,7 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
                 </div>
             </div>
         </div>
+
 
         <!-- MAIN CONTENT WRAPPER -->
         <main class="relative z-10">
@@ -956,5 +963,29 @@ const toggleMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value
 
 .animate-slow-zoom {
     animation: slow-zoom 20s infinite alternate ease-in-out;
+}
+
+/* Ajustes para el contador dentro del hero */
+#hero .countdown-box {
+    padding: 8px 12px;
+    min-width: 60px;
+}
+
+#hero .countdown-box .number {
+    font-size: 1.5rem;
+}
+
+@media (max-width: 640px) {
+    #hero .absolute.bottom-10 {
+        bottom: 20px;
+    }
+
+    #hero .countdown-box .number {
+        font-size: 1.25rem;
+    }
+
+    #hero .countdown-box .label {
+        font-size: 0.6rem;
+    }
 }
 </style>
