@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
 use App\Models\PoolEntry;
 use App\Models\Tournament;
@@ -19,7 +18,7 @@ class PoolEntryController extends Controller
     {
         $search = request('search');
 
-        $pool_entries = PoolEntry::query()
+        $poolEntries = PoolEntry::query()
             ->with(['tournament','user'])
             ->when($search, function ($query) use ($search) {
 
@@ -40,7 +39,7 @@ class PoolEntryController extends Controller
 
         return Inertia::render('Admin/PoolEntries/Index', [
             'filters' => request()->only('search'),
-            'pool_entries' => $pool_entries,
+            'poolEntries' => $poolEntries,
             'tournaments' => $tournaments,
             'users' => $users,
         ]);
@@ -69,7 +68,7 @@ class PoolEntryController extends Controller
     {
         $this->normalizePoolEntryPayload($request);
 
-        $validated = $this->validatePoolEntry($request, $pool_entry);
+        $validated = $this->validatePoolEntry($request);
 
         $payload = $this->applyPoolEntryDefaults($validated, $pool_entry);
 
@@ -101,20 +100,17 @@ class PoolEntryController extends Controller
         $deleted = PoolEntry::whereIn('id', $validated['ids'])->delete();
 
         return back()->with([
-            'success' => "$deleted pool_entries deleted successfully"
+            'success' => "$deleted pool entries deleted successfully"
         ]);
     }
 
-    private function validatePoolEntry(Request $request, ?PoolEntry $poolEntry = null): array
+    private function validatePoolEntry(Request $request): array
     {
         return $request->validate([
             'tournament_id' => ['required', 'exists:tournaments,id'],
             'user_id' => [
                 'required',
                 'exists:users,id',
-                Rule::unique('pool_entries', 'user_id')
-                    ->ignore($poolEntry?->id)
-                    ->where(fn ($query) => $query->where('tournament_id', $request->input('tournament_id')))
             ],
             'name' => ['required', 'string', 'max:255'],
             'status' => ['nullable', 'string', 'max:50'],

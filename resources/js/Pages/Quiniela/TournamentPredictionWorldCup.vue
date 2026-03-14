@@ -22,7 +22,7 @@ const props = defineProps({
 })
 
 const page = usePage()
-const saveForm = useForm({
+const poolEntryForm = useForm({
     tournament_id: props.tournament.id,
     predictions: [],
 })
@@ -126,7 +126,7 @@ const progress = computed(() => {
     }
 })
 
-const completedPredictions = computed(() => {
+const predictionPayloads = computed(() => {
     return props.games
         .filter((game) => isGameFilled(game.id))
         .map((game) => ({
@@ -136,11 +136,11 @@ const completedPredictions = computed(() => {
         }))
 })
 
-const canSubmitQuiniela = computed(() => {
+const canSubmitPoolEntry = computed(() => {
     return progress.value.total > 0 && progress.value.filled === progress.value.total
 })
 
-const createdPoolEntry = computed(() => page.props.flash?.pool_entry_created ?? null)
+const createdPoolEntry = computed(() => page.props.flash?.created_pool_entry ?? null)
 const flashError = computed(() => page.props.flash?.error ?? null)
 
 const stageProgress = computed(() => {
@@ -317,14 +317,14 @@ const goToNextStage = () => {
     }
 }
 
-const submitQuiniela = () => {
-    if (!canSubmitQuiniela.value || saveForm.processing) {
+const submitPoolEntry = () => {
+    if (!canSubmitPoolEntry.value || poolEntryForm.processing) {
         return
     }
 
-    saveForm.transform(() => ({
+    poolEntryForm.transform(() => ({
         tournament_id: props.tournament.id,
-        predictions: completedPredictions.value,
+        predictions: predictionPayloads.value,
     })).post(route('pools.store'), {
         preserveScroll: true,
     })
@@ -351,7 +351,7 @@ watch(
         <div class="space-y-8 pb-16">
             <PredictionSuccessCard
                 v-if="createdPoolEntry"
-                :entry="createdPoolEntry"
+                :pool-entry="createdPoolEntry"
             />
 
             <section class="overflow-hidden rounded-3xl border border-cyan-400/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_transparent_32%),linear-gradient(135deg,_rgba(2,6,23,0.98),_rgba(15,23,42,0.96))] p-6 shadow-xl shadow-cyan-950/20 md:p-8">
@@ -407,11 +407,11 @@ watch(
 
                     <button
                         type="button"
-                        @click="submitQuiniela"
-                        :disabled="!canSubmitQuiniela || saveForm.processing"
+                        @click="submitPoolEntry"
+                        :disabled="!canSubmitPoolEntry || poolEntryForm.processing"
                         class="inline-flex min-w-[220px] items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-400/10 px-5 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        {{ saveForm.processing ? 'Registrando quiniela...' : 'Registrar quiniela' }}
+                        {{ poolEntryForm.processing ? 'Registrando quiniela...' : 'Registrar quiniela' }}
                     </button>
                 </div>
             </section>

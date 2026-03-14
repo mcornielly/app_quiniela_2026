@@ -17,32 +17,32 @@ class PoolEntryController extends Controller
 {
     public function index(Request $request): Response
     {
-        $entries = PoolEntry::query()
+        $poolEntries = PoolEntry::query()
             ->with('tournament:id,name,year')
             ->where('user_id', $request->user()->id)
             ->latest()
             ->get()
-            ->map(function (PoolEntry $entry) {
+            ->map(function (PoolEntry $poolEntry) {
                 return [
-                    'id' => $entry->id,
-                    'registration_number' => $entry->id,
-                    'name' => $entry->name,
-                    'status' => $entry->status,
-                    'completion_percent' => $entry->completion_percent,
-                    'total_points' => $entry->total_points,
-                    'exact_hits' => $entry->exact_hits,
-                    'correct_results' => $entry->correct_results,
-                    'created_at' => $entry->created_at?->format('d/m/Y H:i'),
+                    'id' => $poolEntry->id,
+                    'registrationNumber' => $poolEntry->id,
+                    'name' => $poolEntry->name,
+                    'status' => $poolEntry->status,
+                    'completionPercent' => $poolEntry->completion_percent,
+                    'totalPoints' => $poolEntry->total_points,
+                    'exactHits' => $poolEntry->exact_hits,
+                    'correctResults' => $poolEntry->correct_results,
+                    'createdAt' => $poolEntry->created_at?->format('d/m/Y H:i'),
                     'tournament' => [
-                        'id' => $entry->tournament?->id,
-                        'name' => $entry->tournament?->name,
-                        'year' => $entry->tournament?->year,
+                        'id' => $poolEntry->tournament?->id,
+                        'name' => $poolEntry->tournament?->name,
+                        'year' => $poolEntry->tournament?->year,
                     ],
                 ];
             });
 
         return Inertia::render('Pools/Index', [
-            'entries' => $entries,
+            'poolEntries' => $poolEntries,
         ]);
     }
 
@@ -64,9 +64,9 @@ class PoolEntryController extends Controller
         $user = $request->user();
         $tournament = Tournament::query()->findOrFail($validated['tournament_id']);
 
-        /** @var \Illuminate\Support\Collection<int, array<string, int>> $submittedPredictions */
-        $submittedPredictions = collect($validated['predictions']);
-        $gameIds = $submittedPredictions->pluck('game_id')->all();
+        /** @var \Illuminate\Support\Collection<int, array<string, int>> $predictionPayloads */
+        $predictionPayloads = collect($validated['predictions']);
+        $gameIds = $predictionPayloads->pluck('game_id')->all();
 
         $games = Game::query()
             ->with(['homeTeam:id,name', 'awayTeam:id,name'])
@@ -94,8 +94,8 @@ class PoolEntryController extends Controller
         }
 
         try {
-            $createdEntry = DB::transaction(function () use ($user, $tournament, $submittedPredictions, $games) {
-                $entry = PoolEntry::query()->create([
+            $poolEntry = DB::transaction(function () use ($user, $tournament, $predictionPayloads, $games) {
+                $poolEntry = PoolEntry::query()->create([
                     'tournament_id' => $tournament->id,
                     'user_id' => $user->id,
                     'name' => 'Quiniela en registro',
@@ -103,8 +103,8 @@ class PoolEntryController extends Controller
                     'completion_percent' => 100,
                 ]);
 
-                $entry->predictions()->createMany(
-                    $submittedPredictions
+                $poolEntry->predictions()->createMany(
+                    $predictionPayloads
                         ->map(function (array $prediction) use ($games) {
                             /** @var \App\Models\Game $game */
                             $game = $games->get($prediction['game_id']);
@@ -120,11 +120,11 @@ class PoolEntryController extends Controller
                         ->all()
                 );
 
-                $entry->forceFill([
-                    'name' => "Quiniela #{$entry->id}",
+                $poolEntry->forceFill([
+                    'name' => "Quiniela #{$poolEntry->id}",
                 ])->save();
 
-                return $entry->fresh(['predictions', 'tournament']);
+                return $poolEntry->fresh(['predictions', 'tournament']);
             });
         } catch (Throwable $exception) {
             report($exception);
@@ -137,25 +137,25 @@ class PoolEntryController extends Controller
         return redirect()
             ->route('predictions.worldcup')
             ->with('success', 'La quiniela fue registrada exitosamente.')
-            ->with('pool_entry_created', $this->buildCreatedEntryPayload($createdEntry, $games, $submittedPredictions));
+            ->with('created_pool_entry', $this->buildCreatedPoolEntryPayload($poolEntry, $games, $predictionPayloads));
     }
 
-    private function buildCreatedEntryPayload(PoolEntry $entry, Collection $games, Collection $submittedPredictions): array
+    private function buildCreatedPoolEntryPayload(PoolEntry $poolEntry, Collection $games, Collection $predictionPayloads): array
     {
         $finalGame = $games->firstWhere('stage', 'final');
         $finalPrediction = $finalGame
-            ? $submittedPredictions->firstWhere('game_id', $finalGame->id)
+            ? $predictionPayloads->firstWhere('game_id', $finalGame->id)
             : null;
 
         return [
-            'id' => $entry->id,
-            'registration_number' => $entry->id,
-            'name' => $entry->name,
-            'status' => $entry->status,
-            'completion_percent' => $entry->completion_percent,
-            'tournament_name' => $entry->tournament?->name,
-            'champion_name' => $this->resolveChampionName($finalGame, $finalPrediction),
-            'created_at' => $entry->created_at?->format('d/m/Y H:i'),
+            'id' => $poolEntry->id,
+            'registrationNumber' => $poolEntry->id,
+            'name' => $poolEntry->name,
+            'status' => $poolEntry->status,
+            'completionPercent' => $poolEntry->completion_percent,
+            'tournamentName' => $poolEntry->tournament?->name,
+            'predictedChampionName' => $this->resolveChampionName($finalGame, $finalPrediction),
+            'createdAt' => $poolEntry->created_at?->format('d/m/Y H:i'),
         ];
     }
 

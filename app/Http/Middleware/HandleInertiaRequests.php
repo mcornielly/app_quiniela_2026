@@ -37,7 +37,7 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
-                'pool_entry_created' => fn () => $request->session()->get('pool_entry_created'),
+                'created_pool_entry' => fn () => $request->session()->get('created_pool_entry'),
             ],
         ];
     }
