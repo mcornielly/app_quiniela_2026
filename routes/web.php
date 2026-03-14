@@ -134,6 +134,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/quiniela/leaderboard', fn() => Inertia::render('Leaderboard'))->name('leaderboard');
     Route::get('/quiniela/predictions', fn() => Inertia::render('Predictions/Index'))->name('predictions.index');
     Route::get('/quiniela/world-cup-template', QuinielaWorldCupController::class)->name('predictions.worldcup');
+    Route::get('/pools', [PoolEntryController::class, 'index'])->name('pools.index');
+    Route::post('/pools', [PoolEntryController::class, 'store'])->name('pools.store');
     
     // Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
     // Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');

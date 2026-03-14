@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Prediction extends Model
 {
@@ -22,17 +23,12 @@ class Prediction extends Model
         'points' => 'integer',
     ];
 
-    public function entry()
-    {
-        return $this->belongsTo(PoolEntry::class, 'pool_entry_id');
-    }
-
-    public function game()
+    public function game(): BelongsTo
     {
         return $this->belongsTo(Game::class);
     }
 
-    public function poolEntry()
+    public function poolEntry(): BelongsTo
     {
         return $this->belongsTo(PoolEntry::class);
     }

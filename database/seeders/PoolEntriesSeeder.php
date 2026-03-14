@@ -2,36 +2,51 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\PoolEntry;
-use Illuminate\Support\Str;
+use App\Models\Tournament;
+use App\Models\User;
+use Illuminate\Database\Seeder;
 
 class PoolEntriesSeeder extends Seeder
 {
     public function run(): void
     {
-        $tournamentId = 1;
+        $tournament = Tournament::query()->first();
 
-        for ($userId = 1; $userId <= 20; $userId++) {
+        if (!$tournament) {
+            return;
+        }
 
-            PoolEntry::create([
-                'tournament_id' => $tournamentId,
-                'user_id' => $userId,
-                'name' => "User {$userId} Pool",
-                'status' => 'active',
-                'completion_percent' => rand(60, 100),
-                'exact_hits' => 0,
-                'correct_results' => 0,
-                'total_points' => 0,
+        $users = User::query()
+            ->where('is_admin', false)
+            ->orderBy('id')
+            ->take(20)
+            ->get();
 
-                // payment simulation
-                'entry_fee' => 15,
-                'paid_at' => now()->subDays(rand(1,10)),
-                'payment_ref' => '000000' . rand(1000,9999),
+        foreach ($users as $index => $user) {
+            $entriesToCreate = $index < 6 ? 2 : 1;
 
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
+            for ($entryNumber = 1; $entryNumber <= $entriesToCreate; $entryNumber++) {
+                $completionPercent = $entryNumber === 1 ? 100 : fake()->numberBetween(72, 100);
+
+                PoolEntry::query()->firstOrCreate(
+                    [
+                        'tournament_id' => $tournament->id,
+                        'user_id' => $user->id,
+                        'name' => "User {$user->id} Pool #{$entryNumber}",
+                    ],
+                    [
+                        'status' => 'complete',
+                        'completion_percent' => $completionPercent,
+                        'exact_hits' => 0,
+                        'correct_results' => 0,
+                        'total_points' => 0,
+                        'entry_fee' => 15,
+                        'paid_at' => now()->subDays(fake()->numberBetween(1, 10)),
+                        'payment_ref' => '000000' . fake()->numberBetween(1000, 9999),
+                    ]
+                );
+            }
         }
     }
 }

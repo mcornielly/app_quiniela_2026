@@ -1,9 +1,10 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
-import { Head } from '@inertiajs/vue3'
+import { Head, useForm, usePage } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import StandingWidget from '@/Components/Quiniela/StandingsWidget.vue'
 import WorldCupMatchCard from '@/Components/Quiniela/WorldCupMatchCard.vue'
+import PredictionSuccessCard from '@/Components/Quiniela/PredictionSuccessCard.vue'
 
 const props = defineProps({
     tournament: {
@@ -18,6 +19,12 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+})
+
+const page = usePage()
+const saveForm = useForm({
+    tournament_id: props.tournament.id,
+    predictions: [],
 })
 
 const stageDefinitions = [
@@ -118,6 +125,23 @@ const progress = computed(() => {
         percentage: total === 0 ? 0 : Math.round((filled / total) * 100),
     }
 })
+
+const completedPredictions = computed(() => {
+    return props.games
+        .filter((game) => isGameFilled(game.id))
+        .map((game) => ({
+            game_id: game.id,
+            home_score: predictions[game.id].home,
+            away_score: predictions[game.id].away,
+        }))
+})
+
+const canSubmitQuiniela = computed(() => {
+    return progress.value.total > 0 && progress.value.filled === progress.value.total
+})
+
+const createdPoolEntry = computed(() => page.props.flash?.pool_entry_created ?? null)
+const flashError = computed(() => page.props.flash?.error ?? null)
 
 const stageProgress = computed(() => {
     return stageDefinitions.map((stage, index) => {
@@ -293,6 +317,19 @@ const goToNextStage = () => {
     }
 }
 
+const submitQuiniela = () => {
+    if (!canSubmitQuiniela.value || saveForm.processing) {
+        return
+    }
+
+    saveForm.transform(() => ({
+        tournament_id: props.tournament.id,
+        predictions: completedPredictions.value,
+    })).post(route('pools.store'), {
+        preserveScroll: true,
+    })
+}
+
 watch(
     currentStage,
     (stage) => {
@@ -312,6 +349,11 @@ watch(
         <Head :title="`Quiniela Mundial ${tournament.year ?? ''}`" />
 
         <div class="space-y-8 pb-16">
+            <PredictionSuccessCard
+                v-if="createdPoolEntry"
+                :entry="createdPoolEntry"
+            />
+
             <section class="overflow-hidden rounded-3xl border border-cyan-400/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_transparent_32%),linear-gradient(135deg,_rgba(2,6,23,0.98),_rgba(15,23,42,0.96))] p-6 shadow-xl shadow-cyan-950/20 md:p-8">
                 <div class="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
                     <div class="max-w-3xl">
@@ -349,6 +391,28 @@ watch(
                             />
                         </div>
                     </div>
+                </div>
+
+                <div v-if="flashError" class="mt-6 rounded-2xl border border-rose-300/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+                    {{ flashError }}
+                </div>
+
+                <div class="mt-6 flex flex-col gap-4 rounded-3xl border border-white/10 bg-black/20 p-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Registro final</p>
+                        <p class="mt-2 text-sm leading-6 text-slate-300">
+                            Cuando completes los {{ progress.total }} partidos, guardaremos la quiniela en tu cuenta y el numero de registro sera el ID unico de esa inscripcion.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        @click="submitQuiniela"
+                        :disabled="!canSubmitQuiniela || saveForm.processing"
+                        class="inline-flex min-w-[220px] items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-400/10 px-5 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {{ saveForm.processing ? 'Registrando quiniela...' : 'Registrar quiniela' }}
+                    </button>
                 </div>
             </section>
 
