@@ -46,6 +46,9 @@ const hiddenFlags = ref({})
 const teamKey = (team, slot) => team?.id || team?.code || slot || 'unknown'
 const flagSrc = (team) => team?.flag_url || imageUrl(team?.flag_path)
 const shouldShowFlag = (team, slot) => Boolean(flagSrc(team)) && !hiddenFlags.value[teamKey(team, slot)]
+const flagClass = (team) => team?.is_special_slot
+    ? 'h-[42px] w-14 rounded-lg object-contain bg-white shadow-lg shadow-black/30'
+    : 'h-[42px] w-14 rounded-lg object-cover shadow-lg shadow-black/30'
 const hideFlag = (team, slot) => {
     hiddenFlags.value = {
         ...hiddenFlags.value,
@@ -78,7 +81,7 @@ const hideFlag = (team, slot) => {
                     v-if="shouldShowFlag(match.home_team, match.home_slot)"
                     :src="flagSrc(match.home_team)"
                     :alt="teamLabel(match.home_team, match.home_slot)"
-                    class="h-[42px] w-14 rounded-lg object-contain bg-white shadow-lg shadow-black/30"
+                    :class="flagClass(match.home_team)"
                     @error="hideFlag(match.home_team, match.home_slot)"
                 >
                 <div
@@ -120,7 +123,7 @@ const hideFlag = (team, slot) => {
                     v-if="shouldShowFlag(match.away_team, match.away_slot)"
                     :src="flagSrc(match.away_team)"
                     :alt="teamLabel(match.away_team, match.away_slot)"
-                    class="h-[42px] w-14 rounded-lg object-contain bg-white shadow-lg shadow-black/30"
+                    :class="flagClass(match.away_team)"
                     @error="hideFlag(match.away_team, match.away_slot)"
                 >
                 <div
