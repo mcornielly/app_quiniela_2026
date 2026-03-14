@@ -14,26 +14,24 @@ import { notifySuccess, notifyError } from '@/Utils/notify'
 const page = usePage()
 
 const props = defineProps({
-    pool_entry: Object,
-        tournaments: Array,
+    poolEntry: Object,
+    tournaments: Array,
     users: Array,
-
 })
 
 const emit = defineEmits(['close'])
 
-const isEdit = !!props.pool_entry
+const isEdit = !!props.poolEntry
 
-const form = ref({
-        tournament_id: props.pool_entry?.tournament_id || '',
-    user_id: props.pool_entry?.user_id || '',
-    name: props.pool_entry?.name || '',
-    status: props.pool_entry?.status || '',
-    completion_percent: props.pool_entry?.completion_percent || '',
-    total_points: props.pool_entry?.total_points || '',
-    paid_at: props.pool_entry?.paid_at || '',
-    payment_ref: props.pool_entry?.payment_ref || '',
-
+const poolEntryForm = ref({
+    tournament_id: props.poolEntry?.tournament_id || '',
+    user_id: props.poolEntry?.user_id || '',
+    name: props.poolEntry?.name || '',
+    status: props.poolEntry?.status || '',
+    completion_percent: props.poolEntry?.completion_percent || '',
+    total_points: props.poolEntry?.total_points || '',
+    paid_at: props.poolEntry?.paid_at || '',
+    payment_ref: props.poolEntry?.payment_ref || '',
 })
 
 const submit = () => {
@@ -52,14 +50,14 @@ const submit = () => {
 
     if (isEdit) {
         router.put(
-            route('admin.pool_entries.update', props.pool_entry.id),
-            form.value,
+            route('admin.pool_entries.update', props.poolEntry.id),
+            poolEntryForm.value,
             options
         )
     } else {
         router.post(
             route('admin.pool_entries.store'),
-            form.value,
+            poolEntryForm.value,
             options
         )
     }
@@ -70,37 +68,37 @@ const submit = () => {
     <form @submit.prevent="submit" class="space-y-4">
         
                     <SelectInput
-                        v-model="form.tournament_id"
+                        v-model="poolEntryForm.tournament_id"
                         label="Tournament"
                         :options="tournaments"
                     />
                     <SelectInput
-                        v-model="form.user_id"
+                        v-model="poolEntryForm.user_id"
                         label="User"
                         :options="users"
                     />
                     <TextInput
-                        v-model="form.name"
+                        v-model="poolEntryForm.name"
                         label="Name"
                     />
                     <TextInput
-                        v-model="form.status"
+                        v-model="poolEntryForm.status"
                         label="Status"
                     />
                     <TextInput
-                        v-model="form.completion_percent"
+                        v-model="poolEntryForm.completion_percent"
                         label="Completion Percent"
                     />
                     <TextInput
-                        v-model="form.total_points"
+                        v-model="poolEntryForm.total_points"
                         label="Total Points"
                     />
                     <TextInput
-                        v-model="form.paid_at"
+                        v-model="poolEntryForm.paid_at"
                         label="Paid At"
                     />
                     <TextInput
-                        v-model="form.payment_ref"
+                        v-model="poolEntryForm.payment_ref"
                         label="Payment Ref"
                     />
 

@@ -2,7 +2,7 @@
 import { Link } from '@inertiajs/vue3'
 
 defineProps({
-    entry: {
+    poolEntry: {
         type: Object,
         required: true,
     },
@@ -45,30 +45,30 @@ const confettiPieces = Array.from({ length: 24 }, (_, index) => ({
                     Tu quiniela ya quedo lista
                 </h2>
                 <p class="mt-3 text-sm leading-6 text-slate-300 sm:text-base">
-                    Registro <span class="font-bold text-white">#{{ entry.registration_number }}</span>
-                    generado con exito para {{ entry.tournament_name }}.
+                    Registro <span class="font-bold text-white">#{{ poolEntry.registrationNumber }}</span>
+                    generado con exito para {{ poolEntry.tournamentName }}.
                 </p>
             </div>
 
             <div class="mt-8 grid gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 sm:grid-cols-3">
                 <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Numero unico</p>
-                    <p class="mt-2 text-2xl font-black text-white">#{{ entry.registration_number }}</p>
+                    <p class="mt-2 text-2xl font-black text-white">#{{ poolEntry.registrationNumber }}</p>
                 </div>
                 <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Estado</p>
-                    <p class="mt-2 text-2xl font-black capitalize text-emerald-300">{{ entry.status }}</p>
+                    <p class="mt-2 text-2xl font-black capitalize text-emerald-300">{{ poolEntry.status }}</p>
                 </div>
                 <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Completado</p>
-                    <p class="mt-2 text-2xl font-black text-cyan-300">{{ entry.completion_percent }}%</p>
+                    <p class="mt-2 text-2xl font-black text-cyan-300">{{ poolEntry.completionPercent }}%</p>
                 </div>
             </div>
 
             <div class="mt-6 rounded-3xl border border-amber-300/20 bg-amber-300/10 p-5">
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200/80">Tu campeon pronosticado</p>
                 <p class="mt-2 text-2xl font-black text-white">
-                    {{ entry.champion_name || 'Por definirse en la final de tu quiniela' }}
+                    {{ poolEntry.predictedChampionName || 'Por definirse en la final de tu quiniela' }}
                 </p>
                 <p class="mt-2 text-sm text-slate-300">
                     Guarda este numero de registro para identificar esta quiniela entre todas tus participaciones.

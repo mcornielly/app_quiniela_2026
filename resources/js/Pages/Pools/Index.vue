@@ -3,7 +3,7 @@ import { Head, Link } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 
 defineProps({
-    entries: {
+    poolEntries: {
         type: Array,
         default: () => [],
     },
@@ -44,18 +44,18 @@ const statusClasses = {
             <section class="grid gap-4 md:grid-cols-3">
                 <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                     <p class="text-sm text-gray-500">Quinielas registradas</p>
-                    <p class="mt-2 text-3xl font-black text-gray-900">{{ entries.length }}</p>
+                    <p class="mt-2 text-3xl font-black text-gray-900">{{ poolEntries.length }}</p>
                 </div>
                 <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                     <p class="text-sm text-gray-500">Puntaje total acumulado</p>
                     <p class="mt-2 text-3xl font-black text-gray-900">
-                        {{ entries.reduce((sum, entry) => sum + (entry.total_points || 0), 0) }}
+                        {{ poolEntries.reduce((sum, poolEntry) => sum + (poolEntry.totalPoints || 0), 0) }}
                     </p>
                 </div>
                 <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                     <p class="text-sm text-gray-500">Completadas</p>
                     <p class="mt-2 text-3xl font-black text-gray-900">
-                        {{ entries.filter((entry) => entry.status === 'complete').length }}
+                        {{ poolEntries.filter((poolEntry) => poolEntry.status === 'complete').length }}
                     </p>
                 </div>
             </section>
@@ -65,7 +65,7 @@ const statusClasses = {
                     <h2 class="text-lg font-semibold text-gray-900">Listado de quinielas</h2>
                 </div>
 
-                <div v-if="entries.length === 0" class="px-6 py-12 text-center">
+                <div v-if="poolEntries.length === 0" class="px-6 py-12 text-center">
                     <p class="text-lg font-semibold text-gray-900">Aun no has registrado quinielas.</p>
                     <p class="mt-2 text-sm text-gray-600">
                         Completa tu primera quiniela del Mundial y aqui aparecera con su numero de registro y puntaje.
@@ -86,24 +86,24 @@ const statusClasses = {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 bg-white">
-                            <tr v-for="entry in entries" :key="entry.id" class="hover:bg-gray-50">
-                                <td class="px-6 py-4 font-bold text-gray-900">#{{ entry.registration_number }}</td>
-                                <td class="px-6 py-4 text-gray-700">{{ entry.name }}</td>
+                            <tr v-for="poolEntry in poolEntries" :key="poolEntry.id" class="hover:bg-gray-50">
+                                <td class="px-6 py-4 font-bold text-gray-900">#{{ poolEntry.registrationNumber }}</td>
+                                <td class="px-6 py-4 text-gray-700">{{ poolEntry.name }}</td>
                                 <td class="px-6 py-4 text-gray-700">
-                                    {{ entry.tournament?.name }}
-                                    <span v-if="entry.tournament?.year" class="text-gray-400">({{ entry.tournament.year }})</span>
+                                    {{ poolEntry.tournament?.name }}
+                                    <span v-if="poolEntry.tournament?.year" class="text-gray-400">({{ poolEntry.tournament.year }})</span>
                                 </td>
                                 <td class="px-6 py-4">
                                     <span
-                                        :class="statusClasses[entry.status] || 'bg-gray-100 text-gray-700'"
+                                        :class="statusClasses[poolEntry.status] || 'bg-gray-100 text-gray-700'"
                                         class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
                                     >
-                                        {{ entry.status }}
+                                        {{ poolEntry.status }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-gray-700">{{ entry.completion_percent }}%</td>
-                                <td class="px-6 py-4 text-lg font-bold text-gray-900">{{ entry.total_points }}</td>
-                                <td class="px-6 py-4 text-gray-500">{{ entry.created_at }}</td>
+                                <td class="px-6 py-4 text-gray-700">{{ poolEntry.completionPercent }}%</td>
+                                <td class="px-6 py-4 text-lg font-bold text-gray-900">{{ poolEntry.totalPoints }}</td>
+                                <td class="px-6 py-4 text-gray-500">{{ poolEntry.createdAt }}</td>
                             </tr>
                         </tbody>
                     </table>

@@ -19,7 +19,7 @@ const title = 'PoolEntries'
 
 const props = defineProps({
     filters: Object,
-    pool_entries: Object,
+    poolEntries: Object,
     tournaments: Array,
     users: Array,
 })
@@ -70,13 +70,13 @@ const handleToolbarAction = (action) => {
 const deleteSelected = async () => {
 
     if(selectedItems.value.length === 0){
-        notifyError("No pool_entries selected")
+        notifyError("No pool entries selected")
         return
     }
 
     try{
 
-        await confirmDelete(`Delete ${selectedItems.value.length} pool_entries?`)
+        await confirmDelete(`Delete ${selectedItems.value.length} pool entries?`)
 
         router.delete(route('admin.pool_entries.bulkDelete'), {
             data: {
@@ -168,7 +168,7 @@ const handleCreate = () => {
                         <div class="overflow-hidden shadow">
 
                             <DataTable
-                                :rows="pool_entries.data"
+                                :rows="poolEntries.data"
                                 :columns="columns"
                                 :actions="actions"
                                 @selection-change="handleSelectionChange"
@@ -176,11 +176,11 @@ const handleCreate = () => {
                                 @delete="openDelete"
                             />
 
-                            <div v-if="pool_entries.data.length === 0" class="py-12 text-center text-gray-500 dark:text-gray-400">
-                                No pool_entries found.
+                            <div v-if="poolEntries.data.length === 0" class="py-12 text-center text-gray-500 dark:text-gray-400">
+                                No pool entries found.
                             </div>
 
-                            <Pagination :meta="pool_entries" />
+                            <Pagination :meta="poolEntries" />
 
                         </div>
 
@@ -193,9 +193,8 @@ const handleCreate = () => {
                     @close="showCreateDrawer = false"
                 >
                     <PoolEntryForm
-                                :tournaments="tournaments"
-        :users="users"
-
+                        :tournaments="tournaments"
+                        :users="users"
                         @saved="handleCreate"
                         @close="showCreateDrawer = false"
                     />
@@ -207,10 +206,9 @@ const handleCreate = () => {
                     @close="selectedItem = null"
                 >
                     <PoolEntryForm
-                                :tournaments="tournaments"
-        :users="users"
-
-                        :pool_entry="selectedItem"
+                        :tournaments="tournaments"
+                        :users="users"
+                        :pool-entry="selectedItem"
                         @close="selectedItem = null"
                     />
                 </FormDrawer>
