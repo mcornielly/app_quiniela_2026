@@ -11,6 +11,7 @@ use App\Models\Tournament;
 use App\Models\Group;
 use App\Models\Team;
 use App\Models\Game;
+use App\Models\Country;
 use Carbon\Carbon;
 
 class WorldCupSeeder extends Seeder
@@ -233,6 +234,8 @@ class WorldCupSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
+        $countryId = $this->resolveCountryId($teamName);
+
         $team = Team::firstOrCreate(
 
             [
@@ -241,10 +244,22 @@ class WorldCupSeeder extends Seeder
             ],
 
             [
+                'country_id' => $countryId,
                 'group_id' => $group->id,
                 'group_position' => $position
             ]
         );
+
+        if ($countryId && !$team->country_id) {
+            $team->update(['country_id' => $countryId]);
+        }
+
+        if (!$team->group_id || !$team->group_position) {
+            $team->update([
+                'group_id' => $group->id,
+                'group_position' => $position,
+            ]);
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -260,5 +275,75 @@ class WorldCupSeeder extends Seeder
         ]);
 
         return [$team->id, null];
+    }
+
+    private function resolveCountryId(?string $teamName): ?int
+    {
+        $code = $this->resolveCountryCodeFromTeamName($teamName);
+
+        if (!$code) {
+            return null;
+        }
+
+        return Country::where('code', $code)->value('id');
+    }
+
+    private function resolveCountryCodeFromTeamName(?string $teamName): ?string
+    {
+        if (!$teamName) {
+            return null;
+        }
+
+        $map = [
+            'algeria' => 'dz',
+            'argentina' => 'ar',
+            'australia' => 'au',
+            'austria' => 'at',
+            'belgium' => 'be',
+            'brazil' => 'br',
+            'canada' => 'ca',
+            'cape verde' => 'cv',
+            'colombia' => 'co',
+            'croatia' => 'hr',
+            'curacao' => 'cw',
+            'curaçao' => 'cw',
+            'ecuador' => 'ec',
+            'egypt' => 'eg',
+            'england' => 'gb-eng',
+            'france' => 'fr',
+            'germany' => 'de',
+            'ghana' => 'gh',
+            'haiti' => 'ht',
+            'ir iran' => 'ir',
+            'iran' => 'ir',
+            'ivory coast' => 'ci',
+            'japan' => 'jp',
+            'jordan' => 'jo',
+            'mexico' => 'mx',
+            'morocco' => 'ma',
+            'netherlands' => 'nl',
+            'new zealand' => 'nz',
+            'norway' => 'no',
+            'panama' => 'pa',
+            'paraguay' => 'py',
+            'portugal' => 'pt',
+            'qatar' => 'qa',
+            'rep. of korea' => 'kr',
+            'republic of korea' => 'kr',
+            'south korea' => 'kr',
+            'saudi arabia' => 'sa',
+            'scotland' => 'gb-sct',
+            'senegal' => 'sn',
+            'south africa' => 'za',
+            'spain' => 'es',
+            'switzerland' => 'ch',
+            'tunisia' => 'tn',
+            'uruguay' => 'uy',
+            'usa' => 'us',
+            'united states' => 'us',
+            'uzbekistan' => 'uz',
+        ];
+
+        return $map[strtolower(trim($teamName))] ?? null;
     }
 }

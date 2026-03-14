@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\MatchController;
 use App\Http\Controllers\Admin\PoolEntriesController;
 use App\Http\Controllers\Admin\PoolEntryController as AdminPoolEntryController;
 use App\Http\Controllers\PoolEntryController;
+use App\Http\Controllers\QuinielaWorldCupController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -132,6 +133,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/quiniela/groups', fn() => Inertia::render('Groups'))->name('groups.index');
     Route::get('/quiniela/leaderboard', fn() => Inertia::render('Leaderboard'))->name('leaderboard');
     Route::get('/quiniela/predictions', fn() => Inertia::render('Predictions/Index'))->name('predictions.index');
+    Route::get('/quiniela/world-cup-template', QuinielaWorldCupController::class)->name('predictions.worldcup');
     
     // Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
     // Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
