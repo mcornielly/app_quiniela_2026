@@ -93,6 +93,21 @@ class PoolEntryController extends Controller
                 ->with('error', 'Hay partidos repetidos en el envio. Revisa la quiniela e intentalo nuevamente.');
         }
 
+        $hasInvalidKnockoutDraw = $predictionPayloads->contains(function (array $prediction) use ($games) {
+            /** @var \App\Models\Game|null $game */
+            $game = $games->get($prediction['game_id']);
+
+            return $game
+                && $game->stage !== 'group'
+                && (int) $prediction['home_score'] === (int) $prediction['away_score'];
+        });
+
+        if ($hasInvalidKnockoutDraw) {
+            return redirect()
+                ->route('predictions.worldcup')
+                ->with('error', 'En fases eliminatorias debes definir un ganador. Revisa los empates de tu quiniela.');
+        }
+
         try {
             $poolEntry = DB::transaction(function () use ($user, $tournament, $predictionPayloads, $games) {
                 $poolEntry = PoolEntry::query()->create([
@@ -165,14 +180,26 @@ class PoolEntryController extends Controller
             return null;
         }
 
+        $resolveDisplayName = function (?string $teamName, ?string $slot): ?string {
+            if ($teamName) {
+                return $teamName;
+            }
+
+            if (!$slot || preg_match('/^(W|RU)\d+$/', $slot)) {
+                return null;
+            }
+
+            return $slot;
+        };
+
         if ($finalPrediction['home_score'] > $finalPrediction['away_score']) {
-            return $finalGame->homeTeam?->name ?? $finalGame->home_slot;
+            return $resolveDisplayName($finalGame->homeTeam?->name, $finalGame->home_slot);
         }
 
         if ($finalPrediction['away_score'] > $finalPrediction['home_score']) {
-            return $finalGame->awayTeam?->name ?? $finalGame->away_slot;
+            return $resolveDisplayName($finalGame->awayTeam?->name, $finalGame->away_slot);
         }
 
-        return 'Empate en la final';
+        return null;
     }
 }

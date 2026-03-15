@@ -115,6 +115,18 @@ const isGameFilled = (gameId) => {
     return prediction?.home !== null && prediction?.away !== null
 }
 
+const isPredictionDecisive = (game) => {
+    if (!isGameFilled(game.id)) {
+        return false
+    }
+
+    if (game.stage === 'group') {
+        return true
+    }
+
+    return predictions[game.id].home !== predictions[game.id].away
+}
+
 const progress = computed(() => {
     const filled = props.games.filter((game) => isGameFilled(game.id)).length
     const total = props.games.length || 104
@@ -136,8 +148,14 @@ const predictionPayloads = computed(() => {
         }))
 })
 
+const hasInvalidKnockoutDraws = computed(() => {
+    return decoratedGames.value.some((game) => game.stage !== 'group' && isGameFilled(game.id) && !isPredictionDecisive(game))
+})
+
 const canSubmitPoolEntry = computed(() => {
-    return progress.value.total > 0 && progress.value.filled === progress.value.total
+    return progress.value.total > 0
+        && progress.value.filled === progress.value.total
+        && !hasInvalidKnockoutDraws.value
 })
 
 const createdPoolEntry = computed(() => page.props.flash?.created_pool_entry ?? null)
@@ -146,12 +164,12 @@ const flashError = computed(() => page.props.flash?.error ?? null)
 const stageProgress = computed(() => {
     return stageDefinitions.map((stage, index) => {
         const matches = gamesByStage.value[stage.key] || []
-        const completed = matches.filter((game) => isGameFilled(game.id)).length
+        const completed = matches.filter((game) => isPredictionDecisive(game)).length
         const unlocked = index === 0 || stageDefinitions
             .slice(0, index)
             .every((previousStage) => {
                 const previousMatches = gamesByStage.value[previousStage.key] || []
-                return previousMatches.length > 0 && previousMatches.every((game) => isGameFilled(game.id))
+                return previousMatches.length > 0 && previousMatches.every((game) => isPredictionDecisive(game))
             })
 
         return {
@@ -265,7 +283,166 @@ const standingsByGroup = computed(() => {
     )
 })
 
-const currentGroup = computed(() => groupedStageMatches.value[currentGroupIndex.value] ?? null)
+const teamsById = computed(() => {
+    return Object.fromEntries(
+        props.groups
+            .flatMap((group) => group.teams)
+            .map((team) => [team.id, team]),
+    )
+})
+
+const compareStandingsRows = (left, right) => {
+    if (right.points !== left.points) {
+        return right.points - left.points
+    }
+
+    if (right.gd !== left.gd) {
+        return right.gd - left.gd
+    }
+
+    if (right.gf !== left.gf) {
+        return right.gf - left.gf
+    }
+
+    if ((left.team?.group_name ?? '') !== (right.team?.group_name ?? '')) {
+        return String(left.team?.group_name ?? '').localeCompare(String(right.team?.group_name ?? ''))
+    }
+
+    return (left.team?.group_position ?? 9) - (right.team?.group_position ?? 9)
+}
+
+const rankedThirdPlaceRows = computed(() => {
+    return Object.values(standingsByGroup.value)
+        .map((rows) => rows[2])
+        .filter(Boolean)
+        .sort(compareStandingsRows)
+})
+
+const resolvedKnockoutGamesById = computed(() => {
+    const resolvedById = {}
+    const resolvedByMatchNumber = {}
+    const usedThirdPlaceGroups = new Set()
+
+    const resolveWinnerForGame = (resolvedGame) => {
+        const prediction = predictions[resolvedGame.id]
+
+        if (!prediction || prediction.home === null || prediction.away === null) {
+            return null
+        }
+
+        if (prediction.home === prediction.away) {
+            return null
+        }
+
+        return prediction.home > prediction.away
+            ? resolvedGame.home_team
+            : resolvedGame.away_team
+    }
+
+    const resolveRunnerUpForGame = (resolvedGame) => {
+        const winner = resolveWinnerForGame(resolvedGame)
+
+        if (!winner) {
+            return null
+        }
+
+        return winner.id === resolvedGame.home_team?.id
+            ? resolvedGame.away_team
+            : resolvedGame.home_team
+    }
+
+    const resolveSlotTeam = (slot) => {
+        if (!slot) {
+            return null
+        }
+
+        let matches = slot.match(/^([1-3])([A-Z])$/)
+        if (matches) {
+            const position = Number(matches[1]) - 1
+            const groupLetter = matches[2]
+
+            return standingsByGroup.value[groupLetter]?.[position]?.team ?? null
+        }
+
+        matches = slot.match(/^3-([A-Z]+)$/)
+        if (matches) {
+            const allowedGroups = new Set(matches[1].split(''))
+            const thirdPlaceRow = rankedThirdPlaceRows.value.find((row) => {
+                return allowedGroups.has(row.team?.group_name)
+                    && !usedThirdPlaceGroups.has(row.team?.group_name)
+            })
+
+            if (!thirdPlaceRow?.team) {
+                return null
+            }
+
+            usedThirdPlaceGroups.add(thirdPlaceRow.team.group_name)
+
+            return thirdPlaceRow.team
+        }
+
+        matches = slot.match(/^W(\d+)$/)
+        if (matches) {
+            const previousGame = resolvedByMatchNumber[matches[1]]
+            return previousGame ? resolveWinnerForGame(previousGame) : null
+        }
+
+        matches = slot.match(/^RU(\d+)$/)
+        if (matches) {
+            const previousGame = resolvedByMatchNumber[matches[1]]
+            return previousGame ? resolveRunnerUpForGame(previousGame) : null
+        }
+
+        return null
+    }
+
+    decoratedGames.value
+        .filter((game) => game.stage !== 'group')
+        .sort((left, right) => Number(left.match_number) - Number(right.match_number))
+        .forEach((game) => {
+            const homeTeam = game.home_slot ? (resolveSlotTeam(game.home_slot) ?? game.home_team) : game.home_team
+            const awayTeam = game.away_slot ? (resolveSlotTeam(game.away_slot) ?? game.away_team) : game.away_team
+
+            const resolvedGame = {
+                ...game,
+                home_team: homeTeam ? (teamsById.value[homeTeam.id] ?? homeTeam) : null,
+                away_team: awayTeam ? (teamsById.value[awayTeam.id] ?? awayTeam) : null,
+            }
+
+            resolvedById[game.id] = resolvedGame
+            resolvedByMatchNumber[String(game.match_number)] = resolvedGame
+        })
+
+    return resolvedById
+})
+
+const displayGames = computed(() => {
+    return decoratedGames.value.map((game) => {
+        if (game.stage === 'group') {
+            return game
+        }
+
+        return resolvedKnockoutGamesById.value[game.id] ?? game
+    })
+})
+
+const displayGamesByStage = computed(() => {
+    return stageDefinitions.reduce((accumulator, stage) => {
+        accumulator[stage.key] = displayGames.value.filter((game) => game.stage === stage.key)
+        return accumulator
+    }, {})
+})
+
+const displayGroupedStageMatches = computed(() => {
+    return props.groups.map((group) => ({
+        ...group,
+        games: displayGames.value.filter(
+            (game) => game.stage === 'group' && game.group_name === group.name,
+        ),
+    }))
+})
+
+const currentGroup = computed(() => displayGroupedStageMatches.value[currentGroupIndex.value] ?? null)
 
 const currentGroupStatus = computed(() => groupProgress.value[currentGroupIndex.value] ?? null)
 
@@ -273,7 +450,7 @@ const currentStageStatus = computed(() => {
     return stageProgress.value.find((stage) => stage.key === currentStage.value) ?? null
 })
 
-const visibleStageMatches = computed(() => gamesByStage.value[currentStage.value] || [])
+const visibleStageMatches = computed(() => displayGamesByStage.value[currentStage.value] || [])
 
 const nextUnlockedStage = computed(() => {
     const currentIndex = stageDefinitions.findIndex((stage) => stage.key === currentStage.value)
@@ -395,6 +572,10 @@ watch(
 
                 <div v-if="flashError" class="mt-6 rounded-2xl border border-rose-300/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
                     {{ flashError }}
+                </div>
+
+                <div v-if="hasInvalidKnockoutDraws" class="mt-4 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+                    En fases eliminatorias no se permiten empates en la quiniela. Define un ganador para que el bracket pueda avanzar correctamente.
                 </div>
 
                 <div class="mt-6 flex flex-col gap-4 rounded-3xl border border-white/10 bg-black/20 p-4 lg:flex-row lg:items-center lg:justify-between">

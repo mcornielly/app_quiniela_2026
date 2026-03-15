@@ -108,6 +108,37 @@ class PoolEntryCreationTest extends TestCase
         $this->assertDatabaseCount('predictions', 4);
     }
 
+    public function test_a_user_cannot_store_a_knockout_draw_prediction(): void
+    {
+        $user = User::factory()->create();
+        [$tournament, $games] = $this->createTournamentWithGames();
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('pools.store'), [
+                'tournament_id' => $tournament->id,
+                'predictions' => [
+                    [
+                        'game_id' => $games[0]->id,
+                        'home_score' => 2,
+                        'away_score' => 2,
+                    ],
+                    [
+                        'game_id' => $games[1]->id,
+                        'home_score' => 1,
+                        'away_score' => 1,
+                    ],
+                ],
+            ]);
+
+        $response
+            ->assertRedirect(route('predictions.worldcup'))
+            ->assertSessionHas('error', 'En fases eliminatorias debes definir un ganador. Revisa los empates de tu quiniela.');
+
+        $this->assertDatabaseCount('pool_entries', 0);
+        $this->assertDatabaseCount('predictions', 0);
+    }
+
     /**
      * @return array{0: \App\Models\Tournament, 1: array<int, \App\Models\Game>}
      */

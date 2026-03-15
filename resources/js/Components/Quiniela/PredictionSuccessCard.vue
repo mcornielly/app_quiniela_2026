@@ -51,15 +51,15 @@ const confettiPieces = Array.from({ length: 24 }, (_, index) => ({
             </div>
 
             <div class="mt-8 grid gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 sm:grid-cols-3">
-                <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4 text-center">
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Numero unico</p>
                     <p class="mt-2 text-2xl font-black text-white">#{{ poolEntry.registrationNumber }}</p>
                 </div>
-                <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4 text-center">
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Estado</p>
                     <p class="mt-2 text-2xl font-black capitalize text-emerald-300">{{ poolEntry.status }}</p>
                 </div>
-                <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4 text-center">
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Completado</p>
                     <p class="mt-2 text-2xl font-black text-cyan-300">{{ poolEntry.completionPercent }}%</p>
                 </div>
