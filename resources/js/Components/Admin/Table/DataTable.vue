@@ -10,7 +10,7 @@ const props = defineProps({
     actions: Object
 })
 
-const emit = defineEmits(['selection-change', 'edit', 'delete'])
+const emit = defineEmits(['selection-change', 'edit', 'delete', 'view'])
 
 const selected = ref([])
 
@@ -64,6 +64,7 @@ watch(() => props.rows, () => {
                             :actions="actions"
                             :selected="selected.includes(row.id)"
                             @toggle="toggleRow"
+                            @view="$emit('view',$event)"
                             @edit="$emit('edit',$event)"
                             @delete="$emit('delete',$event)"
                         />

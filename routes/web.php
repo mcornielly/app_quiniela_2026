@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\CalendarController;
 use App\Http\Controllers\Admin\MatchController;
 use App\Http\Controllers\Admin\PoolEntriesController;
 use App\Http\Controllers\Admin\PoolEntryController as AdminPoolEntryController;
+use App\Http\Controllers\Admin\TournamentParticipantController;
 use App\Http\Controllers\PoolEntryController;
 use App\Http\Controllers\QuinielaWorldCupController;
 use Illuminate\Foundation\Application;
@@ -62,6 +63,10 @@ Route::middleware(['auth', 'verified', 'admin'])
         ->name('tournaments.bulkDelete');
 
     Route::resource('tournaments', TournamentController::class)->only(['index','store','update','destroy']);
+    Route::get('tournaments/{tournament}/participants', [TournamentParticipantController::class, 'index'])
+        ->name('tournaments.participants.index');
+    Route::patch('tournaments/{tournament}/participants/{participant}', [TournamentParticipantController::class, 'update'])
+        ->name('tournaments.participants.update');
 
     Route::delete('teams/bulk-delete', [TeamController::class, 'bulkDelete'])
         ->name('teams.bulkDelete');

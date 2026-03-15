@@ -43,7 +43,7 @@ const selectedItems = ref([])
 const itemToDelete = ref(null)
 
 const actions = {
-    show: false,
+    show: true,
     edit: true,
     delete: true,
     new: true,
@@ -116,6 +116,10 @@ const openDelete = (item) => {
     itemToDelete.value = item
 }
 
+const openParticipants = (item) => {
+    router.visit(route('admin.tournaments.participants.index', item.id))
+}
+
 const handleCreate = () => {
     router.reload()
 }
@@ -169,6 +173,7 @@ const handleCreate = () => {
                                 :columns="columns"
                                 :actions="actions"
                                 @selection-change="handleSelectionChange"
+                                @view="openParticipants"
                                 @edit="openEdit"
                                 @delete="openDelete"
                             />

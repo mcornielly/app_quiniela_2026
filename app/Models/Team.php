@@ -43,6 +43,12 @@ class Team extends Model
 
     public function tournaments()
     {
-        return $this->belongsToMany(Tournament::class);
+        return $this->belongsToMany(Tournament::class)
+            ->withPivot(['id', 'fifa_ranking', 'fair_play_points']);
+    }
+
+    public function tournamentEntries()
+    {
+        return $this->hasMany(TournamentTeam::class);
     }
 }

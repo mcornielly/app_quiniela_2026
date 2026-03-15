@@ -149,10 +149,7 @@ class GameResultController extends Controller
             | El ganador avanza automáticamente al siguiente partido.
             */
 
-            if ($game->isKnockout()) {
-
-                $this->bracketService->advance($game);
-            }
+            $this->bracketService->syncTournament($game->tournament);
 
             /*
             |--------------------------------------------------------------------------

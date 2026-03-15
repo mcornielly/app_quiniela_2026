@@ -13,7 +13,7 @@ const props = defineProps({
     selected: Boolean
 })
 
-const emit = defineEmits(['toggle', 'edit', 'delete'])
+const emit = defineEmits(['toggle', 'edit', 'delete', 'view'])
 
 const toggle = () => {
     emit('toggle', props.row.id)
@@ -95,6 +95,7 @@ const isImageField = (key) => imageFields.includes(key)
             <TableActions
                 :row="row"
                 :actions="actions"
+                @view="$emit('view', $event)"
                 @edit="$emit('edit', $event)"
                 @delete="$emit('delete', $event)"
             />

@@ -3,14 +3,13 @@
 namespace App\Services\Tournament;
 
 use App\Models\Game;
+use App\Models\Tournament;
 
 class BracketProgressionService
 {
-    protected $resolver;
-
-    public function __construct(BracketResolverService $resolver)
-    {
-        $this->resolver = $resolver;
+    public function __construct(
+        private readonly OfficialBracketResolverService $officialBracketResolverService,
+    ) {
     }
 
     public function advance(Game $game)
@@ -19,57 +18,11 @@ class BracketProgressionService
             return;
         }
 
-        $matchNumber = $game->match_number;
-
-        $winnerSlot = "W{$matchNumber}";
-        $loserSlot  = "RU{$matchNumber}";
-
-        /*
-        |--------------------------------------------------------------------------
-        | Find next games referencing this match
-        |--------------------------------------------------------------------------
-        */
-
-        $nextGames = Game::where(function ($q) use ($winnerSlot, $loserSlot) {
-
-            $q->where('home_slot', $winnerSlot)
-                ->orWhere('away_slot', $winnerSlot)
-                ->orWhere('home_slot', $loserSlot)
-                ->orWhere('away_slot', $loserSlot);
-
-        })->get();
-
-        foreach ($nextGames as $nextGame) {
-
-            $this->updateGameSlot($nextGame, $winnerSlot);
-            $this->updateGameSlot($nextGame, $loserSlot);
-        }
+        $this->syncTournament($game->tournament);
     }
 
-    private function updateGameSlot(Game $game, string $slot)
+    public function syncTournament(Tournament $tournament): void
     {
-        $teamId = $this->resolver->resolveSlot($slot);
-
-        /*
-        |--------------------------------------------------------------------------
-        | If slot cannot be resolved yet
-        |--------------------------------------------------------------------------
-        */
-
-        if ($teamId === null) {
-            return;
-        }
-
-        if ($game->home_slot === $slot) {
-            $game->home_team_id = $teamId;
-        }
-
-        if ($game->away_slot === $slot) {
-            $game->away_team_id = $teamId;
-        }
-
-        if ($game->isDirty()) {
-            $game->save();
-        }
+        $this->officialBracketResolverService->sync($tournament);
     }
 }
