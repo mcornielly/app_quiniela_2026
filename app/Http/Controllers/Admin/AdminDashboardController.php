@@ -64,26 +64,9 @@ class AdminDashboardController extends Controller
         $groups = Group::query()
             ->with('teams.country')
             ->orderBy('name')
-            ->get()
-            ->map(function (Group $group) {
-                return [
-                    'id' => $group->id,
-                    'value' => (string) $group->id,
-                    'name' => $group->name,
-                    'label' => "Grupo {$group->name}",
-                    'teams' => $group->teams
-                        ->sortBy([
-                            ['group_position', 'asc'],
-                            ['name', 'asc'],
-                        ])
-                        ->values()
-                        ->map(fn ($team) => $this->transformTeam($team))
-                        ->all(),
-                ];
-            })
-            ->values();
+            ->get();
 
-        $standingsByGroup = GroupStanding::query()
+        $storedStandingsByGroup = GroupStanding::query()
             ->with('team.country')
             ->orderBy('position')
             ->get()
@@ -107,6 +90,58 @@ class AdminDashboardController extends Controller
                     ->values()
                     ->all();
             });
+
+        $standingsByGroup = $groups
+            ->mapWithKeys(function (Group $group) use ($storedStandingsByGroup) {
+                $groupStandings = $storedStandingsByGroup->get($group->id);
+
+                if ($groupStandings && count($groupStandings) > 0) {
+                    return [(string) $group->id => $groupStandings];
+                }
+
+                return [
+                    (string) $group->id => $group->teams
+                        ->sortBy([
+                            ['group_position', 'asc'],
+                            ['name', 'asc'],
+                        ])
+                        ->values()
+                        ->map(function ($team) {
+                            return [
+                                'teamId' => $team->id,
+                                'team' => $this->transformTeam($team),
+                                'played' => 0,
+                                'won' => 0,
+                                'drawn' => 0,
+                                'lost' => 0,
+                                'gf' => 0,
+                                'ga' => 0,
+                                'gd' => 0,
+                                'points' => 0,
+                            ];
+                        })
+                        ->all(),
+                ];
+            });
+
+        $groups = $groups
+            ->map(function (Group $group) {
+                return [
+                    'id' => $group->id,
+                    'value' => (string) $group->id,
+                    'name' => $group->name,
+                    'label' => "Grupo {$group->name}",
+                    'teams' => $group->teams
+                        ->sortBy([
+                            ['group_position', 'asc'],
+                            ['name', 'asc'],
+                        ])
+                        ->values()
+                        ->map(fn ($team) => $this->transformTeam($team))
+                        ->all(),
+                ];
+            })
+            ->values();
 
         $ranking = $tournament
             ? $rankingService->getRanking($tournament->id, 15)

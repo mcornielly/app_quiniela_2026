@@ -25,28 +25,28 @@ const props = defineProps({
 const emit = defineEmits(['update:selectedGroup'])
 const hiddenFlags = ref({})
 
-const badgeClass = (status) => {
-    if (status === 'FT') {
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-    }
-
-    if (status === 'LIVE') {
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-    }
-
-    return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
-}
-
 const statusLabel = (status) => {
     if (status === 'FT') {
-        return 'Final'
+        return 'Finalizado'
     }
 
     if (status === 'LIVE') {
         return 'En vivo'
     }
 
-    return 'Proximo'
+    return 'Programado'
+}
+
+const statusBadgeClass = (status) => {
+    if (status === 'FT') {
+        return 'bg-green-100 text-green-800 dark:bg-green-900/60 dark:text-green-300'
+    }
+
+    if (status === 'LIVE') {
+        return 'bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-300'
+    }
+
+    return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
 }
 
 const teamKey = (team, slot) => team?.id || team?.code || slot || 'unknown'
@@ -62,6 +62,13 @@ const hideFlag = (team, slot) => {
 const teamName = (team, slot) => team?.name || slot || 'Por definir'
 const actionHref = (match) => match.status === 'LIVE' ? route('admin.calendar.index') : route('admin.games.index')
 const actionLabel = (match) => match.status === 'LIVE' ? 'Ver en vivo' : 'Resultados'
+const centerDisplay = (match) => {
+    if (match.status === 'FT' || match.status === 'LIVE') {
+        return `${match.homeScore ?? '-'} - ${match.awayScore ?? '-'}`
+    }
+
+    return match.display_time ? String(match.display_time).slice(0, 5) : '--:--'
+}
 </script>
 
 <template>
@@ -88,14 +95,12 @@ const actionLabel = (match) => match.status === 'LIVE' ? 'Ver en vivo' : 'Result
             </div>
         </div>
 
-        <table class="w-full text-left text-sm text-gray-600 dark:text-gray-300">
+        <table class="w-full table-fixed text-left text-sm text-gray-600 dark:text-gray-300">
             <thead class="border-b border-t border-gray-200 bg-gray-50 text-xs uppercase text-gray-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-300">
                 <tr>
-                    <th scope="col" class="px-6 py-3 font-medium">Estado</th>
-                    <th scope="col" class="px-6 py-3 font-medium">Partido</th>
-                    <th scope="col" class="px-6 py-3 font-medium">Fecha y sede</th>
-                    <th scope="col" class="px-6 py-3 text-right font-medium">Marcador</th>
-                    <th scope="col" class="px-6 py-3 text-right font-medium">Accion</th>
+                    <th scope="col" class="w-[58%] px-6 py-3 font-medium">Partido</th>
+                    <th scope="col" class="w-[25%] px-6 py-3 font-medium">Fecha y sede</th>
+                    <th scope="col" class="w-[17%] px-6 py-3 text-right font-medium">Accion</th>
                 </tr>
             </thead>
             <tbody>
@@ -104,41 +109,48 @@ const actionLabel = (match) => match.status === 'LIVE' ? 'Ver en vivo' : 'Result
                     :key="match.id"
                     class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
                 >
-                    <td class="px-6 py-4">
-                        <span class="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium" :class="badgeClass(match.status)">
-                            {{ statusLabel(match.status) }}
-                        </span>
-                    </td>
                     <th scope="row" class="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                        <div class="flex flex-wrap items-center gap-2 whitespace-normal">
-                            <img
-                                v-if="shouldShowFlag(match.home_team, match.home_slot)"
-                                :src="getFlagSrc(match.home_team)"
-                                :alt="teamName(match.home_team, match.home_slot)"
-                                class="h-4 w-6 rounded object-cover"
-                                @error="hideFlag(match.home_team, match.home_slot)"
-                            >
-                            <span>{{ teamName(match.home_team, match.home_slot) }}</span>
-                            <span class="text-gray-400">vs</span>
-                            <img
-                                v-if="shouldShowFlag(match.away_team, match.away_slot)"
-                                :src="getFlagSrc(match.away_team)"
-                                :alt="teamName(match.away_team, match.away_slot)"
-                                class="h-4 w-6 rounded object-cover"
-                                @error="hideFlag(match.away_team, match.away_slot)"
-                            >
-                            <span>{{ teamName(match.away_team, match.away_slot) }}</span>
+                        <div class="grid grid-cols-[minmax(0,1fr)_140px_minmax(0,1fr)] items-center gap-4">
+                            <div class="flex min-w-0 items-center justify-end gap-2 pe-2 text-right">
+                                <span class="truncate">{{ teamName(match.home_team, match.home_slot) }}</span>
+                                <img
+                                    v-if="shouldShowFlag(match.home_team, match.home_slot)"
+                                    :src="getFlagSrc(match.home_team)"
+                                    :alt="teamName(match.home_team, match.home_slot)"
+                                    class="h-5 w-7 shrink-0 rounded object-cover"
+                                    @error="hideFlag(match.home_team, match.home_slot)"
+                                >
+                            </div>
+
+                            <div class="w-[140px] text-center">
+                                <div class="flex justify-center">
+                                    <span
+                                        class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium"
+                                        :class="statusBadgeClass(match.status)"
+                                    >
+                                        {{ statusLabel(match.status) }}
+                                    </span>
+                                </div>
+                                <div class="mt-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+                                    {{ centerDisplay(match) }}
+                                </div>
+                            </div>
+
+                            <div class="flex min-w-0 items-center gap-2 ps-2">
+                                <img
+                                    v-if="shouldShowFlag(match.away_team, match.away_slot)"
+                                    :src="getFlagSrc(match.away_team)"
+                                    :alt="teamName(match.away_team, match.away_slot)"
+                                    class="h-5 w-7 shrink-0 rounded object-cover"
+                                    @error="hideFlag(match.away_team, match.away_slot)"
+                                >
+                                <span class="truncate">{{ teamName(match.away_team, match.away_slot) }}</span>
+                            </div>
                         </div>
                     </th>
                     <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                        <div>{{ match.display_date }} · {{ match.display_time }}</div>
+                        <div>{{ match.display_date }}</div>
                         <div class="mt-1">{{ match.venue || 'Sede por confirmar' }}</div>
-                    </td>
-                    <td class="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-white">
-                        <span v-if="match.status === 'FT' || match.status === 'LIVE'">
-                            {{ match.homeScore ?? '-' }} - {{ match.awayScore ?? '-' }}
-                        </span>
-                        <span v-else class="font-normal text-gray-500 dark:text-gray-400">Pendiente</span>
                     </td>
                     <td class="px-6 py-4 text-right">
                         <Link :href="actionHref(match)" class="font-medium text-blue-700 hover:underline dark:text-blue-400">
@@ -147,7 +159,7 @@ const actionLabel = (match) => match.status === 'LIVE' ? 'Ver en vivo' : 'Result
                     </td>
                 </tr>
                 <tr v-if="!matches.length" class="bg-white dark:bg-gray-800">
-                    <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                    <td colspan="3" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
                         No hay partidos disponibles para este grupo.
                     </td>
                 </tr>

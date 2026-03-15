@@ -107,6 +107,14 @@ const upcomingActionHref = (game) => {
     return game.status === 'LIVE' ? route('admin.calendar.index') : route('admin.games.index')
 }
 
+const formatMatchTime = (value) => {
+    if (!value) {
+        return '--:--'
+    }
+
+    return String(value).slice(0, 5)
+}
+
 const teamKey = (team) => team?.id || team?.code || team?.name || 'unknown'
 const getFlagSrc = (team) => team?.flag_url || imageUrl(team?.flag_path)
 const shouldShowFlag = (team) => Boolean(getFlagSrc(team)) && !hiddenFlags.value[teamKey(team)]
@@ -235,7 +243,7 @@ const formatGoalDiff = (value) => {
                                 <tr v-for="game in upcomingGames" :key="game.id" class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
                                     <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
                                         <div class="font-medium">{{ game.date }}</div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ game.time }}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ formatMatchTime(game.time) }}</div>
                                     </td>
                                     <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
                                         <div class="flex flex-wrap items-center gap-2">
@@ -337,24 +345,23 @@ const formatGoalDiff = (value) => {
                         <table class="w-full text-left text-sm text-gray-600 dark:text-gray-300">
                             <thead class="border-b border-t border-gray-200 bg-gray-50 text-xs uppercase text-gray-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-300">
                                 <tr>
-                                    <th class="px-6 py-3 font-medium">#</th>
-                                    <th class="px-6 py-3 font-medium">Participante</th>
-                                    <th class="px-6 py-3 text-right font-medium">Pts</th>
+                                    <th class="px-6 py-3 font-medium">Pos</th>
+                                    <th class="px-6 py-3 font-medium">Usuario</th>
+                                    <th class="px-6 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">Exactos</th>
+                                    <th class="px-6 py-3 text-right font-medium text-sky-600 dark:text-sky-400">Aciertos</th>
+                                    <th class="px-6 py-3 text-right font-medium">Total</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="(entry, index) in ranking" :key="entry.id" class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-                                    <td class="px-6 py-4">{{ index + 1 }}</td>
-                                    <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                        {{ entry.name }}
-                                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                            Exactos: {{ entry.exactHits }} · Aciertos: {{ entry.correctResults }}
-                                        </div>
-                                    </td>
+                                    <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">{{ index + 1 }}</td>
+                                    <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ entry.name }}</td>
+                                    <td class="px-6 py-4 text-right font-semibold" :class="entry.exactHits === 0 ? 'text-gray-400 dark:text-gray-500' : 'text-emerald-600 dark:text-emerald-400'">{{ entry.exactHits }}</td>
+                                    <td class="px-6 py-4 text-right font-semibold" :class="entry.correctResults === 0 ? 'text-gray-400 dark:text-gray-500' : 'text-sky-600 dark:text-sky-400'">{{ entry.correctResults }}</td>
                                     <td class="px-6 py-4 text-right font-semibold text-gray-900 dark:text-white">{{ entry.totalPoints }}</td>
                                 </tr>
                                 <tr v-if="!ranking.length" class="bg-white dark:bg-gray-800">
-                                    <td colspan="3" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">No hay entradas en el ranking.</td>
+                                    <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">No hay entradas en el ranking.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -385,7 +392,7 @@ const formatGoalDiff = (value) => {
                                     <div v-for="team in group.teams" :key="team.id" class="flex items-center gap-2 truncate">
                                         <img v-if="team.flag_url" :src="team.flag_url" :alt="team.name" class="h-4 w-6 rounded object-cover">
                                         <span v-else class="text-[10px] font-semibold uppercase text-gray-400">{{ team.code }}</span>
-                                        <span class="truncate">• {{ team.name }}</span>
+                                        <span class="truncate">{{ team.name }}</span>
                                     </div>
                                 </div>
                             </button>
@@ -396,3 +403,6 @@ const formatGoalDiff = (value) => {
         </div>
     </AdminLayout>
 </template>
+
+
+
