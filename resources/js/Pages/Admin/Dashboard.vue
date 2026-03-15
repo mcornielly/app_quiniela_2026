@@ -233,7 +233,7 @@ const formatGoalDiff = (value) => {
                             <thead class="border-b border-t border-gray-200 bg-gray-50 text-xs uppercase text-gray-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-300">
                                 <tr>
                                     <th class="px-6 py-3 font-medium">Fecha</th>
-                                    <th class="px-6 py-3 font-medium">Partido</th>
+                                    <th class="px-6 py-3 text-center font-medium">Partidos</th>
                                     <th class="px-6 py-3 font-medium">Grupo</th>
                                     <th class="px-6 py-3 font-medium">Sede</th>
                                     <th class="px-6 py-3 text-right font-medium">Accion</th>
@@ -243,17 +243,22 @@ const formatGoalDiff = (value) => {
                                 <tr v-for="game in upcomingGames" :key="game.id" class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
                                     <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
                                         <div class="font-medium">{{ game.date }}</div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ formatMatchTime(game.time) }}</div>
                                     </td>
                                     <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <img v-if="game.homeTeam?.flag_url" :src="game.homeTeam.flag_url" :alt="game.homeTeam.name" class="h-5 w-7 rounded object-cover">
-                                            <span v-else class="text-xs font-semibold uppercase text-gray-400">{{ game.homeTeam?.code }}</span>
-                                            <span>{{ game.homeTeam?.name }}</span>
-                                            <span class="text-gray-400">vs</span>
-                                            <img v-if="game.awayTeam?.flag_url" :src="game.awayTeam.flag_url" :alt="game.awayTeam.name" class="h-5 w-7 rounded object-cover">
-                                            <span v-else class="text-xs font-semibold uppercase text-gray-400">{{ game.awayTeam?.code }}</span>
-                                            <span>{{ game.awayTeam?.name }}</span>
+                                        <div class="grid grid-cols-[minmax(0,1fr)_88px_minmax(0,1fr)] items-center gap-4">
+                                            <div class="flex min-w-0 items-center justify-end gap-2 pe-2 text-right">
+                                                <span class="truncate">{{ game.homeTeam?.name }}</span>
+                                                <img v-if="game.homeTeam?.flag_url" :src="game.homeTeam.flag_url" :alt="game.homeTeam.name" class="h-5 w-7 shrink-0 rounded object-cover">
+                                                <span v-else class="text-xs font-semibold uppercase text-gray-400">{{ game.homeTeam?.code }}</span>
+                                            </div>
+                                            <div class="text-center text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+                                                {{ formatMatchTime(game.time) }}
+                                            </div>
+                                            <div class="flex min-w-0 items-center gap-2 ps-2">
+                                                <img v-if="game.awayTeam?.flag_url" :src="game.awayTeam.flag_url" :alt="game.awayTeam.name" class="h-5 w-7 shrink-0 rounded object-cover">
+                                                <span v-else class="text-xs font-semibold uppercase text-gray-400">{{ game.awayTeam?.code }}</span>
+                                                <span class="truncate">{{ game.awayTeam?.name }}</span>
+                                            </div>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4">Grupo {{ game.groupName || '-' }}</td>
@@ -403,6 +408,7 @@ const formatGoalDiff = (value) => {
         </div>
     </AdminLayout>
 </template>
+
 
 
 

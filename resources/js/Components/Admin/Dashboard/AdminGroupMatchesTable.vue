@@ -98,7 +98,7 @@ const centerDisplay = (match) => {
         <table class="w-full table-fixed text-left text-sm text-gray-600 dark:text-gray-300">
             <thead class="border-b border-t border-gray-200 bg-gray-50 text-xs uppercase text-gray-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-300">
                 <tr>
-                    <th scope="col" class="w-[58%] px-6 py-3 font-medium">Partido</th>
+                    <th scope="col" class="w-[58%] px-6 py-3 text-center font-medium">Partidos</th>
                     <th scope="col" class="w-[25%] px-6 py-3 font-medium">Fecha y sede</th>
                     <th scope="col" class="w-[17%] px-6 py-3 text-right font-medium">Accion</th>
                 </tr>
@@ -167,3 +167,4 @@ const centerDisplay = (match) => {
         </table>
     </div>
 </template>
+
