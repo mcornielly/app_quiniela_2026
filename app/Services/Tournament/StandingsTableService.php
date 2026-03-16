@@ -233,9 +233,18 @@ class StandingsTableService
 
     private function compareFallback(array $left, array $right): int
     {
+        $comparison = 0;
+
+        if (config('tournament_rules.tiebreakers.use_fair_play', true)) {
+            $comparison = (($right['fair_play'] ?? 0) <=> ($left['fair_play'] ?? 0));
+        }
+
+        if ($comparison === 0 && config('tournament_rules.tiebreakers.use_fifa_ranking', false)) {
+            $comparison = (($right['ranking_score'] ?? 0) <=> ($left['ranking_score'] ?? 0));
+        }
+
         return
-            (($right['fair_play'] ?? 0) <=> ($left['fair_play'] ?? 0))
-            ?: (($right['ranking_score'] ?? 0) <=> ($left['ranking_score'] ?? 0))
+            $comparison
             ?: (($left['team']->group_position ?? 9) <=> ($right['team']->group_position ?? 9))
             ?: strcmp((string) ($left['team']->name ?? ''), (string) ($right['team']->name ?? ''));
     }

@@ -42,7 +42,8 @@ class PoolEntryCreationTest extends TestCase
         $response
             ->assertRedirect(route('predictions.worldcup'))
             ->assertSessionHas('success', 'La quiniela fue registrada exitosamente.')
-            ->assertSessionHas('created_pool_entry');
+            ->assertSessionHas('created_pool_entry')
+            ->assertSessionHas('created_pool_entry.predictedChampionName', 'Finalist A');
 
         $this->assertDatabaseCount('pool_entries', 1);
         $this->assertDatabaseCount('predictions', 2);

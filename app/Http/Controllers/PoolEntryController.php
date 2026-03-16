@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Game;
 use App\Models\PoolEntry;
 use App\Models\Tournament;
+use App\Services\Tournament\PredictionBracketResolverService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -15,6 +16,11 @@ use Throwable;
 
 class PoolEntryController extends Controller
 {
+    public function __construct(
+        private readonly PredictionBracketResolverService $predictionBracketResolverService,
+    ) {
+    }
+
     public function index(Request $request): Response
     {
         $poolEntries = PoolEntry::query()
@@ -109,6 +115,16 @@ class PoolEntryController extends Controller
         }
 
         try {
+            $resolvedBracket = $this->predictionBracketResolverService->resolve($tournament, $predictionPayloads);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return redirect()
+                ->route('predictions.worldcup')
+                ->with('error', 'No pudimos validar el bracket de tu quiniela. Revisa los cruces y vuelve a intentarlo.');
+        }
+
+        try {
             $poolEntry = DB::transaction(function () use ($user, $tournament, $predictionPayloads, $games) {
                 $poolEntry = PoolEntry::query()->create([
                     'tournament_id' => $tournament->id,
@@ -152,16 +168,11 @@ class PoolEntryController extends Controller
         return redirect()
             ->route('predictions.worldcup')
             ->with('success', 'La quiniela fue registrada exitosamente.')
-            ->with('created_pool_entry', $this->buildCreatedPoolEntryPayload($poolEntry, $games, $predictionPayloads));
+            ->with('created_pool_entry', $this->buildCreatedPoolEntryPayload($poolEntry, $resolvedBracket['predictedChampion'] ?? null));
     }
 
-    private function buildCreatedPoolEntryPayload(PoolEntry $poolEntry, Collection $games, Collection $predictionPayloads): array
+    private function buildCreatedPoolEntryPayload(PoolEntry $poolEntry, $predictedChampion): array
     {
-        $finalGame = $games->firstWhere('stage', 'final');
-        $finalPrediction = $finalGame
-            ? $predictionPayloads->firstWhere('game_id', $finalGame->id)
-            : null;
-
         return [
             'id' => $poolEntry->id,
             'registrationNumber' => $poolEntry->id,
@@ -169,37 +180,8 @@ class PoolEntryController extends Controller
             'status' => $poolEntry->status,
             'completionPercent' => $poolEntry->completion_percent,
             'tournamentName' => $poolEntry->tournament?->name,
-            'predictedChampionName' => $this->resolveChampionName($finalGame, $finalPrediction),
+            'predictedChampionName' => $predictedChampion?->name,
             'createdAt' => $poolEntry->created_at?->format('d/m/Y H:i'),
         ];
-    }
-
-    private function resolveChampionName(?Game $finalGame, ?array $finalPrediction): ?string
-    {
-        if (!$finalGame || !$finalPrediction) {
-            return null;
-        }
-
-        $resolveDisplayName = function (?string $teamName, ?string $slot): ?string {
-            if ($teamName) {
-                return $teamName;
-            }
-
-            if (!$slot || preg_match('/^(W|RU)\d+$/', $slot)) {
-                return null;
-            }
-
-            return $slot;
-        };
-
-        if ($finalPrediction['home_score'] > $finalPrediction['away_score']) {
-            return $resolveDisplayName($finalGame->homeTeam?->name, $finalGame->home_slot);
-        }
-
-        if ($finalPrediction['away_score'] > $finalPrediction['home_score']) {
-            return $resolveDisplayName($finalGame->awayTeam?->name, $finalGame->away_slot);
-        }
-
-        return null;
     }
 }

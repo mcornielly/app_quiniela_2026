@@ -13,6 +13,9 @@ const confettiPieces = Array.from({ length: 24 }, (_, index) => ({
     left: `${(index % 8) * 12 + 6}%`,
     delay: `${(index % 6) * 120}ms`,
     duration: `${2200 + (index % 5) * 180}ms`,
+    rotation: `${(index % 7) * 18}deg`,
+    height: `${14 + (index % 4) * 5}px`,
+    width: `${8 + (index % 3) * 2}px`,
     colorClass: [
         'bg-cyan-300',
         'bg-emerald-300',
@@ -24,13 +27,20 @@ const confettiPieces = Array.from({ length: 24 }, (_, index) => ({
 
 <template>
     <div class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/75 px-4 backdrop-blur-sm">
-        <div class="pointer-events-none absolute inset-0 overflow-hidden">
+        <div class="confetti-wrapper">
             <span
                 v-for="piece in confettiPieces"
                 :key="piece.id"
                 :class="piece.colorClass"
-                class="absolute top-0 h-3 w-2 rounded-full opacity-90 animate-[confetti-fall_var(--duration)_ease-in_forwards]"
-                :style="{ left: piece.left, animationDelay: piece.delay, '--duration': piece.duration }"
+                class="confetti-piece rounded-sm"
+                :style="{
+                    left: piece.left,
+                    animationDelay: piece.delay,
+                    '--duration': piece.duration,
+                    '--rotation': piece.rotation,
+                    width: piece.width,
+                    height: piece.height,
+                }"
             />
         </div>
 
@@ -65,9 +75,9 @@ const confettiPieces = Array.from({ length: 24 }, (_, index) => ({
                 </div>
             </div>
 
-            <div class="mt-6 rounded-3xl border border-amber-300/20 bg-amber-300/10 p-5">
+            <div class="mt-6 rounded-3xl border border-amber-300/20 bg-amber-300/10 p-5 text-center">
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200/80">Tu campeon pronosticado</p>
-                <p class="mt-2 text-2xl font-black text-white">
+                <p class="mt-2 text-2xl font-black uppercase tracking-[0.14em] text-white">
                     {{ poolEntry.predictedChampionName || 'Por definirse en la final de tu quiniela' }}
                 </p>
                 <p class="mt-2 text-sm text-slate-300">
@@ -88,19 +98,29 @@ const confettiPieces = Array.from({ length: 24 }, (_, index) => ({
 </template>
 
 <style scoped>
+.confetti-wrapper {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.confetti-piece {
+    position: absolute;
+    top: 0;
+    opacity: 0.9;
+    animation: confetti-fall var(--duration) linear infinite;
+}
+
 @keyframes confetti-fall {
     0% {
-        transform: translate3d(0, -20px, 0) rotate(0deg);
-        opacity: 0;
-    }
-
-    15% {
+        transform: translate3d(0, -100%, 0) rotate(var(--rotation, 0deg));
         opacity: 1;
     }
 
     100% {
-        transform: translate3d(0, 105vh, 0) rotate(540deg);
-        opacity: 0;
+        transform: translate3d(0, 100vh, 0) rotate(calc(var(--rotation, 0deg) + 360deg));
+        opacity: 0.8;
     }
 }
 </style>

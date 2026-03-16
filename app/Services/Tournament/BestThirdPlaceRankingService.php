@@ -17,12 +17,20 @@ class BestThirdPlaceRankingService
 
     public function compareRows(array $left, array $right): int
     {
+        $fairPlayComparison = config('tournament_rules.tiebreakers.use_fair_play', true)
+            ? ($this->fairPlayScore($right) <=> $this->fairPlayScore($left))
+            : 0;
+
+        $rankingComparison = config('tournament_rules.tiebreakers.use_fifa_ranking', false)
+            ? ($this->rankingScore($right) <=> $this->rankingScore($left))
+            : 0;
+
         return
             $right['points'] <=> $left['points']
             ?: $right['gd'] <=> $left['gd']
             ?: $right['gf'] <=> $left['gf']
-            ?: $this->fairPlayScore($right) <=> $this->fairPlayScore($left)
-            ?: $this->rankingScore($right) <=> $this->rankingScore($left)
+            ?: $fairPlayComparison
+            ?: $rankingComparison
             ?: strcmp((string) ($left['team']->group?->name ?? ''), (string) ($right['team']->group?->name ?? ''))
             ?: strcmp((string) ($left['team']->name ?? ''), (string) ($right['team']->name ?? ''));
     }

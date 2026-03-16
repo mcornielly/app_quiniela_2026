@@ -141,7 +141,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/quiniela/world-cup-template', QuinielaWorldCupController::class)->name('predictions.worldcup');
     Route::get('/pools', [PoolEntryController::class, 'index'])->name('pools.index');
     Route::post('/pools', [PoolEntryController::class, 'store'])->name('pools.store');
-    
+
     // Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
     // Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
     // Route::get('/rules', [RulesController::class, 'index'])->name('rules.index');
@@ -149,5 +149,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Route::get('/my-pools', [PoolEntryController::class, 'index'])->name('pools.index');
     Route::get('/pools/create', [PoolEntryController::class, 'create'])->name('pools.create');
 });
-
 require __DIR__.'/auth.php';

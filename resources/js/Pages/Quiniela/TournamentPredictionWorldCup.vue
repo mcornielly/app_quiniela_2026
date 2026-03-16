@@ -19,6 +19,10 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    bracketRules: {
+        type: Object,
+        default: () => ({}),
+    },
 })
 
 const page = usePage()
@@ -300,6 +304,10 @@ const compareStandingsRows = (left, right) => {
         return right.gd - left.gd
     }
 
+    if (left.ga !== right.ga) {
+        return left.ga - right.ga
+    }
+
     if (right.gf !== left.gf) {
         return right.gf - left.gf
     }
@@ -318,10 +326,102 @@ const rankedThirdPlaceRows = computed(() => {
         .sort(compareStandingsRows)
 })
 
+const qualifiedThirdPlaceRows = computed(() => rankedThirdPlaceRows.value.slice(0, 8))
+
+const thirdPlaceAssignments = computed(() => {
+    const qualifiedByGroup = Object.fromEntries(
+        qualifiedThirdPlaceRows.value.map((row) => [row.team?.group_name, row]),
+    )
+
+    const slotCandidates = {}
+    const thirdPlaceGames = decoratedGames.value.filter((game) => game.stage === 'round_32')
+
+    thirdPlaceGames.forEach((game) => {
+        ;['home', 'away'].forEach((side) => {
+            const slot = side === 'home' ? game.home_slot : game.away_slot
+            const matches = String(slot || '').match(/^3-([A-Z]+)$/)
+
+            if (!matches) {
+                return
+            }
+
+            const allowedGroups = matches[1]
+                .split('')
+                .filter((groupLetter) => Boolean(qualifiedByGroup[groupLetter]))
+
+            const slotKey = `${game.match_number}:${side}`
+
+            slotCandidates[slotKey] = {
+                key: slotKey,
+                matchNumber: Number(game.match_number),
+                side,
+                slot,
+                allowedGroups,
+            }
+        })
+    })
+
+    const qualifiedGroups = qualifiedThirdPlaceRows.value
+        .map((row) => row.team?.group_name)
+        .filter(Boolean)
+        .sort()
+
+    const combinationKey = qualifiedGroups.join('')
+    const configuredMatrix = props.bracketRules?.third_place_matrix?.[combinationKey] ?? null
+
+    if (configuredMatrix) {
+        const assignment = {}
+
+        for (const [slotKey, slotCandidate] of Object.entries(slotCandidates)) {
+            const configuredGroup = configuredMatrix[slotCandidate.matchNumber]
+
+            if (!configuredGroup || !slotCandidate.allowedGroups.includes(configuredGroup)) {
+                return {}
+            }
+
+            assignment[slotKey] = qualifiedByGroup[configuredGroup] ?? null
+        }
+
+        return assignment
+    }
+
+    const orderedSlots = Object.values(slotCandidates).sort((left, right) => {
+        if (left.matchNumber !== right.matchNumber) {
+            return left.matchNumber - right.matchNumber
+        }
+
+        return left.side.localeCompare(right.side)
+    })
+
+    const usedGroups = new Set()
+    const assignment = {}
+
+    for (const currentSlot of orderedSlots) {
+        const selectedGroup = [...currentSlot.allowedGroups].sort((left, right) => {
+            const leftIndex = qualifiedThirdPlaceRows.value.findIndex((row) => row.team?.group_name === left)
+            const rightIndex = qualifiedThirdPlaceRows.value.findIndex((row) => row.team?.group_name === right)
+
+            if (leftIndex !== rightIndex) {
+                return leftIndex - rightIndex
+            }
+
+            return left.localeCompare(right)
+        }).find((groupLetter) => !usedGroups.has(groupLetter))
+
+        if (!selectedGroup) {
+            return {}
+        }
+
+        assignment[currentSlot.key] = qualifiedByGroup[selectedGroup]
+        usedGroups.add(selectedGroup)
+    }
+
+    return assignment
+})
+
 const resolvedKnockoutGamesById = computed(() => {
     const resolvedById = {}
     const resolvedByMatchNumber = {}
-    const usedThirdPlaceGroups = new Set()
 
     const resolveWinnerForGame = (resolvedGame) => {
         const prediction = predictions[resolvedGame.id]
@@ -351,7 +451,7 @@ const resolvedKnockoutGamesById = computed(() => {
             : resolvedGame.home_team
     }
 
-    const resolveSlotTeam = (slot) => {
+    const resolveSlotTeam = (slot, side, game) => {
         if (!slot) {
             return null
         }
@@ -366,19 +466,8 @@ const resolvedKnockoutGamesById = computed(() => {
 
         matches = slot.match(/^3-([A-Z]+)$/)
         if (matches) {
-            const allowedGroups = new Set(matches[1].split(''))
-            const thirdPlaceRow = rankedThirdPlaceRows.value.find((row) => {
-                return allowedGroups.has(row.team?.group_name)
-                    && !usedThirdPlaceGroups.has(row.team?.group_name)
-            })
-
-            if (!thirdPlaceRow?.team) {
-                return null
-            }
-
-            usedThirdPlaceGroups.add(thirdPlaceRow.team.group_name)
-
-            return thirdPlaceRow.team
+            const thirdPlaceRow = thirdPlaceAssignments.value[`${game.match_number}:${side}`]
+            return thirdPlaceRow?.team ?? null
         }
 
         matches = slot.match(/^W(\d+)$/)
@@ -400,8 +489,12 @@ const resolvedKnockoutGamesById = computed(() => {
         .filter((game) => game.stage !== 'group')
         .sort((left, right) => Number(left.match_number) - Number(right.match_number))
         .forEach((game) => {
-            const homeTeam = game.home_slot ? (resolveSlotTeam(game.home_slot) ?? game.home_team) : game.home_team
-            const awayTeam = game.away_slot ? (resolveSlotTeam(game.away_slot) ?? game.away_team) : game.away_team
+            const homeTeam = game.home_slot
+                ? (resolveSlotTeam(game.home_slot, 'home', game) ?? game.home_team)
+                : game.home_team
+            const awayTeam = game.away_slot
+                ? (resolveSlotTeam(game.away_slot, 'away', game) ?? game.away_team)
+                : game.away_team
 
             const resolvedGame = {
                 ...game,
@@ -726,7 +819,7 @@ watch(
             <section v-else class="space-y-6">
                 <div class="grid gap-6 xl:grid-cols-[1fr_auto]">
                     <div class="rounded-3xl border border-amber-300/15 bg-amber-300/5 p-5 text-sm text-amber-100">
-                        La navegacion entre fases avanza a medida que completas la etapa previa. Los cruces muestran equipos resueltos cuando existen y, si no, usan el slot del bracket.
+                        La navegacion entre fases avanza a medida que completas la etapa previa. Los cruces muestran equipos resueltos cuando existen y, mientras tanto, mantienen un placeholder visual.
                     </div>
                     <button
                         v-if="currentStageStatus?.isComplete && nextUnlockedStage"

@@ -9,8 +9,11 @@ use Tests\TestCase;
 
 class BestThirdPlaceRankingServiceTest extends TestCase
 {
-    public function test_it_ranks_third_place_rows_using_fair_play_and_ranking_after_goals_for(): void
+    public function test_it_ranks_third_place_rows_using_fair_play_after_goals_for(): void
     {
+        config()->set('tournament_rules.tiebreakers.use_fair_play', true);
+        config()->set('tournament_rules.tiebreakers.use_fifa_ranking', false);
+
         $service = new BestThirdPlaceRankingService();
 
         $groupStandings = collect([
@@ -33,9 +36,35 @@ class BestThirdPlaceRankingServiceTest extends TestCase
 
         $ranked = $service->rank($groupStandings);
 
+        $this->assertSame('B', $ranked[0]['team']->group->name);
+        $this->assertSame('C', $ranked[1]['team']->group->name);
+        $this->assertSame('A', $ranked[2]['team']->group->name);
+    }
+
+    public function test_it_can_use_fifa_ranking_when_the_flag_is_enabled(): void
+    {
+        config()->set('tournament_rules.tiebreakers.use_fair_play', false);
+        config()->set('tournament_rules.tiebreakers.use_fifa_ranking', true);
+
+        $service = new BestThirdPlaceRankingService();
+
+        $groupStandings = collect([
+            'B' => [
+                null,
+                null,
+                $this->makeRow('B', 'Third B', 4, 1, 2, -2, 60),
+            ],
+            'C' => [
+                null,
+                null,
+                $this->makeRow('C', 'Third C', 4, 1, 2, -2, 80),
+            ],
+        ]);
+
+        $ranked = $service->rank($groupStandings);
+
         $this->assertSame('C', $ranked[0]['team']->group->name);
         $this->assertSame('B', $ranked[1]['team']->group->name);
-        $this->assertSame('A', $ranked[2]['team']->group->name);
     }
 
     private function makeRow(

@@ -48,9 +48,11 @@ const awayScore = computed({
     },
 })
 
-const teamLabel = (team, slot) => team?.name || slot || 'Por definir'
-const teamCode = (team, slot) => team?.code || slot || 'TBD'
+const isThirdPlaceRuleSlot = (slot) => /^3-[A-Z]+$/.test(String(slot || ''))
+const teamLabel = (team, slot) => team?.name || (isThirdPlaceRuleSlot(slot) ? 'Por definir' : (slot || 'Por definir'))
+const teamCode = (team, slot) => team?.code || (isThirdPlaceRuleSlot(slot) ? 'TBD' : (slot || 'TBD'))
 const teamSubLabel = (team, slot) => team?.is_special_slot ? 'FIFA' : teamLabel(team, slot)
+const teamCodeClass = () => 'mt-3 text-2xl font-black text-white whitespace-nowrap leading-tight'
 const hiddenFlags = ref({})
 
 const teamKey = (team, slot) => team?.id || team?.code || slot || 'unknown'
@@ -100,7 +102,7 @@ const hideFlag = (team, slot) => {
                 >
                     {{ teamCode(match.home_team, match.home_slot) }}
                 </div>
-                <p class="mt-3 text-2xl font-black text-white break-words leading-tight">
+                <p :class="teamCodeClass()">
                     {{ teamCode(match.home_team, match.home_slot) }}
                 </p>
                 <p class="mt-1 text-xs text-slate-400">
@@ -148,7 +150,7 @@ const hideFlag = (team, slot) => {
                 >
                     {{ teamCode(match.away_team, match.away_slot) }}
                 </div>
-                <p class="mt-3 text-2xl font-black text-white break-words leading-tight">
+                <p :class="teamCodeClass()">
                     {{ teamCode(match.away_team, match.away_slot) }}
                 </p>
                 <p class="mt-1 text-xs text-slate-400">
