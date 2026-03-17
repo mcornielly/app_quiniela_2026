@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -23,6 +24,7 @@ class User extends Authenticatable
         'email',
         'password',
         'is_admin',
+        'favorite_team_id',
     ];
 
     /**
@@ -51,5 +53,10 @@ class User extends Authenticatable
     public function poolEntries(): HasMany
     {
         return $this->hasMany(PoolEntry::class);
+    }
+
+    public function favoriteTeam(): BelongsTo
+    {
+        return $this->belongsTo(Team::class, 'favorite_team_id');
     }
 }

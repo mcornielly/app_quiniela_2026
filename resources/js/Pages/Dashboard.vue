@@ -26,6 +26,7 @@ const props = defineProps({
 const page = usePage()
 const userName = computed(() => page.props.auth?.user?.name?.split(' ')[0] ?? 'Jugador')
 const tournamentLogo = computed(() => imageUrl(props.tournament?.logo))
+const favoriteTeamTheme = computed(() => page.props.auth?.user?.favorite_team_theme ?? null)
 
 const worldCupKickoff = new Date('2026-06-11T19:00:00-04:00')
 const countdown = ref({
@@ -38,6 +39,19 @@ const countdown = ref({
 let timerId = null
 
 const tickerThemes = {
+    neutral: {
+        label: 'Neutral',
+        tickerClass: 'border-t border-slate-300/70 bg-[linear-gradient(to_right,_#cfd6df_0%,_#e4e8ee_45%,_#f4f6f9_100%)] text-slate-900',
+        surfaceClass: 'rounded-[1.5rem] bg-white/38 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] ring-1 ring-white/34 backdrop-blur-md',
+        iconClass: 'bg-white/80 text-slate-600 ring-1 ring-slate-200/80',
+        eyebrowClass: 'text-slate-700',
+        bodyClass: 'text-slate-700',
+        counterClass: 'rounded-2xl bg-[rgba(151,170,189,0.10)] px-3 py-2 text-center ring-1 ring-slate-200/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]',
+        counterValueClass: 'text-slate-900',
+        counterLabelClass: 'text-slate-600',
+        chipClass: 'border-slate-200 bg-white/68 text-slate-700 hover:bg-white',
+        activeChipClass: 'border-slate-300 bg-white text-slate-900 shadow-sm',
+    },
     alemania: {
         label: 'Alemania',
         tickerClass: 'border-t border-slate-300/60 bg-[linear-gradient(to_bottom,_#3b3b3b_0%,_#3b3b3b_33%,_#c97a7a_33%,_#c97a7a_66%,_#f0d88a_66%,_#f0d88a_100%)] text-white',
@@ -106,11 +120,11 @@ const tickerThemes = {
     },
 }
 
-const selectedTickerTheme = ref('francia')
-const activeTickerTheme = computed(() => tickerThemes[selectedTickerTheme.value] ?? tickerThemes.alemania)
+const selectedTickerTheme = ref('neutral')
+const activeTickerTheme = computed(() => favoriteTeamTheme.value ?? tickerThemes[selectedTickerTheme.value] ?? tickerThemes.neutral)
 
 const setTickerTheme = (themeKey) => {
-    selectedTickerTheme.value = tickerThemes[themeKey] ? themeKey : 'alemania'
+    selectedTickerTheme.value = tickerThemes[themeKey] ? themeKey : 'neutral'
     localStorage.setItem('dashboard-ticker-theme', selectedTickerTheme.value)
 }
 
@@ -201,9 +215,13 @@ const updateCountdown = () => {
 }
 
 onMounted(() => {
-    const storedTickerTheme = localStorage.getItem('dashboard-ticker-theme')
-    if (storedTickerTheme && tickerThemes[storedTickerTheme]) {
-        selectedTickerTheme.value = storedTickerTheme
+    if (favoriteTeamTheme.value?.key && tickerThemes[favoriteTeamTheme.value.key]) {
+        selectedTickerTheme.value = favoriteTeamTheme.value.key
+    } else {
+        const storedTickerTheme = localStorage.getItem('dashboard-ticker-theme')
+        if (storedTickerTheme && tickerThemes[storedTickerTheme]) {
+            selectedTickerTheme.value = storedTickerTheme
+        }
     }
 
     updateCountdown()
@@ -238,7 +256,7 @@ onBeforeUnmount(() => {
                         <CalendarDaysIcon v-else :class="activeTickerTheme.iconClass" class="h-4 w-4" />
                     </div>
                     <div>
-                        <p :class="activeTickerTheme.eyebrowClass" class="text-[11px] font-semibold uppercase tracking-[0.26em]">
+                        <p :class="activeTickerTheme.eyebrowClass" class="text-[12px] font-bold uppercase tracking-[0.26em]">
                             Cuenta regresiva al Mundial 2026
                         </p>
                         <p :class="activeTickerTheme.bodyClass" class="text-sm">
