@@ -1,5 +1,7 @@
 <script setup>
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { Link } from '@inertiajs/vue3'
+import confetti from 'canvas-confetti'
 
 defineProps({
     poolEntry: {
@@ -8,43 +10,89 @@ defineProps({
     },
 })
 
-const confettiPieces = Array.from({ length: 24 }, (_, index) => ({
-    id: index,
-    left: `${(index % 8) * 12 + 6}%`,
-    delay: `${(index % 6) * 120}ms`,
-    duration: `${2200 + (index % 5) * 180}ms`,
-    rotation: `${(index % 7) * 18}deg`,
-    height: `${14 + (index % 4) * 5}px`,
-    width: `${8 + (index % 3) * 2}px`,
-    colorClass: [
-        'bg-cyan-300',
-        'bg-emerald-300',
-        'bg-amber-300',
-        'bg-sky-300',
-    ][index % 4],
-}))
+const statusLabel = (status) => {
+    const labels = {
+        complete: 'Completado',
+    }
+
+    return labels[status] ?? status
+}
+
+const backConfettiCanvas = ref(null)
+const frontConfettiCanvas = ref(null)
+let backConfettiInstance = null
+let frontConfettiInstance = null
+
+const launchConfetti = () => {
+    if (!backConfettiCanvas.value || !frontConfettiCanvas.value) {
+        return
+    }
+
+    backConfettiInstance = confetti.create(backConfettiCanvas.value, {
+        resize: true,
+        useWorker: true,
+    })
+
+    frontConfettiInstance = confetti.create(frontConfettiCanvas.value, {
+        resize: true,
+        useWorker: true,
+    })
+
+    const backBursts = [
+        { particleCount: 120, spread: 72, startVelocity: 50, origin: { x: 0.5, y: 0.2 } },
+        { particleCount: 70, spread: 58, startVelocity: 42, origin: { x: 0.18, y: 0.15 } },
+        { particleCount: 70, spread: 58, startVelocity: 42, origin: { x: 0.82, y: 0.15 } },
+        { particleCount: 48, spread: 110, startVelocity: 34, decay: 0.92, scalar: 0.9, origin: { x: 0.5, y: 0.28 } },
+    ]
+
+    const frontBursts = [
+        { particleCount: 42, spread: 66, startVelocity: 38, scalar: 1.05, origin: { x: 0.32, y: 0.24 } },
+        { particleCount: 42, spread: 66, startVelocity: 38, scalar: 1.05, origin: { x: 0.68, y: 0.24 } },
+        { particleCount: 28, spread: 92, startVelocity: 28, decay: 0.9, scalar: 1.1, origin: { x: 0.5, y: 0.18 } },
+    ]
+
+    backBursts.forEach((burst, index) => {
+        window.setTimeout(() => {
+            backConfettiInstance?.({
+                ...burst,
+                ticks: 260,
+                gravity: 1.02,
+                colors: ['#67e8f9', '#6ee7b7', '#fde047', '#7dd3fc', '#f9a8d4', '#c4b5fd'],
+            })
+        }, index * 180)
+    })
+
+    frontBursts.forEach((burst, index) => {
+        window.setTimeout(() => {
+            frontConfettiInstance?.({
+                ...burst,
+                ticks: 220,
+                gravity: 0.98,
+                drift: index === 1 ? -0.15 : 0.15,
+                colors: ['#ffffff', '#67e8f9', '#fde047', '#f9a8d4'],
+            })
+        }, 120 + (index * 220))
+    })
+}
+
+onMounted(() => {
+    launchConfetti()
+})
+
+onBeforeUnmount(() => {
+    confetti.reset()
+})
 </script>
 
 <template>
     <div class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/75 px-4 backdrop-blur-sm">
-        <div class="confetti-wrapper">
-            <span
-                v-for="piece in confettiPieces"
-                :key="piece.id"
-                :class="piece.colorClass"
-                class="confetti-piece rounded-sm"
-                :style="{
-                    left: piece.left,
-                    animationDelay: piece.delay,
-                    '--duration': piece.duration,
-                    '--rotation': piece.rotation,
-                    width: piece.width,
-                    height: piece.height,
-                }"
-            />
-        </div>
+        <canvas
+            ref="backConfettiCanvas"
+            class="pointer-events-none fixed inset-0 h-full w-full"
+            aria-hidden="true"
+        />
 
-        <div class="relative w-full max-w-2xl overflow-hidden rounded-[2rem] border border-cyan-300/20 bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.16),_transparent_35%),linear-gradient(180deg,_rgba(15,23,42,0.98),_rgba(2,6,23,0.98))] p-8 shadow-2xl shadow-cyan-950/40">
+        <div class="relative z-[72] w-full max-w-2xl overflow-hidden rounded-[2rem] border border-cyan-300/20 bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.16),_transparent_35%),linear-gradient(180deg,_rgba(15,23,42,0.98),_rgba(2,6,23,0.98))] p-8 shadow-2xl shadow-cyan-950/40">
             <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-300 via-emerald-300 to-amber-300" />
 
             <div class="text-center">
@@ -67,7 +115,7 @@ const confettiPieces = Array.from({ length: 24 }, (_, index) => ({
                 </div>
                 <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4 text-center">
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Estado</p>
-                    <p class="mt-2 text-2xl font-black capitalize text-emerald-300">{{ poolEntry.status }}</p>
+                    <p class="mt-2 text-2xl font-black text-emerald-300">{{ statusLabel(poolEntry.status) }}</p>
                 </div>
                 <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4 text-center">
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Completado</p>
@@ -94,33 +142,11 @@ const confettiPieces = Array.from({ length: 24 }, (_, index) => ({
                 </Link>
             </div>
         </div>
+
+        <canvas
+            ref="frontConfettiCanvas"
+            class="pointer-events-none fixed inset-0 z-[73] h-full w-full"
+            aria-hidden="true"
+        />
     </div>
 </template>
-
-<style scoped>
-.confetti-wrapper {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    overflow: hidden;
-}
-
-.confetti-piece {
-    position: absolute;
-    top: 0;
-    opacity: 0.9;
-    animation: confetti-fall var(--duration) linear infinite;
-}
-
-@keyframes confetti-fall {
-    0% {
-        transform: translate3d(0, -100%, 0) rotate(var(--rotation, 0deg));
-        opacity: 1;
-    }
-
-    100% {
-        transform: translate3d(0, 100vh, 0) rotate(calc(var(--rotation, 0deg) + 360deg));
-        opacity: 0.8;
-    }
-}
-</style>
