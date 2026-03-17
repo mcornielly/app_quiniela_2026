@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Game;
 use App\Models\PoolEntry;
 use App\Models\Tournament;
+use App\Services\Tournament\PredictionBracketResolverService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -15,6 +16,11 @@ use Throwable;
 
 class PoolEntryController extends Controller
 {
+    public function __construct(
+        private readonly PredictionBracketResolverService $predictionBracketResolverService,
+    ) {
+    }
+
     public function index(Request $request): Response
     {
         $poolEntries = PoolEntry::query()
@@ -93,6 +99,31 @@ class PoolEntryController extends Controller
                 ->with('error', 'Hay partidos repetidos en el envio. Revisa la quiniela e intentalo nuevamente.');
         }
 
+        $hasInvalidKnockoutDraw = $predictionPayloads->contains(function (array $prediction) use ($games) {
+            /** @var \App\Models\Game|null $game */
+            $game = $games->get($prediction['game_id']);
+
+            return $game
+                && $game->stage !== 'group'
+                && (int) $prediction['home_score'] === (int) $prediction['away_score'];
+        });
+
+        if ($hasInvalidKnockoutDraw) {
+            return redirect()
+                ->route('predictions.worldcup')
+                ->with('error', 'En fases eliminatorias debes definir un ganador. Revisa los empates de tu quiniela.');
+        }
+
+        try {
+            $resolvedBracket = $this->predictionBracketResolverService->resolve($tournament, $predictionPayloads);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return redirect()
+                ->route('predictions.worldcup')
+                ->with('error', 'No pudimos validar el bracket de tu quiniela. Revisa los cruces y vuelve a intentarlo.');
+        }
+
         try {
             $poolEntry = DB::transaction(function () use ($user, $tournament, $predictionPayloads, $games) {
                 $poolEntry = PoolEntry::query()->create([
@@ -137,16 +168,11 @@ class PoolEntryController extends Controller
         return redirect()
             ->route('predictions.worldcup')
             ->with('success', 'La quiniela fue registrada exitosamente.')
-            ->with('created_pool_entry', $this->buildCreatedPoolEntryPayload($poolEntry, $games, $predictionPayloads));
+            ->with('created_pool_entry', $this->buildCreatedPoolEntryPayload($poolEntry, $resolvedBracket['predictedChampion'] ?? null));
     }
 
-    private function buildCreatedPoolEntryPayload(PoolEntry $poolEntry, Collection $games, Collection $predictionPayloads): array
+    private function buildCreatedPoolEntryPayload(PoolEntry $poolEntry, $predictedChampion): array
     {
-        $finalGame = $games->firstWhere('stage', 'final');
-        $finalPrediction = $finalGame
-            ? $predictionPayloads->firstWhere('game_id', $finalGame->id)
-            : null;
-
         return [
             'id' => $poolEntry->id,
             'registrationNumber' => $poolEntry->id,
@@ -154,25 +180,8 @@ class PoolEntryController extends Controller
             'status' => $poolEntry->status,
             'completionPercent' => $poolEntry->completion_percent,
             'tournamentName' => $poolEntry->tournament?->name,
-            'predictedChampionName' => $this->resolveChampionName($finalGame, $finalPrediction),
+            'predictedChampionName' => $predictedChampion?->name,
             'createdAt' => $poolEntry->created_at?->format('d/m/Y H:i'),
         ];
-    }
-
-    private function resolveChampionName(?Game $finalGame, ?array $finalPrediction): ?string
-    {
-        if (!$finalGame || !$finalPrediction) {
-            return null;
-        }
-
-        if ($finalPrediction['home_score'] > $finalPrediction['away_score']) {
-            return $finalGame->homeTeam?->name ?? $finalGame->home_slot;
-        }
-
-        if ($finalPrediction['away_score'] > $finalPrediction['home_score']) {
-            return $finalGame->awayTeam?->name ?? $finalGame->away_slot;
-        }
-
-        return 'Empate en la final';
     }
 }

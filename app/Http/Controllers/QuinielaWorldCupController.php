@@ -80,7 +80,13 @@ class QuinielaWorldCupController extends Controller
             ],
             'groups' => $groups,
             'games' => $games,
+            'bracketRules' => config('tournament_brackets.' . $this->bracketKey($tournament), []),
         ]);
+    }
+
+    private function bracketKey(Tournament $tournament): string
+    {
+        return sprintf('%s_%s', $tournament->type, $tournament->year);
     }
 
     private function transformTeam(?Team $team): ?array

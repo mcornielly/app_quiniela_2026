@@ -16,31 +16,43 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'score-changed'])
 
+const sanitizeScore = (value) => {
+    const digits = String(value ?? '').replace(/\D+/g, '').slice(0, 2)
+
+    if (digits === '') {
+        return null
+    }
+
+    return Math.min(20, Math.max(0, Number.parseInt(digits, 10)))
+}
+
 const homeScore = computed({
-    get: () => props.modelValue.home,
+    get: () => props.modelValue.home ?? '',
     set: (value) => {
         emit('update:modelValue', {
             ...props.modelValue,
-            home: value === '' ? null : Number(value),
+            home: sanitizeScore(value),
         })
         emit('score-changed')
     },
 })
 
 const awayScore = computed({
-    get: () => props.modelValue.away,
+    get: () => props.modelValue.away ?? '',
     set: (value) => {
         emit('update:modelValue', {
             ...props.modelValue,
-            away: value === '' ? null : Number(value),
+            away: sanitizeScore(value),
         })
         emit('score-changed')
     },
 })
 
-const teamLabel = (team, slot) => team?.name || slot || 'Por definir'
-const teamCode = (team, slot) => team?.code || slot || 'TBD'
+const isThirdPlaceRuleSlot = (slot) => /^3-[A-Z]+$/.test(String(slot || ''))
+const teamLabel = (team, slot) => team?.name || (isThirdPlaceRuleSlot(slot) ? 'Por definir' : (slot || 'Por definir'))
+const teamCode = (team, slot) => team?.code || (isThirdPlaceRuleSlot(slot) ? 'TBD' : (slot || 'TBD'))
 const teamSubLabel = (team, slot) => team?.is_special_slot ? 'FIFA' : teamLabel(team, slot)
+const teamCodeClass = () => 'mt-3 text-2xl font-black text-white whitespace-nowrap leading-tight'
 const hiddenFlags = ref({})
 
 const teamKey = (team, slot) => team?.id || team?.code || slot || 'unknown'
@@ -90,7 +102,7 @@ const hideFlag = (team, slot) => {
                 >
                     {{ teamCode(match.home_team, match.home_slot) }}
                 </div>
-                <p class="mt-3 text-2xl font-black text-white break-words leading-tight">
+                <p :class="teamCodeClass()">
                     {{ teamCode(match.home_team, match.home_slot) }}
                 </p>
                 <p class="mt-1 text-xs text-slate-400">
@@ -101,18 +113,24 @@ const hideFlag = (team, slot) => {
             <div class="flex items-center gap-2">
                 <input
                     v-model="homeScore"
-                    type="number"
-                    min="0"
-                    max="20"
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="2"
+                    autocorrect="off"
+                    autocomplete="off"
+                    spellcheck="false"
                     placeholder="-"
                     class="h-16 w-14 rounded-2xl border border-white/10 bg-black/40 text-center text-3xl font-black text-white focus:border-cyan-400 focus:ring-cyan-400/30 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 >
                 <span class="text-xl font-black text-slate-500">:</span>
                 <input
                     v-model="awayScore"
-                    type="number"
-                    min="0"
-                    max="20"
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="2"
+                    autocorrect="off"
+                    autocomplete="off"
+                    spellcheck="false"
                     placeholder="-"
                     class="h-16 w-14 rounded-2xl border border-white/10 bg-black/40 text-center text-3xl font-black text-white focus:border-cyan-400 focus:ring-cyan-400/30 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 >
@@ -132,7 +150,7 @@ const hideFlag = (team, slot) => {
                 >
                     {{ teamCode(match.away_team, match.away_slot) }}
                 </div>
-                <p class="mt-3 text-2xl font-black text-white break-words leading-tight">
+                <p :class="teamCodeClass()">
                     {{ teamCode(match.away_team, match.away_slot) }}
                 </p>
                 <p class="mt-1 text-xs text-slate-400">

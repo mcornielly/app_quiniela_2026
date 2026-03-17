@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\CalendarController;
 use App\Http\Controllers\Admin\MatchController;
 use App\Http\Controllers\Admin\PoolEntriesController;
 use App\Http\Controllers\Admin\PoolEntryController as AdminPoolEntryController;
+use App\Http\Controllers\Admin\TournamentParticipantController;
 use App\Http\Controllers\PoolEntryController;
 use App\Http\Controllers\QuinielaWorldCupController;
 use Illuminate\Foundation\Application;
@@ -62,6 +63,10 @@ Route::middleware(['auth', 'verified', 'admin'])
         ->name('tournaments.bulkDelete');
 
     Route::resource('tournaments', TournamentController::class)->only(['index','store','update','destroy']);
+    Route::get('tournaments/{tournament}/participants', [TournamentParticipantController::class, 'index'])
+        ->name('tournaments.participants.index');
+    Route::patch('tournaments/{tournament}/participants/{participant}', [TournamentParticipantController::class, 'update'])
+        ->name('tournaments.participants.update');
 
     Route::delete('teams/bulk-delete', [TeamController::class, 'bulkDelete'])
         ->name('teams.bulkDelete');
@@ -136,7 +141,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/quiniela/world-cup-template', QuinielaWorldCupController::class)->name('predictions.worldcup');
     Route::get('/pools', [PoolEntryController::class, 'index'])->name('pools.index');
     Route::post('/pools', [PoolEntryController::class, 'store'])->name('pools.store');
-    
+
     // Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
     // Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
     // Route::get('/rules', [RulesController::class, 'index'])->name('rules.index');
@@ -144,5 +149,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Route::get('/my-pools', [PoolEntryController::class, 'index'])->name('pools.index');
     Route::get('/pools/create', [PoolEntryController::class, 'create'])->name('pools.create');
 });
-
 require __DIR__.'/auth.php';
