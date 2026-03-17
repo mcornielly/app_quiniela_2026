@@ -13,10 +13,19 @@ import {
 } from '@heroicons/vue/24/outline'
 import SectionCard from '@/Components/User/SectionCard.vue'
 import StatCard from '@/Components/User/StatCard.vue'
+import { imageUrl } from '@/Utils/image'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
+
+const props = defineProps({
+    tournament: {
+        type: Object,
+        default: null,
+    },
+})
 
 const page = usePage()
 const userName = computed(() => page.props.auth?.user?.name?.split(' ')[0] ?? 'Jugador')
+const tournamentLogo = computed(() => imageUrl(props.tournament?.logo))
 
 const worldCupKickoff = new Date('2026-06-11T19:00:00-04:00')
 const countdown = ref({
@@ -32,12 +41,12 @@ const tickerThemes = {
     alemania: {
         label: 'Alemania',
         tickerClass: 'border-t border-slate-300/60 bg-[linear-gradient(to_bottom,_#3b3b3b_0%,_#3b3b3b_33%,_#c97a7a_33%,_#c97a7a_66%,_#f0d88a_66%,_#f0d88a_100%)] text-white',
-        surfaceClass: 'rounded-[1.5rem] bg-slate-950/24 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-white/10 backdrop-blur-md',
+        surfaceClass: 'rounded-[1.5rem] bg-slate-950/18 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/30 backdrop-blur-md',
         iconClass: 'bg-white/16 text-white ring-1 ring-white/15',
         eyebrowClass: 'text-white/75',
         bodyClass: 'text-white',
-        counterClass: 'rounded-2xl bg-black/18 px-3 py-2 text-center ring-1 ring-white/14 backdrop-blur',
-        counterValueClass: 'text-white',
+        counterClass: 'rounded-2xl bg-white/16 px-3 py-2 text-center ring-1 ring-white/40 backdrop-blur',
+        counterValueClass: 'text-[#111111]',
         counterLabelClass: 'text-white/72',
         chipClass: 'border-slate-400/70 bg-slate-900/65 text-white hover:bg-slate-900/80',
         activeChipClass: 'border-white/20 bg-white/16 text-white shadow-sm',
@@ -45,12 +54,12 @@ const tickerThemes = {
     argentina: {
         label: 'Argentina',
         tickerClass: 'border-t border-sky-200/70 bg-[linear-gradient(to_bottom,_#a9dbff_0%,_#a9dbff_33%,_#f7fbff_33%,_#f7fbff_66%,_#a9dbff_66%,_#a9dbff_100%)] text-slate-900',
-        surfaceClass: 'rounded-[1.5rem] bg-white/48 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] ring-1 ring-sky-200/70 backdrop-blur-md',
+        surfaceClass: 'relative rounded-[1.5rem] bg-slate-950/12 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/30 backdrop-blur-md',
         iconClass: 'bg-white/80 text-sky-600 ring-1 ring-sky-200/70',
         eyebrowClass: 'text-sky-700',
         bodyClass: 'text-slate-700',
-        counterClass: 'rounded-2xl bg-white/72 px-3 py-2 text-center ring-1 ring-sky-200/70 backdrop-blur',
-        counterValueClass: 'text-slate-950',
+        counterClass: 'rounded-2xl bg-white/16 px-3 py-2 text-center ring-1 ring-white/40 backdrop-blur',
+        counterValueClass: 'text-[#4d8fcb]',
         counterLabelClass: 'text-slate-500',
         chipClass: 'border-sky-200 bg-white/70 text-sky-700 hover:bg-white',
         activeChipClass: 'border-sky-300 bg-sky-50 text-sky-800 shadow-sm',
@@ -59,25 +68,25 @@ const tickerThemes = {
         label: 'Brasil',
         tickerClass: 'relative overflow-hidden border-t border-emerald-300/60 bg-[#3f9f63] text-white',
         decorationClass: 'before:absolute before:left-1/2 before:top-1/2 before:h-32 before:w-32 before:-translate-x-1/2 before:-translate-y-1/2 before:rotate-45 before:rounded-[0.75rem] before:bg-[#f0d25a] before:content-[\'\'] after:absolute after:left-1/2 after:top-1/2 after:h-16 after:w-16 after:-translate-x-1/2 after:-translate-y-1/2 after:rounded-full after:bg-[#29539b] after:content-[\'\']',
-        surfaceClass: 'relative rounded-[1.5rem] bg-slate-950/16 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-white/12 backdrop-blur-md',
+        surfaceClass: 'relative rounded-[1.5rem] bg-slate-950/12 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/30 backdrop-blur-md',
         iconClass: 'bg-white/16 text-white ring-1 ring-white/20',
         eyebrowClass: 'text-white/80',
         bodyClass: 'text-white',
-        counterClass: 'rounded-2xl bg-black/16 px-3 py-2 text-center ring-1 ring-white/14 backdrop-blur',
-        counterValueClass: 'text-white',
-        counterLabelClass: 'text-white/72',
+        counterClass: 'rounded-2xl bg-white/16 px-3 py-2 text-center ring-1 ring-white/40 backdrop-blur',
+        counterValueClass: 'text-[#f0d25a]',
+        counterLabelClass: 'text-white/78',
         chipClass: 'border-emerald-300/30 bg-slate-950/20 text-white hover:bg-slate-950/30',
         activeChipClass: 'border-white/20 bg-white/16 text-white shadow-sm',
     },
     francia: {
         label: 'Francia',
         tickerClass: 'border-t border-slate-300/60 bg-[linear-gradient(to_right,_#8fb2d9_0%,_#8fb2d9_33%,_#f8fafc_33%,_#f8fafc_66%,_#e3a19b_66%,_#e3a19b_100%)] text-slate-900',
-        surfaceClass: 'rounded-[1.5rem] bg-white/44 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] ring-1 ring-slate-200/70 backdrop-blur-md',
+        surfaceClass: 'relative rounded-[1.5rem] bg-slate-950/12 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/30 backdrop-blur-md',
         iconClass: 'bg-white/82 text-slate-700 ring-1 ring-slate-200/80',
         eyebrowClass: 'text-slate-700',
         bodyClass: 'text-slate-700',
-        counterClass: 'rounded-2xl bg-white/72 px-3 py-2 text-center ring-1 ring-slate-200/80 backdrop-blur',
-        counterValueClass: 'text-slate-950',
+        counterClass: 'rounded-2xl bg-white/16 px-3 py-2 text-center ring-1 ring-white/40 backdrop-blur',
+        counterValueClass: 'text-[#3f6faa]',
         counterLabelClass: 'text-slate-500',
         chipClass: 'border-slate-200 bg-white/68 text-slate-700 hover:bg-white',
         activeChipClass: 'border-slate-300 bg-white text-slate-900 shadow-sm',
@@ -85,12 +94,12 @@ const tickerThemes = {
     italia: {
         label: 'Italia',
         tickerClass: 'border-t border-slate-300/60 bg-[linear-gradient(to_right,_#8dc7a2_0%,_#8dc7a2_33%,_#f8fafc_33%,_#f8fafc_66%,_#e5a0a0_66%,_#e5a0a0_100%)] text-slate-900',
-        surfaceClass: 'rounded-[1.5rem] bg-white/46 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] ring-1 ring-slate-200/70 backdrop-blur-md',
+        surfaceClass: 'relative rounded-[1.5rem] bg-slate-950/12 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/30 backdrop-blur-md',
         iconClass: 'bg-white/82 text-slate-700 ring-1 ring-slate-200/80',
         eyebrowClass: 'text-slate-700',
         bodyClass: 'text-slate-700',
-        counterClass: 'rounded-2xl bg-white/74 px-3 py-2 text-center ring-1 ring-slate-200/80 backdrop-blur',
-        counterValueClass: 'text-slate-950',
+        counterClass: 'rounded-2xl bg-white/16 px-3 py-2 text-center ring-1 ring-white/40 backdrop-blur',
+        counterValueClass: 'text-[#3f9960]',
         counterLabelClass: 'text-slate-500',
         chipClass: 'border-slate-200 bg-white/68 text-slate-700 hover:bg-white',
         activeChipClass: 'border-slate-300 bg-white text-slate-900 shadow-sm',
@@ -217,10 +226,16 @@ onBeforeUnmount(() => {
         :ticker-class="[activeTickerTheme.tickerClass, activeTickerTheme.decorationClass || ''].join(' ')"
     >
         <template #ticker>
-            <div :class="activeTickerTheme.surfaceClass" class="flex items-center gap-3">
+            <div :class="activeTickerTheme.surfaceClass" class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-center gap-3">
-                    <div :class="activeTickerTheme.iconClass" class="flex h-9 w-9 items-center justify-center rounded-full">
-                        <CalendarDaysIcon class="h-4 w-4" />
+                    <div class="flex items-center justify-center overflow-hidden">
+                        <img
+                            v-if="tournamentLogo"
+                            :src="tournamentLogo"
+                            :alt="props.tournament?.name || 'World Cup logo'"
+                            class="h-[4.5rem] w-auto object-contain"
+                        >
+                        <CalendarDaysIcon v-else :class="activeTickerTheme.iconClass" class="h-4 w-4" />
                     </div>
                     <div>
                         <p :class="activeTickerTheme.eyebrowClass" class="text-[11px] font-semibold uppercase tracking-[0.26em]">
@@ -231,26 +246,24 @@ onBeforeUnmount(() => {
                         </p>
                     </div>
                 </div>
-            </div>
-        </template>
 
-        <template #headerCenter>
-            <div class="grid grid-cols-4 gap-2 md:gap-3">
-                <div class="rounded-2xl border border-slate-200/80 bg-white/92 px-4 py-3 text-center shadow-sm dark:border-slate-700 dark:bg-slate-950/70">
-                    <p class="text-2xl font-black tracking-tight text-slate-950 dark:text-white">{{ countdown.days }}</p>
-                    <p class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Dias</p>
-                </div>
-                <div class="rounded-2xl border border-slate-200/80 bg-white/92 px-4 py-3 text-center shadow-sm dark:border-slate-700 dark:bg-slate-950/70">
-                    <p class="text-2xl font-black tracking-tight text-slate-950 dark:text-white">{{ countdown.hours }}</p>
-                    <p class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Horas</p>
-                </div>
-                <div class="rounded-2xl border border-slate-200/80 bg-white/92 px-4 py-3 text-center shadow-sm dark:border-slate-700 dark:bg-slate-950/70">
-                    <p class="text-2xl font-black tracking-tight text-slate-950 dark:text-white">{{ countdown.minutes }}</p>
-                    <p class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Min</p>
-                </div>
-                <div class="rounded-2xl border border-slate-200/80 bg-white/92 px-4 py-3 text-center shadow-sm dark:border-slate-700 dark:bg-slate-950/70">
-                    <p class="text-2xl font-black tracking-tight text-slate-950 dark:text-white">{{ countdown.seconds }}</p>
-                    <p class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Seg</p>
+                <div class="grid grid-cols-4 gap-2 md:gap-3">
+                    <div :class="activeTickerTheme.counterClass">
+                        <p :class="activeTickerTheme.counterValueClass" class="text-xl font-black tracking-tight">{{ countdown.days }}</p>
+                        <p :class="activeTickerTheme.counterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Dias</p>
+                    </div>
+                    <div :class="activeTickerTheme.counterClass">
+                        <p :class="activeTickerTheme.counterValueClass" class="text-xl font-black tracking-tight">{{ countdown.hours }}</p>
+                        <p :class="activeTickerTheme.counterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Horas</p>
+                    </div>
+                    <div :class="activeTickerTheme.counterClass">
+                        <p :class="activeTickerTheme.counterValueClass" class="text-xl font-black tracking-tight">{{ countdown.minutes }}</p>
+                        <p :class="activeTickerTheme.counterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Min</p>
+                    </div>
+                    <div :class="activeTickerTheme.counterClass">
+                        <p :class="activeTickerTheme.counterValueClass" class="text-xl font-black tracking-tight">{{ countdown.seconds }}</p>
+                        <p :class="activeTickerTheme.counterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Seg</p>
+                    </div>
                 </div>
             </div>
         </template>

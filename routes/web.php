@@ -1,6 +1,6 @@
 <?php
 
-// use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DashboardController;
 // use App\Http\Controllers\PoolEntryController;
 // use App\Http\Controllers\RankingController;
 // use App\Http\Controllers\RulesController;
@@ -133,7 +133,7 @@ Route::get('/quiniela-2026', function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', fn() => Inertia::render('Dashboard'))->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/quiniela/matches', fn() => Inertia::render('Matches'))->name('matches.index');
     Route::get('/quiniela/groups', fn() => Inertia::render('Groups'))->name('groups.index');
     Route::get('/quiniela/leaderboard', fn() => Inertia::render('Leaderboard'))->name('leaderboard');

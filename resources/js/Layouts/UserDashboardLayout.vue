@@ -310,7 +310,7 @@ onMounted(() => {
 
         <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
             <div class="mb-8 overflow-hidden rounded-[2rem] border border-white/80 bg-white/90 p-6 shadow-xl shadow-slate-200/70 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none">
-                <div class="flex flex-col gap-6 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_auto] xl:items-center">
+                <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                     <div class="max-w-2xl">
                         <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary-600 dark:text-primary-400">
                             Bienvenido
@@ -321,10 +321,6 @@ onMounted(() => {
                         <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
                             {{ props.description }}
                         </p>
-                    </div>
-
-                    <div v-if="$slots.headerCenter" class="min-w-0">
-                        <slot name="headerCenter" />
                     </div>
 
                     <div class="flex flex-wrap gap-3">
