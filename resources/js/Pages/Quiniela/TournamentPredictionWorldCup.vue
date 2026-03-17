@@ -681,21 +681,21 @@ onBeforeUnmount(() => {
                 </div>
 
                 <div class="grid grid-cols-4 gap-2 md:gap-3">
-                    <div class="rounded-2xl bg-white/8 px-3 py-2 text-center ring-1 ring-white/10 backdrop-blur">
+                    <div class="rounded-2xl border border-slate-500/60 bg-slate-800/80 px-3 py-2 text-center shadow-lg shadow-black/25 backdrop-blur">
                         <p class="text-xl font-black tracking-tight text-white">{{ countdown.days }}</p>
-                        <p class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-300">Dias</p>
+                        <p class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-200">Dias</p>
                     </div>
-                    <div class="rounded-2xl bg-white/8 px-3 py-2 text-center ring-1 ring-white/10 backdrop-blur">
+                    <div class="rounded-2xl border border-slate-500/60 bg-slate-800/80 px-3 py-2 text-center shadow-lg shadow-black/25 backdrop-blur">
                         <p class="text-xl font-black tracking-tight text-white">{{ countdown.hours }}</p>
-                        <p class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-300">Horas</p>
+                        <p class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-200">Horas</p>
                     </div>
-                    <div class="rounded-2xl bg-white/8 px-3 py-2 text-center ring-1 ring-white/10 backdrop-blur">
+                    <div class="rounded-2xl border border-slate-500/60 bg-slate-800/80 px-3 py-2 text-center shadow-lg shadow-black/25 backdrop-blur">
                         <p class="text-xl font-black tracking-tight text-white">{{ countdown.minutes }}</p>
-                        <p class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-300">Min</p>
+                        <p class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-200">Min</p>
                     </div>
-                    <div class="rounded-2xl bg-white/8 px-3 py-2 text-center ring-1 ring-white/10 backdrop-blur">
+                    <div class="rounded-2xl border border-slate-500/60 bg-slate-800/80 px-3 py-2 text-center shadow-lg shadow-black/25 backdrop-blur">
                         <p class="text-xl font-black tracking-tight text-white">{{ countdown.seconds }}</p>
-                        <p class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-300">Seg</p>
+                        <p class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-200">Seg</p>
                     </div>
                 </div>
             </div>
