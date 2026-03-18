@@ -6,6 +6,7 @@ use App\Models\Team;
 use App\Models\Tournament;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -26,6 +27,7 @@ class DashboardController extends Controller
                 'logo' => $tournament->logo,
             ] : null,
             'favoriteTeams' => $this->favoriteTeams(),
+            'favoriteTeamCard' => $this->favoriteTeamCard(),
         ]);
     }
 
@@ -89,5 +91,39 @@ class DashboardController extends Controller
                 ];
             })
             ->all();
+    }
+
+    private function favoriteTeamCard(): ?array
+    {
+        $user = Auth::user();
+        $favoriteTeamId = $user?->favorite_team_id;
+
+        if (!$favoriteTeamId) {
+            return null;
+        }
+
+        $team = Team::query()
+            ->with(['group', 'country'])
+            ->find($favoriteTeamId);
+
+        if (!$team) {
+            return null;
+        }
+
+        return [
+            'id' => $team->id,
+            'name' => $team->name,
+            'group_name' => $team->group?->name,
+            'position' => $team->group_position,
+            'stats' => [
+                'points' => 0,
+                'played' => 0,
+                'won' => 0,
+                'drawn' => 0,
+                'lost' => 0,
+                'gf' => 0,
+                'ga' => 0,
+            ],
+        ];
     }
 }

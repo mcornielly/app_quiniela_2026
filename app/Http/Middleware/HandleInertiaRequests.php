@@ -55,6 +55,7 @@ class HandleInertiaRequests extends Middleware
             'email' => $user->email,
             'email_verified_at' => $user->email_verified_at,
             'is_admin' => $user->is_admin,
+            'pool_entries_count' => $user->poolEntries()->count(),
             'favorite_team_id' => $user->favorite_team_id,
             'favorite_team' => $user->favoriteTeam ? [
                 'id' => $user->favoriteTeam->id,

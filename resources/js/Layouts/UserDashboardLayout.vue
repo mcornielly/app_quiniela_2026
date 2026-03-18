@@ -314,38 +314,40 @@ onMounted(() => {
                     <slot name="headerAside" />
                 </div>
 
-                <div class="min-w-0 flex-1 overflow-hidden rounded-[2rem] border border-white/80 bg-white/90 p-6 shadow-xl shadow-slate-200/70 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none">
-                <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                    <div class="max-w-2xl">
-                        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary-600 dark:text-primary-400">
-                            Bienvenido
-                        </p>
-                        <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">
-                            {{ props.title || 'Panel principal' }}
-                        </h1>
-                        <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                            {{ props.description }}
-                        </p>
-                    </div>
+                <slot v-if="$slots.headerContent" name="headerContent" />
 
-                    <div class="flex flex-wrap gap-3">
-                        <slot name="headerActions">
-                            <Link
-                                :href="route('predictions.worldcup')"
-                                class="inline-flex items-center justify-center rounded-2xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-primary-500/30 transition hover:bg-primary-700"
-                            >
-                                Crear quiniela
-                            </Link>
-                            <Link
-                                :href="route('pools.index')"
-                                class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary-300 hover:text-primary-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-primary-500 dark:hover:text-primary-300"
-                            >
-                                Ver mis quinielas
-                            </Link>
-                        </slot>
+                <div v-else class="min-w-0 flex-1 overflow-hidden rounded-[2rem] border border-white/80 bg-white/90 p-6 shadow-xl shadow-slate-200/70 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none">
+                    <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                        <div class="max-w-2xl">
+                            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary-600 dark:text-primary-400">
+                                Bienvenido
+                            </p>
+                            <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                                {{ props.title || 'Panel principal' }}
+                            </h1>
+                            <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                {{ props.description }}
+                            </p>
+                        </div>
+
+                        <div class="flex flex-wrap gap-3">
+                            <slot name="headerActions">
+                                <Link
+                                    :href="route('predictions.worldcup')"
+                                    class="inline-flex items-center justify-center rounded-2xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-primary-500/30 transition hover:bg-primary-700"
+                                >
+                                    Crear quiniela
+                                </Link>
+                                <Link
+                                    :href="route('pools.index')"
+                                    class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary-300 hover:text-primary-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-primary-500 dark:hover:text-primary-300"
+                                >
+                                    Ver mis quinielas
+                                </Link>
+                            </slot>
+                        </div>
                     </div>
                 </div>
-            </div>
             </div>
             <slot />
 
@@ -353,6 +355,3 @@ onMounted(() => {
         </main>
     </div>
 </template>
-
-
-

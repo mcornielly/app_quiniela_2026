@@ -13,7 +13,6 @@ import {
 } from '@heroicons/vue/24/outline'
 import FavoriteTeamModal from '@/Components/User/FavoriteTeamModal.vue'
 import SectionCard from '@/Components/User/SectionCard.vue'
-import ShieldCard from '@/Components/User/ShieldCard.vue'
 import StatCard from '@/Components/User/StatCard.vue'
 import { launchThemeChangeConfetti } from '@/Utils/confetti'
 import { imageUrl } from '@/Utils/image'
@@ -28,19 +27,25 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    favoriteTeamCard: {
+        type: Object,
+        default: null,
+    },
 })
 
 const page = usePage()
 const userName = computed(() => page.props.auth?.user?.name?.split(' ')[0] ?? 'Jugador')
+const userPoolEntriesCount = computed(() => Number(page.props.auth?.user?.pool_entries_count ?? 0))
 const tournamentLogo = computed(() => imageUrl(props.tournament?.logo))
+const tournamentTitle = computed(() => props.tournament?.name ?? 'World Cup 2026')
 const currentFavoriteTeam = computed(() => page.props.auth?.user?.favorite_team ?? null)
 const favoriteTeamTheme = computed(() => page.props.auth?.user?.favorite_team_theme ?? null)
 const favoriteTeamShield = computed(() => imageUrl(currentFavoriteTeam.value?.shield_path))
 const favoriteTeamFlag = computed(() => imageUrl(currentFavoriteTeam.value?.flag_path))
 const defaultIdentityShield = '/logo_world_cup_2026.png'
 const identityName = computed(() => currentFavoriteTeam.value?.name ?? 'FIFA')
-const identityShield = computed(() => favoriteTeamShield.value || favoriteTeamFlag.value || defaultIdentityShield)
-const identityImageVariant = computed(() => currentFavoriteTeam.value ? 'shield' : 'poster')
+const identityTitle = computed(() => currentFavoriteTeam.value?.name ?? tournamentTitle.value)
+const identityShield = computed(() => favoriteTeamShield.value || favoriteTeamFlag.value || tournamentLogo.value || defaultIdentityShield)
 const favoriteTeamModalOpen = ref(false)
 const isApplyingFavoriteTeam = ref(false)
 
@@ -70,9 +75,30 @@ const tickerThemes = {
 
 const activeTickerTheme = computed(() => favoriteTeamTheme.value ?? tickerThemes.neutral)
 const favoriteTeamButtonLabel = computed(() => currentFavoriteTeam.value ? 'Cambiar equipo' : 'Elegir equipo')
-const favoriteTeamDescription = computed(() => currentFavoriteTeam.value
-    ? `Mundial de Futbol 2026 - ${currentFavoriteTeam.value.name}`
-    : '')
+const favoriteTeamCard = computed(() => props.favoriteTeamCard ?? null)
+const favoriteTeamGroupLabel = computed(() => favoriteTeamCard.value?.group_name ?? null)
+const favoriteTeamPositionLabel = computed(() => favoriteTeamCard.value?.position ?? null)
+const favoriteTeamMetaLine = computed(() => {
+    if (favoriteTeamGroupLabel.value && favoriteTeamPositionLabel.value) {
+        return `Grupo ${favoriteTeamGroupLabel.value} #${favoriteTeamPositionLabel.value}`
+    }
+
+    return 'FIFA'
+})
+const showFavoritePositionLine = computed(() => Boolean(currentFavoriteTeam.value))
+const favoriteTeamStats = computed(() => {
+    const stats = favoriteTeamCard.value?.stats ?? {}
+
+    return [
+        { label: 'PTS', value: stats.points ?? 0 },
+        { label: 'PJ', value: stats.played ?? 0 },
+        { label: 'G', value: stats.won ?? 0 },
+        { label: 'E', value: stats.drawn ?? 0 },
+        { label: 'P', value: stats.lost ?? 0 },
+        { label: 'GF', value: stats.gf ?? 0 },
+        { label: 'GC', value: stats.ga ?? 0 },
+    ]
+})
 
 const submitFavoriteTeam = (teamId) => {
     if (isApplyingFavoriteTeam.value) {
@@ -107,7 +133,7 @@ const submitFavoriteTeam = (teamId) => {
 const quickStats = computed(() => [
     {
         title: 'Mis quinielas',
-        value: '1',
+        value: String(userPoolEntriesCount.value),
         helper: 'Activa',
         tone: 'primary',
         description: 'Tu espacio ya esta listo para registrar y seguir tus predicciones.',
@@ -253,39 +279,98 @@ onBeforeUnmount(() => {
             </div>
         </template>
 
-        <template #headerAside>
-            <ShieldCard
-                :name="identityName"
-                :shield-src="identityShield"
-                :image-variant="identityImageVariant"
-                badge-label="Trending"
-                competition-label="Mundial de Futbol 2026 - Mexico - Canada"
-                button-label="Ver juegos"
-                :games-available="false"
-                @action="favoriteTeamModalOpen = true"
-            />
-        </template>
+        <template #headerContent>
+            <div class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+                <div class="flex flex-col xl:min-h-[20rem] xl:flex-row">
+                    <div class="flex flex-col overflow-hidden border-b border-slate-200 xl:w-[24%] xl:border-b-0 xl:border-r dark:border-slate-700">
+                        <div class="min-h-[12.5rem] flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950/40">
+                            <img
+                                :src="identityShield"
+                                :alt="identityTitle"
+                                class="h-full w-full object-cover object-center"
+                            >
+                        </div>
 
-        <template #headerActions>
-            <button
-                type="button"
-                class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary-300 hover:text-primary-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-primary-500 dark:hover:text-primary-300"
-                @click="favoriteTeamModalOpen = true"
-            >
-                <span>{{ favoriteTeamButtonLabel }}</span>
-            </button>
-            <Link
-                :href="route('predictions.worldcup')"
-                class="inline-flex items-center justify-center rounded-2xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-primary-500/30 transition hover:bg-primary-700"
-            >
-                Crear quiniela
-            </Link>
-            <Link
-                :href="route('matches.index')"
-                class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary-300 hover:text-primary-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-primary-500 dark:hover:text-primary-300"
-            >
-                Ver partidos
-            </Link>
+                        <div class="space-y-4 px-5 py-4">
+                            <div :class="showFavoritePositionLine ? '' : 'text-center'">
+                                <p class="text-base font-semibold leading-6 text-slate-900 dark:text-white">
+                                    {{ identityTitle }}
+                                </p>
+                                <p class="text-sm font-medium leading-6 text-slate-500 dark:text-slate-400">
+                                    {{ favoriteTeamMetaLine }}
+                                </p>
+                            </div>
+
+                            <div v-if="showFavoritePositionLine">
+                                <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                    Posicion actual de {{ identityName }}
+                                </p>
+                            </div>
+
+                            <div class="border-t border-slate-200 pt-3 dark:border-slate-700">
+                                <div v-if="showFavoritePositionLine" class="grid grid-cols-7 gap-2">
+                                    <div v-for="item in favoriteTeamStats" :key="item.label" class="text-center">
+                                        <p class="text-lg font-bold leading-none text-slate-900 dark:text-white">
+                                            {{ item.value }}
+                                        </p>
+                                        <p class="mt-1 text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                                            {{ item.label }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <p
+                                    v-else
+                                    class="text-center text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400"
+                                >
+                                    USA | CANADA | MEXICO
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-1 flex-col justify-between px-6 py-5 xl:px-8 xl:py-6">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.38em] text-[#8FA8D8] dark:text-[#9FB5E8]">
+                                Bienvenido
+                            </p>
+                            <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-900 dark:text-white md:text-4xl">
+                                {{ userName }}
+                            </h1>
+                            <p class="mt-4 text-base text-slate-600 dark:text-slate-300">
+                                Team: {{ identityName }}
+                            </p>
+                            <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-500 dark:text-slate-400">
+                                Un panel limpio para seguir el torneo, revisar tu quiniela y moverte rapido entre partidos, ranking y resultados.
+                            </p>
+                        </div>
+
+                        <div class="mt-6 flex flex-wrap items-end justify-start gap-3 xl:justify-end">
+                            <button
+                                type="button"
+                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl border border-slate-300 bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-slate-700"
+                                @click="favoriteTeamModalOpen = true"
+                            >
+                                {{ favoriteTeamButtonLabel }}
+                            </button>
+                            <Link
+                                :href="route('pools.index')"
+                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl border border-slate-300 bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-slate-700"
+                            >
+                                Mis quinielas ({{ userPoolEntriesCount }})
+                            </Link>
+                            <Link
+                                :href="route('predictions.worldcup')"
+                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-cyan-300 focus:outline-none focus:ring-4 focus:ring-cyan-200 dark:bg-cyan-400 dark:hover:bg-cyan-300 dark:focus:ring-cyan-900"
+                            >
+                                <svg class="me-2 h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                </svg>
+                                Crear quiniela
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </template>
 
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
