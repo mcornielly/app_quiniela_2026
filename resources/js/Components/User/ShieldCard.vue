@@ -29,10 +29,10 @@ defineEmits(['action'])
 const posterVariant = computed(() => props.imageVariant === 'poster')
 const mediaWrapperClass = computed(() => posterVariant.value
     ? 'relative h-[13.6rem] overflow-hidden border-b border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950'
-    : 'flex h-[11.5rem] items-center justify-center overflow-hidden border-b border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950')
+    : 'flex h-[12rem] items-center justify-center overflow-hidden border-b border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950')
 const imageClass = computed(() => posterVariant.value
     ? 'absolute left-1/2 top-1/2 h-auto w-[98%] max-w-none -translate-x-1/2 -translate-y-[43%] object-contain'
-    : 'h-full w-full object-contain p-4')
+    : 'max-h-[10.25rem] w-auto max-w-[88%] object-contain')
 </script>
 
 <template>

@@ -11,9 +11,6 @@ class TestUsersSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database with many non-admin users.
-     */
     public function run(): void
     {
         User::query()->updateOrCreate(
@@ -25,9 +22,25 @@ class TestUsersSeeder extends Seeder
             ]
         );
 
-        // create 200 test participants
-        User::factory()->count(200)->create([
-            'is_admin' => false,
-        ]);
+        $targetParticipants = 200;
+
+        $existingParticipants = User::query()
+            ->where('is_admin', false)
+            ->where('email', '!=', 'mcornielly@gmail.com')
+            ->count();
+
+        $missingParticipants = max(0, $targetParticipants - $existingParticipants);
+
+        if ($missingParticipants === 0) {
+            return;
+        }
+
+        User::factory()
+            ->count($missingParticipants)
+            ->sequence(fn ($sequence) => [
+                'email' => sprintf('testuser%03d@example.test', $existingParticipants + $sequence->index + 1),
+                'is_admin' => false,
+            ])
+            ->create();
     }
 }

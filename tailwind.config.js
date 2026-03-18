@@ -11,6 +11,7 @@ export default {
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
         './resources/js/**/*.vue',
+        './config/**/*.php',
         "./node_modules/flowbite/**/*.js",
     ],
 
@@ -51,7 +52,7 @@ export default {
                 ],
             },
             colors: {
-                primary: colors.blue, // primary-50..primary-950 = blue-50..blue-950
+                primary: colors.blue,
             },
         },
     },
