@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { Head, Link, usePage } from '@inertiajs/vue3'
+import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import {
     ArrowTrendingUpIcon,
     CalendarDaysIcon,
@@ -11,8 +11,11 @@ import {
     TrophyIcon,
     UserGroupIcon,
 } from '@heroicons/vue/24/outline'
+import FavoriteTeamModal from '@/Components/User/FavoriteTeamModal.vue'
 import SectionCard from '@/Components/User/SectionCard.vue'
+import ShieldCard from '@/Components/User/ShieldCard.vue'
 import StatCard from '@/Components/User/StatCard.vue'
+import { launchThemeChangeConfetti } from '@/Utils/confetti'
 import { imageUrl } from '@/Utils/image'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
 
@@ -21,12 +24,25 @@ const props = defineProps({
         type: Object,
         default: null,
     },
+    favoriteTeams: {
+        type: Array,
+        default: () => [],
+    },
 })
 
 const page = usePage()
 const userName = computed(() => page.props.auth?.user?.name?.split(' ')[0] ?? 'Jugador')
 const tournamentLogo = computed(() => imageUrl(props.tournament?.logo))
+const currentFavoriteTeam = computed(() => page.props.auth?.user?.favorite_team ?? null)
 const favoriteTeamTheme = computed(() => page.props.auth?.user?.favorite_team_theme ?? null)
+const favoriteTeamShield = computed(() => imageUrl(currentFavoriteTeam.value?.shield_path))
+const favoriteTeamFlag = computed(() => imageUrl(currentFavoriteTeam.value?.flag_path))
+const defaultIdentityShield = '/logo_world_cup_2026.png'
+const identityName = computed(() => currentFavoriteTeam.value?.name ?? 'FIFA')
+const identityShield = computed(() => favoriteTeamShield.value || favoriteTeamFlag.value || defaultIdentityShield)
+const identityImageVariant = computed(() => currentFavoriteTeam.value ? 'shield' : 'poster')
+const favoriteTeamModalOpen = ref(false)
+const isApplyingFavoriteTeam = ref(false)
 
 const worldCupKickoff = new Date('2026-06-11T19:00:00-04:00')
 const countdown = ref({
@@ -49,83 +65,43 @@ const tickerThemes = {
         counterClass: 'rounded-2xl bg-[rgba(151,170,189,0.10)] px-3 py-2 text-center ring-1 ring-slate-200/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]',
         counterValueClass: 'text-slate-900',
         counterLabelClass: 'text-slate-600',
-        chipClass: 'border-slate-200 bg-white/68 text-slate-700 hover:bg-white',
-        activeChipClass: 'border-slate-300 bg-white text-slate-900 shadow-sm',
-    },
-    alemania: {
-        label: 'Alemania',
-        tickerClass: 'border-t border-slate-300/60 bg-[linear-gradient(to_bottom,_#3b3b3b_0%,_#3b3b3b_33%,_#c97a7a_33%,_#c97a7a_66%,_#f0d88a_66%,_#f0d88a_100%)] text-white',
-        surfaceClass: 'rounded-[1.5rem] bg-slate-950/18 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/30 backdrop-blur-md',
-        iconClass: 'bg-white/16 text-white ring-1 ring-white/15',
-        eyebrowClass: 'text-white/75',
-        bodyClass: 'text-white',
-        counterClass: 'rounded-2xl bg-white/16 px-3 py-2 text-center ring-1 ring-white/40 backdrop-blur',
-        counterValueClass: 'text-[#111111]',
-        counterLabelClass: 'text-white/72',
-        chipClass: 'border-slate-400/70 bg-slate-900/65 text-white hover:bg-slate-900/80',
-        activeChipClass: 'border-white/20 bg-white/16 text-white shadow-sm',
-    },
-    argentina: {
-        label: 'Argentina',
-        tickerClass: 'border-t border-sky-200/70 bg-[linear-gradient(to_bottom,_#a9dbff_0%,_#a9dbff_33%,_#f7fbff_33%,_#f7fbff_66%,_#a9dbff_66%,_#a9dbff_100%)] text-slate-900',
-        surfaceClass: 'relative rounded-[1.5rem] bg-slate-950/12 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/30 backdrop-blur-md',
-        iconClass: 'bg-white/80 text-sky-600 ring-1 ring-sky-200/70',
-        eyebrowClass: 'text-sky-700',
-        bodyClass: 'text-slate-700',
-        counterClass: 'rounded-2xl bg-white/16 px-3 py-2 text-center ring-1 ring-white/40 backdrop-blur',
-        counterValueClass: 'text-[#4d8fcb]',
-        counterLabelClass: 'text-slate-500',
-        chipClass: 'border-sky-200 bg-white/70 text-sky-700 hover:bg-white',
-        activeChipClass: 'border-sky-300 bg-sky-50 text-sky-800 shadow-sm',
-    },
-    brasil: {
-        label: 'Brasil',
-        tickerClass: 'relative overflow-hidden border-t border-emerald-300/60 bg-[#3f9f63] text-white',
-        decorationClass: 'before:absolute before:left-1/2 before:top-1/2 before:h-32 before:w-32 before:-translate-x-1/2 before:-translate-y-1/2 before:rotate-45 before:rounded-[0.75rem] before:bg-[#f0d25a] before:content-[\'\'] after:absolute after:left-1/2 after:top-1/2 after:h-16 after:w-16 after:-translate-x-1/2 after:-translate-y-1/2 after:rounded-full after:bg-[#29539b] after:content-[\'\']',
-        surfaceClass: 'relative rounded-[1.5rem] bg-slate-950/12 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/30 backdrop-blur-md',
-        iconClass: 'bg-white/16 text-white ring-1 ring-white/20',
-        eyebrowClass: 'text-white/80',
-        bodyClass: 'text-white',
-        counterClass: 'rounded-2xl bg-white/16 px-3 py-2 text-center ring-1 ring-white/40 backdrop-blur',
-        counterValueClass: 'text-[#f0d25a]',
-        counterLabelClass: 'text-white/78',
-        chipClass: 'border-emerald-300/30 bg-slate-950/20 text-white hover:bg-slate-950/30',
-        activeChipClass: 'border-white/20 bg-white/16 text-white shadow-sm',
-    },
-    francia: {
-        label: 'Francia',
-        tickerClass: 'border-t border-slate-300/60 bg-[linear-gradient(to_right,_#8fb2d9_0%,_#8fb2d9_33%,_#f8fafc_33%,_#f8fafc_66%,_#e3a19b_66%,_#e3a19b_100%)] text-slate-900',
-        surfaceClass: 'relative rounded-[1.5rem] bg-slate-950/12 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/30 backdrop-blur-md',
-        iconClass: 'bg-white/82 text-slate-700 ring-1 ring-slate-200/80',
-        eyebrowClass: 'text-slate-700',
-        bodyClass: 'text-slate-700',
-        counterClass: 'rounded-2xl bg-white/16 px-3 py-2 text-center ring-1 ring-white/40 backdrop-blur',
-        counterValueClass: 'text-[#3f6faa]',
-        counterLabelClass: 'text-slate-500',
-        chipClass: 'border-slate-200 bg-white/68 text-slate-700 hover:bg-white',
-        activeChipClass: 'border-slate-300 bg-white text-slate-900 shadow-sm',
-    },
-    italia: {
-        label: 'Italia',
-        tickerClass: 'border-t border-slate-300/60 bg-[linear-gradient(to_right,_#8dc7a2_0%,_#8dc7a2_33%,_#f8fafc_33%,_#f8fafc_66%,_#e5a0a0_66%,_#e5a0a0_100%)] text-slate-900',
-        surfaceClass: 'relative rounded-[1.5rem] bg-slate-950/12 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/30 backdrop-blur-md',
-        iconClass: 'bg-white/82 text-slate-700 ring-1 ring-slate-200/80',
-        eyebrowClass: 'text-slate-700',
-        bodyClass: 'text-slate-700',
-        counterClass: 'rounded-2xl bg-white/16 px-3 py-2 text-center ring-1 ring-white/40 backdrop-blur',
-        counterValueClass: 'text-[#3f9960]',
-        counterLabelClass: 'text-slate-500',
-        chipClass: 'border-slate-200 bg-white/68 text-slate-700 hover:bg-white',
-        activeChipClass: 'border-slate-300 bg-white text-slate-900 shadow-sm',
     },
 }
 
-const selectedTickerTheme = ref('neutral')
-const activeTickerTheme = computed(() => favoriteTeamTheme.value ?? tickerThemes[selectedTickerTheme.value] ?? tickerThemes.neutral)
+const activeTickerTheme = computed(() => favoriteTeamTheme.value ?? tickerThemes.neutral)
+const favoriteTeamButtonLabel = computed(() => currentFavoriteTeam.value ? 'Cambiar equipo' : 'Elegir equipo')
+const favoriteTeamDescription = computed(() => currentFavoriteTeam.value
+    ? `Mundial de Futbol 2026 - ${currentFavoriteTeam.value.name}`
+    : '')
 
-const setTickerTheme = (themeKey) => {
-    selectedTickerTheme.value = tickerThemes[themeKey] ? themeKey : 'neutral'
-    localStorage.setItem('dashboard-ticker-theme', selectedTickerTheme.value)
+const submitFavoriteTeam = (teamId) => {
+    if (isApplyingFavoriteTeam.value) {
+        return
+    }
+
+    if (teamId === currentFavoriteTeam.value?.id || (teamId === null && !currentFavoriteTeam.value)) {
+        favoriteTeamModalOpen.value = false
+        return
+    }
+
+    isApplyingFavoriteTeam.value = true
+
+    router.patch(route('dashboard.favorite-team.update'), {
+        favorite_team_id: teamId,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            favoriteTeamModalOpen.value = false
+            window.setTimeout(() => {
+                launchThemeChangeConfetti()
+            }, 520)
+        },
+        onFinish: () => {
+            window.setTimeout(() => {
+                isApplyingFavoriteTeam.value = false
+            }, 550)
+        },
+    })
 }
 
 const quickStats = computed(() => [
@@ -215,15 +191,6 @@ const updateCountdown = () => {
 }
 
 onMounted(() => {
-    if (favoriteTeamTheme.value?.key && tickerThemes[favoriteTeamTheme.value.key]) {
-        selectedTickerTheme.value = favoriteTeamTheme.value.key
-    } else {
-        const storedTickerTheme = localStorage.getItem('dashboard-ticker-theme')
-        if (storedTickerTheme && tickerThemes[storedTickerTheme]) {
-            selectedTickerTheme.value = storedTickerTheme
-        }
-    }
-
     updateCountdown()
     timerId = window.setInterval(updateCountdown, 1000)
 })
@@ -286,7 +253,27 @@ onBeforeUnmount(() => {
             </div>
         </template>
 
+        <template #headerAside>
+            <ShieldCard
+                :name="identityName"
+                :shield-src="identityShield"
+                :image-variant="identityImageVariant"
+                badge-label="Trending"
+                competition-label="Mundial de Futbol 2026 - Mexico - Canada"
+                button-label="Ver juegos"
+                :games-available="false"
+                @action="favoriteTeamModalOpen = true"
+            />
+        </template>
+
         <template #headerActions>
+            <button
+                type="button"
+                class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary-300 hover:text-primary-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-primary-500 dark:hover:text-primary-300"
+                @click="favoriteTeamModalOpen = true"
+            >
+                <span>{{ favoriteTeamButtonLabel }}</span>
+            </button>
             <Link
                 :href="route('predictions.worldcup')"
                 class="inline-flex items-center justify-center rounded-2xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-primary-500/30 transition hover:bg-primary-700"
@@ -312,26 +299,6 @@ onBeforeUnmount(() => {
             >
                 {{ stat.description }}
             </StatCard>
-        </section>
-
-        <section class="mt-6">
-            <SectionCard
-                title="Temas del ticker"
-                subtitle="Base lista para que el usuario cambie la franja visual segun el equipo o pais que prefiera."
-            >
-                <div class="flex flex-wrap gap-3">
-                    <button
-                        v-for="(theme, key) in tickerThemes"
-                        :key="key"
-                        type="button"
-                        @click="setTickerTheme(key)"
-                        :class="selectedTickerTheme === key ? theme.activeChipClass : theme.chipClass"
-                        class="inline-flex items-center justify-center rounded-2xl border px-4 py-2 text-sm font-semibold transition"
-                    >
-                        {{ theme.label }}
-                    </button>
-                </div>
-            </SectionCard>
         </section>
 
         <section class="mt-6 grid gap-6 xl:grid-cols-[1.55fr_1fr]">
@@ -493,5 +460,38 @@ onBeforeUnmount(() => {
                 </div>
             </SectionCard>
         </section>
+
+        <FavoriteTeamModal
+            :show="favoriteTeamModalOpen"
+            :teams="props.favoriteTeams"
+            :current-team-id="currentFavoriteTeam?.id ?? null"
+            :processing="isApplyingFavoriteTeam"
+            @close="favoriteTeamModalOpen = false"
+            @select="submitFavoriteTeam"
+        />
+
+        <Transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="transition duration-150 ease-in"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+        >
+            <div
+                v-if="isApplyingFavoriteTeam"
+                class="fixed inset-0 z-[80] flex items-center justify-center bg-white/55 backdrop-blur-sm dark:bg-slate-950/55"
+            >
+                <div class="rounded-[1.75rem] border border-white/70 bg-white/90 px-8 py-7 text-center shadow-2xl shadow-slate-300/40 dark:border-slate-700 dark:bg-slate-900/92 dark:shadow-none">
+                    <div class="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600 dark:border-primary-500/20 dark:border-t-primary-300" />
+                    <p class="mt-4 text-base font-semibold text-slate-950 dark:text-white">
+                        Aplicando tu identidad visual
+                    </p>
+                    <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                        Ajustando el banner para reflejar tu seleccion favorita.
+                    </p>
+                </div>
+            </div>
+        </Transition>
     </UserDashboardLayout>
 </template>

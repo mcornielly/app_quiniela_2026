@@ -60,6 +60,8 @@ class HandleInertiaRequests extends Middleware
                 'id' => $user->favoriteTeam->id,
                 'name' => $user->favoriteTeam->name,
                 'country_code' => $user->favoriteTeam->country?->code,
+                'flag_path' => $user->favoriteTeam->country?->flag_path,
+                'shield_path' => $user->favoriteTeam->shield_path,
             ] : null,
             'favorite_team_theme' => $this->resolveFavoriteTeamTheme($user),
         ];

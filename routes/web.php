@@ -134,6 +134,7 @@ Route::get('/quiniela-2026', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::patch('/dashboard/favorite-team', [DashboardController::class, 'updateFavoriteTeam'])->name('dashboard.favorite-team.update');
     Route::get('/quiniela/matches', fn() => Inertia::render('Matches'))->name('matches.index');
     Route::get('/quiniela/groups', fn() => Inertia::render('Groups'))->name('groups.index');
     Route::get('/quiniela/leaderboard', fn() => Inertia::render('Leaderboard'))->name('leaderboard');

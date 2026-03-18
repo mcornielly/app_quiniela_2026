@@ -1,7 +1,7 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { Link } from '@inertiajs/vue3'
-import confetti from 'canvas-confetti'
+import { launchPoolEntrySuccessConfetti, resetConfetti } from '@/Utils/confetti'
 
 defineProps({
     poolEntry: {
@@ -20,58 +20,11 @@ const statusLabel = (status) => {
 
 const backConfettiCanvas = ref(null)
 const frontConfettiCanvas = ref(null)
-let backConfettiInstance = null
-let frontConfettiInstance = null
 
 const launchConfetti = () => {
-    if (!backConfettiCanvas.value || !frontConfettiCanvas.value) {
-        return
-    }
-
-    backConfettiInstance = confetti.create(backConfettiCanvas.value, {
-        resize: true,
-        useWorker: true,
-    })
-
-    frontConfettiInstance = confetti.create(frontConfettiCanvas.value, {
-        resize: true,
-        useWorker: true,
-    })
-
-    const backBursts = [
-        { particleCount: 120, spread: 72, startVelocity: 50, origin: { x: 0.5, y: 0.2 } },
-        { particleCount: 70, spread: 58, startVelocity: 42, origin: { x: 0.18, y: 0.15 } },
-        { particleCount: 70, spread: 58, startVelocity: 42, origin: { x: 0.82, y: 0.15 } },
-        { particleCount: 48, spread: 110, startVelocity: 34, decay: 0.92, scalar: 0.9, origin: { x: 0.5, y: 0.28 } },
-    ]
-
-    const frontBursts = [
-        { particleCount: 42, spread: 66, startVelocity: 38, scalar: 1.05, origin: { x: 0.32, y: 0.24 } },
-        { particleCount: 42, spread: 66, startVelocity: 38, scalar: 1.05, origin: { x: 0.68, y: 0.24 } },
-        { particleCount: 28, spread: 92, startVelocity: 28, decay: 0.9, scalar: 1.1, origin: { x: 0.5, y: 0.18 } },
-    ]
-
-    backBursts.forEach((burst, index) => {
-        window.setTimeout(() => {
-            backConfettiInstance?.({
-                ...burst,
-                ticks: 260,
-                gravity: 1.02,
-                colors: ['#67e8f9', '#6ee7b7', '#fde047', '#7dd3fc', '#f9a8d4', '#c4b5fd'],
-            })
-        }, index * 180)
-    })
-
-    frontBursts.forEach((burst, index) => {
-        window.setTimeout(() => {
-            frontConfettiInstance?.({
-                ...burst,
-                ticks: 220,
-                gravity: 0.98,
-                drift: index === 1 ? -0.15 : 0.15,
-                colors: ['#ffffff', '#67e8f9', '#fde047', '#f9a8d4'],
-            })
-        }, 120 + (index * 220))
+    launchPoolEntrySuccessConfetti({
+        backCanvas: backConfettiCanvas.value,
+        frontCanvas: frontConfettiCanvas.value,
     })
 }
 
@@ -80,7 +33,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-    confetti.reset()
+    resetConfetti()
 })
 </script>
 

@@ -12,7 +12,8 @@ class Team extends Model
         'group_id',
         'group_position',
         'name',
-        'type'
+        'type',
+        'shield_path',
     ];
 
     public static function types(): array

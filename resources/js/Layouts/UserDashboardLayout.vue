@@ -309,7 +309,12 @@ onMounted(() => {
         </header>
 
         <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-            <div class="mb-8 overflow-hidden rounded-[2rem] border border-white/80 bg-white/90 p-6 shadow-xl shadow-slate-200/70 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none">
+            <div class="mb-8 flex flex-col gap-6 xl:flex-row xl:items-stretch">
+                <div v-if="$slots.headerAside" class="xl:w-[19rem] xl:shrink-0">
+                    <slot name="headerAside" />
+                </div>
+
+                <div class="min-w-0 flex-1 overflow-hidden rounded-[2rem] border border-white/80 bg-white/90 p-6 shadow-xl shadow-slate-200/70 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none">
                 <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                     <div class="max-w-2xl">
                         <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary-600 dark:text-primary-400">
@@ -341,13 +346,13 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
+            </div>
             <slot />
 
             <UserFooter />
         </main>
     </div>
 </template>
-
 
 
 
