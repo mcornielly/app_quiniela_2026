@@ -18,6 +18,7 @@ import { launchThemeChangeConfetti } from '@/Utils/confetti'
 import { imageUrl } from '@/Utils/image'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
 
+
 const props = defineProps({
     tournament: {
         type: Object,
@@ -34,7 +35,14 @@ const props = defineProps({
 })
 
 const page = usePage()
-const userName = computed(() => page.props.auth?.user?.name?.split(' ')[0] ?? 'Jugador')
+const userName = computed(() => {
+    const fullName = String(page.props.auth?.user?.name ?? '').trim()
+    if (!fullName) {
+        return 'Jugador'
+    }
+
+    return fullName.split(/\s+/).slice(0, 2).join(' ')
+})
 const userPoolEntriesCount = computed(() => Number(page.props.auth?.user?.pool_entries_count ?? 0))
 const tournamentLogo = computed(() => imageUrl(props.tournament?.logo))
 const tournamentTitle = computed(() => props.tournament?.name ?? 'World Cup 2026')
@@ -86,6 +94,8 @@ const favoriteTeamMetaLine = computed(() => {
     return 'FIFA'
 })
 const showFavoritePositionLine = computed(() => Boolean(currentFavoriteTeam.value))
+const favoriteTeamGroupDisplay = computed(() => favoriteTeamGroupLabel.value ?? '')
+const favoriteTeamPositionDisplay = computed(() => favoriteTeamPositionLabel.value ? `#${favoriteTeamPositionLabel.value}` : '')
 const favoriteTeamStats = computed(() => {
     const stats = favoriteTeamCard.value?.stats ?? {}
 
@@ -281,36 +291,25 @@ onBeforeUnmount(() => {
 
         <template #headerContent>
             <div class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-                <div class="flex flex-col xl:min-h-[20rem] xl:flex-row">
+                <div class="flex flex-col xl:min-h-[14.75rem] xl:flex-row">
                     <div class="flex flex-col overflow-hidden border-b border-slate-200 xl:w-[24%] xl:border-b-0 xl:border-r dark:border-slate-700">
-                        <div class="min-h-[12.5rem] flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950/40">
+                        <div class="min-h-[8rem] flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950/40">
                             <img
                                 :src="identityShield"
                                 :alt="identityTitle"
-                                class="h-full w-full object-cover object-center"
+                                class="h-full w-full object-contain p-2.5 sm:object-cover sm:p-0"
                             >
                         </div>
 
-                        <div class="space-y-4 px-5 py-4">
-                            <div :class="showFavoritePositionLine ? '' : 'text-center'">
-                                <p class="text-base font-semibold leading-6 text-slate-900 dark:text-white">
-                                    {{ identityTitle }}
-                                </p>
-                                <p class="text-sm font-medium leading-6 text-slate-500 dark:text-slate-400">
-                                    {{ favoriteTeamMetaLine }}
-                                </p>
-                            </div>
-
-                            <div v-if="showFavoritePositionLine">
-                                <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                    Posicion actual de {{ identityName }}
-                                </p>
-                            </div>
+                        <div class="space-y-3 px-5 py-3">
+                            <p v-if="showFavoritePositionLine" class="text-center text-xs font-semibold uppercase tracking-[0.38em] text-[#8FA8D8] dark:text-[#9FB5E8]">
+                                ESTADISTICAS
+                            </p>
 
                             <div class="border-t border-slate-200 pt-3 dark:border-slate-700">
                                 <div v-if="showFavoritePositionLine" class="grid grid-cols-7 gap-2">
                                     <div v-for="item in favoriteTeamStats" :key="item.label" class="text-center">
-                                        <p class="text-lg font-bold leading-none text-slate-900 dark:text-white">
+                                        <p class="text-lg font-bold leading-none text-[#39C4E0] dark:text-[#39C4E0]">
                                             {{ item.value }}
                                         </p>
                                         <p class="mt-1 text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
@@ -328,39 +327,53 @@ onBeforeUnmount(() => {
                         </div>
                     </div>
 
-                    <div class="flex flex-1 flex-col justify-between px-6 py-5 xl:px-8 xl:py-6">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.38em] text-[#8FA8D8] dark:text-[#9FB5E8]">
-                                Bienvenido
-                            </p>
-                            <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-900 dark:text-white md:text-4xl">
-                                {{ userName }}
-                            </h1>
-                            <p class="mt-4 text-base text-slate-600 dark:text-slate-300">
-                                Team: {{ identityName }}
-                            </p>
-                            <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-500 dark:text-slate-400">
-                                Un panel limpio para seguir el torneo, revisar tu quiniela y moverte rapido entre partidos, ranking y resultados.
-                            </p>
+                    <div class="flex flex-1 flex-col justify-between px-6 py-4 xl:px-8 xl:py-5">
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold uppercase tracking-[0.38em] text-[#8FA8D8] dark:text-[#9FB5E8]">
+                                    Bienvenido
+                                </p>
+                                <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-900 dark:text-white md:text-4xl">
+                                    {{ userName }}
+                                </h1>
+                                <div class="mt-2 space-y-1">
+                                    <p class="text-xl font-bold tracking-[0.04em] text-slate-700 dark:text-slate-200">
+
+                                        Team: <span class=" text-slate-400 dark:text-slate-200 tracking-[0.38em]  uppercase">{{ identityName.toUpperCase() }}</span>
+                                    </p>
+                                    <p v-if="showFavoritePositionLine" class="text-base font-bold text-slate-700 dark:text-slate-200">
+                                        Pos: <span class="text-xl text-slate-400 dark:text-slate-200">{{ favoriteTeamPositionDisplay }}</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div v-if="showFavoritePositionLine" class="justify-self-end text-right">
+                                <p class="text-xs font-semibold uppercase tracking-[0.38em] text-[#8FA8D8] dark:text-[#9FB5E8]">
+                                    Grupo
+                                </p>
+                                <p class="mt-0.5 text-8xl font-black leading-none text-[#39C4E0] dark:text-[#39C4E0]">
+                                    {{ favoriteTeamGroupDisplay }}
+                                </p>
+                            </div>
                         </div>
 
                         <div class="mt-6 flex flex-wrap items-end justify-start gap-3 xl:justify-end">
                             <button
                                 type="button"
-                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl border border-slate-300 bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-slate-700"
+                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl border border-cyan-400 bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-slate-700"
                                 @click="favoriteTeamModalOpen = true"
                             >
                                 {{ favoriteTeamButtonLabel }}
                             </button>
                             <Link
                                 :href="route('pools.index')"
-                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl border border-slate-300 bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-slate-700"
+                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl border border-cyan-400 bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-slate-700"
                             >
                                 Mis quinielas ({{ userPoolEntriesCount }})
                             </Link>
                             <Link
                                 :href="route('predictions.worldcup')"
-                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-cyan-300 focus:outline-none focus:ring-4 focus:ring-cyan-200 dark:bg-cyan-400 dark:hover:bg-cyan-300 dark:focus:ring-cyan-900"
+                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-cyan-300 hover:text-white focus:outline-none focus:ring-4 focus:ring-cyan-200 dark:bg-cyan-400 dark:hover:bg-cyan-300 dark:focus:ring-cyan-900"
                             >
                                 <svg class="me-2 h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                     <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
