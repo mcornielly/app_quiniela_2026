@@ -265,14 +265,14 @@ onBeforeUnmount(() => {
 
         <template #headerContent>
             <div class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-                <div class="flex flex-col xl:min-h-[12.75rem] xl:flex-row">
-                    <div class="flex flex-col overflow-hidden border-b border-slate-200 xl:w-[24%] xl:border-b-0 xl:border-r dark:border-slate-700">
-                        <div :class="activeTickerTheme.shieldContainerClass" class="min-h-[8.25rem] flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950/40">
+                <div class="flex flex-col lg:min-h-[12.75rem] lg:flex-row">
+                    <div class="flex flex-col overflow-hidden border-b border-slate-200 lg:w-[24%] lg:border-b-0 lg:border-r dark:border-slate-700">
+                        <div :class="activeTickerTheme.shieldContainerClass" class="h-44 sm:h-56 lg:min-h-[8.25rem] lg:flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950/40">
                             <img
                                 :src="identityShield"
                                 :alt="identityTitle"
                                 :class="[activeShieldImageClass, activeShieldImageBaseClass]"
-                                class="h-full w-full object-contain p-2.5"
+                                class="h-full w-full object-contain p-0"
                             >
                         </div>
 
@@ -302,7 +302,7 @@ onBeforeUnmount(() => {
                         </div>
                     </div>
 
-                    <div :class="activeRightPanelClass" class="flex flex-1 flex-col justify-between px-6 py-3 xl:px-8 xl:py-3">
+                    <div :class="activeRightPanelClass" class="flex flex-1 flex-col justify-between px-6 py-3 lg:px-8 lg:py-3">
                         <div class="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold uppercase tracking-[0.38em] text-[#8FA8D8] dark:text-[#9FB5E8]">
@@ -372,11 +372,11 @@ onBeforeUnmount(() => {
                             </div>
                         </div>
 
-                        <div class="mt-3 flex flex-wrap items-end justify-start gap-3 xl:justify-end">
+                        <div class="mt-3 flex flex-wrap items-end justify-start gap-3 lg:justify-end">
                             <button
                                 type="button"
                                 :class="themedSecondaryButtonClass"
-                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl border px-5 py-3 text-sm font-semibold transition focus:outline-none"
+                                class="inline-flex min-w-[190px] flex-1 items-center justify-center rounded-xl border px-5 py-3 text-sm font-semibold transition focus:outline-none lg:flex-none"
                                 @click="favoriteTeamModalOpen = true"
                             >
                                 {{ favoriteTeamButtonLabel }}
@@ -384,14 +384,14 @@ onBeforeUnmount(() => {
                             <Link
                                 :href="route('pools.index')"
                                 :class="themedSecondaryButtonClass"
-                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl border px-5 py-3 text-sm font-semibold transition focus:outline-none"
+                                class="inline-flex min-w-[190px] flex-1 items-center justify-center rounded-xl border px-5 py-3 text-sm font-semibold transition focus:outline-none lg:flex-none"
                             >
                                 Mis quinielas ({{ userPoolEntriesCount }})
                             </Link>
                             <Link
                                 :href="route('predictions.worldcup')"
                                 :class="themedPrimaryButtonClass"
-                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold shadow-sm transition focus:outline-none"
+                                class="inline-flex min-w-[190px] flex-1 items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold shadow-sm transition focus:outline-none lg:flex-none"
                             >
                                 <svg class="me-2 h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                     <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
