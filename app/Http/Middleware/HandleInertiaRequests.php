@@ -74,19 +74,24 @@ class HandleInertiaRequests extends Middleware
         $themes = config('world-cup-themes.themes', []);
         $defaultKey = config('world-cup-themes.default');
         $defaultTheme = $defaultKey ? ($themes[$defaultKey] ?? null) : null;
+/*   */        $baseTheme = $defaultTheme ?? ($themes['neutral'] ?? null);
+
+        if (!$baseTheme) {
+            return null;
+        }
 
         if (!$countryCode) {
-            return $defaultTheme;
+            return $baseTheme;
         }
 
         foreach ($themes as $theme) {
             $countryCodes = $theme['country_codes'] ?? [];
 
             if (in_array($countryCode, $countryCodes, true)) {
-                return $theme;
+                return array_replace($baseTheme, $theme);
             }
         }
 
-        return $defaultTheme;
+        return $baseTheme;
     }
 }

@@ -82,6 +82,17 @@ const tickerThemes = {
 }
 
 const activeTickerTheme = computed(() => favoriteTeamTheme.value ?? tickerThemes.neutral)
+const activeCounterClass = computed(() => activeTickerTheme.value?.counterClass ?? tickerThemes.neutral.counterClass)
+const activeCounterValueClass = computed(() => activeTickerTheme.value?.counterValueClass ?? tickerThemes.neutral.counterValueClass)
+const activeCounterLabelClass = computed(() => activeTickerTheme.value?.counterLabelClass ?? tickerThemes.neutral.counterLabelClass)
+const activeRightPanelClass = computed(() => activeTickerTheme.value?.rightPanelClass ?? '')
+const identityNameClass = computed(() => activeTickerTheme.value?.teamNameClass ?? 'text-slate-400 dark:text-[#39C4E0]')
+const favoriteTeamStatsValueClass = computed(() => activeTickerTheme.value?.statsValueClass ?? 'text-[#39C4E0] dark:text-[#39C4E0]')
+const favoriteTeamGroupValueClass = computed(() => activeTickerTheme.value?.statsValueClass ?? 'text-[#39C4E0] dark:text-[#39C4E0]')
+const themedSecondaryButtonClass = computed(() => activeTickerTheme.value?.buttonSecondaryClass
+    ?? 'border-cyan-400 bg-slate-100 text-slate-700 hover:text-white hover:bg-cyan-300 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:focus:ring-slate-700')
+const themedPrimaryButtonClass = computed(() => activeTickerTheme.value?.buttonPrimaryClass
+    ?? 'bg-cyan-400 text-slate-950 hover:bg-cyan-300 hover:text-white focus:ring-cyan-200 dark:bg-cyan-400 dark:hover:bg-cyan-300 dark:focus:ring-cyan-900')
 const favoriteTeamButtonLabel = computed(() => currentFavoriteTeam.value ? 'Cambiar equipo' : 'Elegir equipo')
 const favoriteTeamCard = computed(() => props.favoriteTeamCard ?? null)
 const favoriteTeamGroupLabel = computed(() => favoriteTeamCard.value?.group_name ?? null)
@@ -269,21 +280,21 @@ onBeforeUnmount(() => {
                 </div>
 
                 <div class="grid grid-cols-4 gap-2 md:gap-3">
-                    <div :class="activeTickerTheme.counterClass">
-                        <p :class="activeTickerTheme.counterValueClass" class="text-xl font-black tracking-tight">{{ countdown.days }}</p>
-                        <p :class="activeTickerTheme.counterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Dias</p>
+                    <div :class="activeCounterClass">
+                        <p :class="activeCounterValueClass" class="text-xl font-black tracking-tight">{{ countdown.days }}</p>
+                        <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Dias</p>
                     </div>
-                    <div :class="activeTickerTheme.counterClass">
-                        <p :class="activeTickerTheme.counterValueClass" class="text-xl font-black tracking-tight">{{ countdown.hours }}</p>
-                        <p :class="activeTickerTheme.counterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Horas</p>
+                    <div :class="activeCounterClass">
+                        <p :class="activeCounterValueClass" class="text-xl font-black tracking-tight">{{ countdown.hours }}</p>
+                        <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Horas</p>
                     </div>
-                    <div :class="activeTickerTheme.counterClass">
-                        <p :class="activeTickerTheme.counterValueClass" class="text-xl font-black tracking-tight">{{ countdown.minutes }}</p>
-                        <p :class="activeTickerTheme.counterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Min</p>
+                    <div :class="activeCounterClass">
+                        <p :class="activeCounterValueClass" class="text-xl font-black tracking-tight">{{ countdown.minutes }}</p>
+                        <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Min</p>
                     </div>
-                    <div :class="activeTickerTheme.counterClass">
-                        <p :class="activeTickerTheme.counterValueClass" class="text-xl font-black tracking-tight">{{ countdown.seconds }}</p>
-                        <p :class="activeTickerTheme.counterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Seg</p>
+                    <div :class="activeCounterClass">
+                        <p :class="activeCounterValueClass" class="text-xl font-black tracking-tight">{{ countdown.seconds }}</p>
+                        <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Seg</p>
                     </div>
                 </div>
             </div>
@@ -293,7 +304,7 @@ onBeforeUnmount(() => {
             <div class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
                 <div class="flex flex-col xl:min-h-[14.75rem] xl:flex-row">
                     <div class="flex flex-col overflow-hidden border-b border-slate-200 xl:w-[24%] xl:border-b-0 xl:border-r dark:border-slate-700">
-                        <div class="min-h-[8rem] flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950/40">
+                        <div :class="activeTickerTheme.shieldContainerClass" class="min-h-[6.75rem] flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950/40">
                             <img
                                 :src="identityShield"
                                 :alt="identityTitle"
@@ -309,7 +320,7 @@ onBeforeUnmount(() => {
                             <div class="border-t border-slate-200 pt-3 dark:border-slate-700">
                                 <div v-if="showFavoritePositionLine" class="grid grid-cols-7 gap-2">
                                     <div v-for="item in favoriteTeamStats" :key="item.label" class="text-center">
-                                        <p class="text-lg font-bold leading-none text-[#39C4E0] dark:text-[#39C4E0]">
+                                        <p :class="favoriteTeamStatsValueClass" class="text-lg font-bold leading-none">
                                             {{ item.value }}
                                         </p>
                                         <p class="mt-1 text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
@@ -327,7 +338,7 @@ onBeforeUnmount(() => {
                         </div>
                     </div>
 
-                    <div class="flex flex-1 flex-col justify-between px-6 py-4 xl:px-8 xl:py-5">
+                    <div :class="activeRightPanelClass" class="flex flex-1 flex-col justify-between px-6 py-4 xl:px-8 xl:py-5">
                         <div class="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold uppercase tracking-[0.38em] text-[#8FA8D8] dark:text-[#9FB5E8]">
@@ -339,7 +350,7 @@ onBeforeUnmount(() => {
                                 <div class="mt-2 space-y-1">
                                     <p class="text-xl font-bold tracking-[0.04em] text-slate-700 dark:text-slate-200">
 
-                                        Team: <span class=" text-slate-400 dark:text-slate-200 tracking-[0.38em]  uppercase">{{ identityName.toUpperCase() }}</span>
+                                        Team: <span :class="identityNameClass" class="tracking-[0.38em] uppercase">{{ identityName.toUpperCase() }}</span>
                                     </p>
                                     <p v-if="showFavoritePositionLine" class="text-base font-bold text-slate-700 dark:text-slate-200">
                                         Pos: <span class="text-xl text-slate-400 dark:text-slate-200">{{ favoriteTeamPositionDisplay }}</span>
@@ -351,7 +362,7 @@ onBeforeUnmount(() => {
                                 <p class="text-xs font-semibold uppercase tracking-[0.38em] text-[#8FA8D8] dark:text-[#9FB5E8]">
                                     Grupo
                                 </p>
-                                <p class="mt-0.5 text-8xl font-black leading-none text-[#39C4E0] dark:text-[#39C4E0]">
+                                <p :class="favoriteTeamGroupValueClass" class="mt-0.5 text-8xl font-black leading-none">
                                     {{ favoriteTeamGroupDisplay }}
                                 </p>
                             </div>
@@ -360,20 +371,23 @@ onBeforeUnmount(() => {
                         <div class="mt-6 flex flex-wrap items-end justify-start gap-3 xl:justify-end">
                             <button
                                 type="button"
-                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl border border-cyan-400 bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-slate-700"
+                                :class="themedSecondaryButtonClass"
+                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl border px-5 py-3 text-sm font-semibold transition focus:outline-none"
                                 @click="favoriteTeamModalOpen = true"
                             >
                                 {{ favoriteTeamButtonLabel }}
                             </button>
                             <Link
                                 :href="route('pools.index')"
-                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl border border-cyan-400 bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-slate-700"
+                                :class="themedSecondaryButtonClass"
+                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl border px-5 py-3 text-sm font-semibold transition focus:outline-none"
                             >
                                 Mis quinielas ({{ userPoolEntriesCount }})
                             </Link>
                             <Link
                                 :href="route('predictions.worldcup')"
-                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-cyan-300 hover:text-white focus:outline-none focus:ring-4 focus:ring-cyan-200 dark:bg-cyan-400 dark:hover:bg-cyan-300 dark:focus:ring-cyan-900"
+                                :class="themedPrimaryButtonClass"
+                                class="inline-flex min-w-[190px] items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold shadow-sm transition focus:outline-none"
                             >
                                 <svg class="me-2 h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                     <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
