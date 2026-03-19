@@ -86,6 +86,8 @@ const activeCounterClass = computed(() => activeTickerTheme.value?.counterClass 
 const activeCounterValueClass = computed(() => activeTickerTheme.value?.counterValueClass ?? tickerThemes.neutral.counterValueClass)
 const activeCounterLabelClass = computed(() => activeTickerTheme.value?.counterLabelClass ?? tickerThemes.neutral.counterLabelClass)
 const activeRightPanelClass = computed(() => activeTickerTheme.value?.rightPanelClass ?? '')
+const activeShieldImageClass = computed(() => activeTickerTheme.value?.shieldImageClass ?? '')
+const activeShieldImageBaseClass = computed(() => activeTickerTheme.value?.shieldImageBaseClass ?? 'sm:object-cover sm:p-0')
 const identityNameClass = computed(() => activeTickerTheme.value?.teamNameClass ?? 'text-slate-400 dark:text-[#39C4E0]')
 const favoriteTeamStatsValueClass = computed(() => activeTickerTheme.value?.statsValueClass ?? 'text-[#39C4E0] dark:text-[#39C4E0]')
 const favoriteTeamGroupValueClass = computed(() => activeTickerTheme.value?.statsValueClass ?? 'text-[#39C4E0] dark:text-[#39C4E0]')
@@ -308,7 +310,8 @@ onBeforeUnmount(() => {
                             <img
                                 :src="identityShield"
                                 :alt="identityTitle"
-                                class="h-full w-full object-contain p-2.5 sm:object-cover sm:p-0"
+                                :class="[activeShieldImageClass, activeShieldImageBaseClass]"
+                                class="h-full w-full object-contain p-2.5"
                             >
                         </div>
 
