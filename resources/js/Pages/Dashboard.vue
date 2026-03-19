@@ -260,53 +260,14 @@ onBeforeUnmount(() => {
         :ticker-class="[activeTickerTheme.tickerClass, activeTickerTheme.decorationClass || ''].join(' ')"
     >
         <template #ticker>
-            <div :class="activeTickerTheme.surfaceClass" class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center justify-center overflow-hidden">
-                        <img
-                            v-if="tournamentLogo"
-                            :src="tournamentLogo"
-                            :alt="props.tournament?.name || 'World Cup logo'"
-                            class="h-[4.5rem] w-auto object-contain"
-                        >
-                        <CalendarDaysIcon v-else :class="activeTickerTheme.iconClass" class="h-4 w-4" />
-                    </div>
-                    <div>
-                        <p :class="activeTickerTheme.eyebrowClass" class="text-[12px] font-bold uppercase tracking-[0.26em]">
-                            Cuenta regresiva al Mundial 2026
-                        </p>
-                        <p :class="activeTickerTheme.bodyClass" class="text-sm">
-                            Cada segundo nos acerca al partido inaugural en Ciudad de Mexico.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-4 gap-2 md:gap-3">
-                    <div :class="activeCounterClass">
-                        <p :class="activeCounterValueClass" class="text-xl font-black tracking-tight">{{ countdown.days }}</p>
-                        <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Dias</p>
-                    </div>
-                    <div :class="activeCounterClass">
-                        <p :class="activeCounterValueClass" class="text-xl font-black tracking-tight">{{ countdown.hours }}</p>
-                        <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Horas</p>
-                    </div>
-                    <div :class="activeCounterClass">
-                        <p :class="activeCounterValueClass" class="text-xl font-black tracking-tight">{{ countdown.minutes }}</p>
-                        <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Min</p>
-                    </div>
-                    <div :class="activeCounterClass">
-                        <p :class="activeCounterValueClass" class="text-xl font-black tracking-tight">{{ countdown.seconds }}</p>
-                        <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Seg</p>
-                    </div>
-                </div>
-            </div>
+            <div class="h-12 w-full" aria-hidden="true" />
         </template>
 
         <template #headerContent>
             <div class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
                 <div class="flex flex-col xl:min-h-[12.75rem] xl:flex-row">
                     <div class="flex flex-col overflow-hidden border-b border-slate-200 xl:w-[24%] xl:border-b-0 xl:border-r dark:border-slate-700">
-                        <div :class="activeTickerTheme.shieldContainerClass" class="min-h-[5.25rem] flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950/40">
+                        <div :class="activeTickerTheme.shieldContainerClass" class="min-h-[8.25rem] flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950/40">
                             <img
                                 :src="identityShield"
                                 :alt="identityTitle"
@@ -368,6 +329,46 @@ onBeforeUnmount(() => {
                                 <p :class="favoriteTeamGroupValueClass" class="mt-0.5 text-8xl font-black leading-none">
                                     {{ favoriteTeamGroupDisplay }}
                                 </p>
+                            </div>
+                        </div>
+
+                        <div :class="activeTickerTheme.surfaceClass" class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="flex items-center justify-center overflow-hidden">
+                                    <img
+                                        v-if="tournamentLogo"
+                                        :src="tournamentLogo"
+                                        :alt="props.tournament?.name || 'World Cup logo'"
+                                        class="h-[4.5rem] w-auto object-contain"
+                                    >
+                                </div>
+                                <div>
+                                    <p :class="activeTickerTheme.eyebrowClass" class="text-[12px] font-bold uppercase tracking-[0.26em]">
+                                        Cuenta regresiva al Mundial 2026
+                                    </p>
+                                    <p :class="activeTickerTheme.bodyClass" class="text-sm">
+                                        Cada segundo nos acerca al partido inaugural en Ciudad de Mexico.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-4 gap-2 md:gap-3">
+                                <div :class="activeCounterClass">
+                                    <p :class="activeCounterValueClass" class="text-xl font-black tracking-tight">{{ countdown.days }}</p>
+                                    <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Dias</p>
+                                </div>
+                                <div :class="activeCounterClass">
+                                    <p :class="activeCounterValueClass" class="text-xl font-black tracking-tight">{{ countdown.hours }}</p>
+                                    <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Horas</p>
+                                </div>
+                                <div :class="activeCounterClass">
+                                    <p :class="activeCounterValueClass" class="text-xl font-black tracking-tight">{{ countdown.minutes }}</p>
+                                    <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Min</p>
+                                </div>
+                                <div :class="activeCounterClass">
+                                    <p :class="activeCounterValueClass" class="text-xl font-black tracking-tight">{{ countdown.seconds }}</p>
+                                    <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Seg</p>
+                                </div>
                             </div>
                         </div>
 
