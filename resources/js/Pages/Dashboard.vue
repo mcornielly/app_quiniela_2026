@@ -304,9 +304,9 @@ onBeforeUnmount(() => {
 
         <template #headerContent>
             <div class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-                <div class="flex flex-col xl:min-h-[14.75rem] xl:flex-row">
+                <div class="flex flex-col xl:min-h-[12.75rem] xl:flex-row">
                     <div class="flex flex-col overflow-hidden border-b border-slate-200 xl:w-[24%] xl:border-b-0 xl:border-r dark:border-slate-700">
-                        <div :class="activeTickerTheme.shieldContainerClass" class="min-h-[6.75rem] flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950/40">
+                        <div :class="activeTickerTheme.shieldContainerClass" class="min-h-[5.25rem] flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950/40">
                             <img
                                 :src="identityShield"
                                 :alt="identityTitle"
@@ -341,7 +341,7 @@ onBeforeUnmount(() => {
                         </div>
                     </div>
 
-                    <div :class="activeRightPanelClass" class="flex flex-1 flex-col justify-between px-6 py-4 xl:px-8 xl:py-5">
+                    <div :class="activeRightPanelClass" class="flex flex-1 flex-col justify-between px-6 py-3 xl:px-8 xl:py-3">
                         <div class="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold uppercase tracking-[0.38em] text-[#8FA8D8] dark:text-[#9FB5E8]">
@@ -371,7 +371,7 @@ onBeforeUnmount(() => {
                             </div>
                         </div>
 
-                        <div class="mt-6 flex flex-wrap items-end justify-start gap-3 xl:justify-end">
+                        <div class="mt-3 flex flex-wrap items-end justify-start gap-3 xl:justify-end">
                             <button
                                 type="button"
                                 :class="themedSecondaryButtonClass"
