@@ -267,12 +267,12 @@ onBeforeUnmount(() => {
             <div class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
                 <div class="flex flex-col lg:min-h-[12.75rem] lg:flex-row">
                     <div class="flex flex-col overflow-hidden border-b border-slate-200 lg:w-[24%] lg:border-b-0 lg:border-r dark:border-slate-700">
-                        <div :class="activeTickerTheme.shieldContainerClass" class="h-44 sm:h-56 lg:min-h-[8.25rem] lg:flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950/40">
+                        <div :class="activeTickerTheme.shieldContainerClass" class="h-44 sm:h-56 lg:h-auto lg:min-h-[8.25rem] lg:flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950/40">
                             <img
                                 :src="identityShield"
                                 :alt="identityTitle"
                                 :class="[activeShieldImageClass, activeShieldImageBaseClass]"
-                                class="h-full w-full object-contain p-0"
+                                class="h-full w-full object-contain p-0 lg:p-2.5"
                             >
                         </div>
 
