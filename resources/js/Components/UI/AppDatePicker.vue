@@ -37,7 +37,7 @@ const emit = defineEmits(['update:modelValue'])
         <input
             :value="modelValue"
             type="date"
-            class="block w-full rounded-xl border border-white/10 bg-slate-800/80 py-2.5 pe-3 ps-10 text-sm text-white shadow-sm placeholder:text-slate-400 focus:border-cyan-400 focus:ring-cyan-400/30"
+            class="block w-full rounded-xl border border-slate-300 bg-white py-2.5 pe-3 ps-10 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-primary-400 focus:ring-primary-300/40 dark:border-white/10 dark:bg-slate-800/80 dark:text-white dark:placeholder:text-slate-400 dark:focus:border-cyan-400 dark:focus:ring-cyan-400/30"
             :placeholder="placeholder"
             @input="emit('update:modelValue', $event.target.value)"
         >

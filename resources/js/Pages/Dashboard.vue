@@ -2,24 +2,30 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import {
-    ArrowTrendingUpIcon,
     CalendarDaysIcon,
     ClockIcon,
     FireIcon,
-    PlayCircleIcon,
-    SparklesIcon,
-    TrophyIcon,
-    UserGroupIcon,
 } from '@heroicons/vue/24/outline'
+import AdminTableSection from '@/Components/Admin/Dashboard/AdminTableSection.vue'
+import AppDatePicker from '@/Components/UI/AppDatePicker.vue'
+import AppTooltip from '@/Components/UI/AppTooltip.vue'
+import DashboardMetricCard from '@/Components/User/DashboardMetricCard.vue'
 import FavoriteTeamModal from '@/Components/User/FavoriteTeamModal.vue'
 import SectionCard from '@/Components/User/SectionCard.vue'
-import StatCard from '@/Components/User/StatCard.vue'
 import { launchThemeChangeConfetti } from '@/Utils/confetti'
 import { imageUrl } from '@/Utils/image'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
 
 
 const props = defineProps({
+    todayLabel: {
+        type: String,
+        default: '',
+    },
+    todayIso: {
+        type: String,
+        default: '',
+    },
     tournament: {
         type: Object,
         default: null,
@@ -36,6 +42,38 @@ const props = defineProps({
         type: Object,
         default: null,
     },
+    dashboardMetrics: {
+        type: Object,
+        default: () => ({}),
+    },
+    upcomingMatches: {
+        type: Array,
+        default: () => [],
+    },
+    resultMatches: {
+        type: Array,
+        default: () => [],
+    },
+    featuredResults: {
+        type: Array,
+        default: () => [],
+    },
+    upcomingGames: {
+        type: Array,
+        default: () => [],
+    },
+    topPredictionsRanking: {
+        type: Array,
+        default: () => [],
+    },
+    tournamentCoverage: {
+        type: Object,
+        default: () => ({
+            overallProgress: 0,
+            rows: [],
+            hasGames: false,
+        }),
+    },
 })
 
 const page = usePage()
@@ -47,7 +85,12 @@ const userName = computed(() => {
 
     return fullName.split(/\s+/).slice(0, 2).join(' ')
 })
+const currentUserId = computed(() => Number(page.props.auth?.user?.id ?? 0))
 const userPoolEntriesCount = computed(() => Number(page.props.auth?.user?.pool_entries_count ?? 0))
+const userTournamentPoolEntriesCount = computed(() => Number(
+    props.dashboardMetrics?.userPoolEntriesCount ?? userPoolEntriesCount.value ?? 0,
+))
+const userTotalPoints = computed(() => Number(props.dashboardMetrics?.userTotalPoints ?? 0))
 const tournamentLogo = computed(() => imageUrl(props.tournament?.logo))
 const tournamentTitle = computed(() => props.tournament?.name ?? 'World Cup 2026')
 const currentFavoriteTeam = computed(() => page.props.auth?.user?.favorite_team ?? null)
@@ -70,6 +113,7 @@ const countdown = ref({
 })
 
 let timerId = null
+const selectedDate = ref(props.todayIso || '')
 
 const tickerThemes = {
     neutral: {
@@ -161,69 +205,143 @@ const submitFavoriteTeam = (teamId) => {
     })
 }
 
+const metricIcons = {
+    trophy: {
+        viewBox: '0 0 512 512',
+        path: 'M144.3 0l224 0c26.5 0 48.1 21.8 47.1 48.2-.2 5.3-.4 10.6-.7 15.8l49.6 0c26.1 0 49.1 21.6 47.1 49.8-7.5 103.7-60.5 160.7-118 190.5-15.8 8.2-31.9 14.3-47.2 18.8-20.2 28.6-41.2 43.7-57.9 51.8l0 73.1 64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-192 0c-17.7 0-32-14.3-32-32s14.3-32 32-32l64 0 0-73.1c-16-7.7-35.9-22-55.3-48.3-18.4-4.8-38.4-12.1-57.9-23.1-54.1-30.3-102.9-87.4-109.9-189.9-1.9-28.1 21-49.7 47.1-49.7l49.6 0c-.3-5.2-.5-10.4-.7-15.8-1-26.5 20.6-48.2 47.1-48.2zM101.5 112l-52.4 0c6.2 84.7 45.1 127.1 85.2 149.6-14.4-37.3-26.3-86-32.8-149.6zM380 256.8c40.5-23.8 77.1-66.1 83.3-144.8L411 112c-6.2 60.9-17.4 108.2-31 144.8z',
+    },
+    transmission: {
+        viewBox: '0 0 576 512',
+        path: 'M87.9 11.5c-11.3-6.9-26.1-3.2-33 8.1-24.8 41-39 89.1-39 140.4s14.2 99.4 39 140.4c6.9 11.3 21.6 15 33 8.1s15-21.6 8.1-33C75.7 241.9 64 202.3 64 160S75.7 78.1 96.1 44.4c6.9-11.3 3.2-26.1-8.1-33zm400.1 0c-11.3 6.9-15 21.6-8.1 33 20.4 33.7 32.1 73.3 32.1 115.6s-11.7 81.9-32.1 115.6c-6.9 11.3-3.2 26.1 8.1 33s26.1 3.2 33-8.1c24.8-41 39-89.1 39-140.4S545.8 60.6 521 19.6c-6.9-11.3-21.6-15-33-8.1zM320 215.4c19.1-11.1 32-31.7 32-55.4 0-35.3-28.7-64-64-64s-64 28.7-64 64c0 23.7 12.9 44.4 32 55.4L256 480c0 17.7 14.3 32 32 32s32-14.3 32-32l0-264.6zM180.2 91c7.2-11.2 3.9-26-7.2-33.2s-26-3.9-33.2 7.2c-17.6 27.4-27.8 60-27.8 95s10.2 67.6 27.8 95c7.2 11.2 22 14.4 33.2 7.2s14.4-22 7.2-33.2c-12.8-19.9-20.2-43.6-20.2-69s7.4-49.1 20.2-69zM436.2 65c-7.2-11.2-22-14.4-33.2-7.2s-14.4 22-7.2 33.2c12.8 19.9 20.2 43.6 20.2 69s-7.4 49.1-20.2 69c-7.2 11.2-3.9 26 7.2 33.2s26 3.9 33.2-7.2c17.6-27.4 27.8-60 27.8-95s-10.2-67.6-27.8-95z',
+    },
+    calendar: {
+        viewBox: '0 0 448 512',
+        path: 'M128 0c17.7 0 32 14.3 32 32l0 32 128 0 0-32c0-17.7 14.3-32 32-32s32 14.3 32 32l0 32 32 0c35.3 0 64 28.7 64 64l0 288c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 128C0 92.7 28.7 64 64 64l32 0 0-32c0-17.7 14.3-32 32-32zM64 240l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0c-8.8 0-16 7.2-16 16zm128 0l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0c-8.8 0-16 7.2-16 16zm144-16c-8.8 0-16 7.2-16 16l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0zM64 368l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0c-8.8 0-16 7.2-16 16zm144-16c-8.8 0-16 7.2-16 16l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0zm112 16l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0c-8.8 0-16 7.2-16 16z',
+    },
+    chartline: {
+        viewBox: '0 0 512 512',
+        path: 'M64 64c0-17.7-14.3-32-32-32S0 46.3 0 64L0 400c0 44.2 35.8 80 80 80l400 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L80 416c-8.8 0-16-7.2-16-16L64 64zm406.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L320 210.7 262.6 153.4c-12.5-12.5-32.8-12.5-45.3 0l-96 96c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l73.4-73.4 57.4 57.4c12.5 12.5 32.8 12.5 45.3 0l128-128z',
+    },
+}
+
+const liveGamesCount = computed(() => Number(props.dashboardMetrics?.liveGamesCount ?? 0))
+
 const quickStats = computed(() => [
     {
-        title: 'Mis quinielas',
-        value: String(userPoolEntriesCount.value),
-        helper: 'Activa',
+        title: 'Juego directo',
+        value: String(liveGamesCount.value),
+        badge: 'En directo',
         tone: 'primary',
-        description: 'Tu espacio ya esta listo para registrar y seguir tus predicciones.',
+        valueTone: liveGamesCount.value > 0 ? 'rose' : 'roseMuted',
+        badgeVariant: liveGamesCount.value > 0 ? 'live' : 'clockRose',
+        iconTone: 'rose',
+        icon: metricIcons.transmission,
+        signal: liveGamesCount.value > 0,
+        description: 'Sigue la Copa en Directo',
     },
     {
-        title: 'Partidos del torneo',
-        value: '104',
-        helper: 'Calendario completo',
-        tone: 'slate',
-        description: 'Incluye fase de grupos, ronda de 32 y toda la eliminatoria.',
+        title: 'Calendario',
+        value: String(activeCoverageRow.value?.total ?? 0),
+        badge: hasCoverageGames.value
+            ? (activeCoverageRow.value?.label ?? 'Torneo en curso')
+            : 'Torneo no iniciado',
+        tone: 'sky',
+        valueTone: Number(activeCoverageRow.value?.total ?? 0) > 0 ? 'sky' : 'skyMuted',
+        badgeVariant: hasCoverageGames.value ? 'progressSky' : 'clockSky',
+        icon: metricIcons.calendar,
+        description: 'Atento a tus fechas',
     },
     {
-        title: 'Selecciones',
-        value: '48',
-        helper: 'Nueva era FIFA',
-        tone: 'success',
-        description: 'Un Mundial mas amplio, con mas grupos y mas cruces por seguir.',
+        title: 'Mis quinielas',
+        value: String(userTournamentPoolEntriesCount.value > 0 ? userTournamentPoolEntriesCount.value : 0),
+        badge: userTournamentPoolEntriesCount.value > 0 ? 'Activas' : 'Torneo no iniciado',
+        tone: 'amber',
+        valueTone: userTournamentPoolEntriesCount.value > 0 ? 'amber' : 'amberMuted',
+        badgeVariant: userTournamentPoolEntriesCount.value > 0 ? 'flameAmber' : 'clockAmber',
+        icon: metricIcons.trophy,
+        description: 'Crea tus quinielas',
     },
     {
-        title: 'Ranking de quiniela',
-        value: 'Top 25',
-        helper: 'Referencia inicial',
-        tone: 'warning',
-        description: 'Cuando publiques mas quinielas aqui veras tu posicion real dentro del juego.',
+        title: 'Puntos',
+        value: String(userTotalPoints.value),
+        badge: 'Rendimiento',
+        tone: 'emerald',
+        valueTone: userTotalPoints.value > 0 ? 'emerald' : 'emeraldMuted',
+        badgeVariant: userTotalPoints.value > 0 ? 'progress' : 'clock',
+        icon: metricIcons.chartline,
+        description: 'Total Puntos Acumulados',
     },
 ])
 
-const nextMatches = [
-    {
-        date: '11 jun. 2026 - 19:00',
-        match: 'Mexico vs Sudafrica',
-        venue: 'Estadio Azteca, Ciudad de Mexico',
-        stage: 'Apertura del torneo',
-    },
-    {
-        date: '12 jun. 2026 - 16:00',
-        match: 'Canada vs ITA/NIR/WAL/BIH',
-        venue: 'Toronto Stadium',
-        stage: 'Grupo B',
-    },
-    {
-        date: '12 jun. 2026 - 21:00',
-        match: 'Estados Unidos vs TUR/ROU/SVK/KAZ',
-        venue: 'SoFi Stadium, Los Angeles',
-        stage: 'Grupo D',
-    },
-]
+const liveMatches = computed(() => props.upcomingMatches.filter((match) => match.status === 'LIVE'))
+const filteredResultMatches = computed(() => {
+    if (!selectedDate.value) {
+        return props.resultMatches
+    }
 
-const rankingPreview = computed(() => [
-    { name: 'Andres F.', points: 182, status: 'Lider actual' },
-    { name: 'Camila R.', points: 176, status: 'Persiguiendo el podio' },
-    { name: userName.value, points: 0, status: 'Tu punto de partida' },
-])
+    return props.resultMatches.filter((match) => match.matchDateIso === selectedDate.value)
+})
+const displayedResults = computed(() => {
+    if (filteredResultMatches.value.length) {
+        return filteredResultMatches.value.slice(0, 5)
+    }
 
-const pulseItems = [
-    'El Mundial arranca con 12 grupos y una ronda de 32 historica.',
-    'Tu proxima quiniela puede aprovechar la matriz oficial de mejores terceros.',
-    'La nueva vista unifica resultados, calendario y ranking en un solo flujo.',
-]
+    return props.featuredResults.slice(0, 5)
+})
+const selectedDateLabel = computed(() => {
+    if (!selectedDate.value) {
+        return props.todayLabel || '-'
+    }
+
+    return new Date(`${selectedDate.value}T00:00:00`).toLocaleDateString('es-VE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+    })
+})
+const rankingUpdatedAt = computed(() => props.topPredictionsRanking?.[0]?.updatedAt ?? '-')
+const coverageRows = computed(() => props.tournamentCoverage?.rows ?? [])
+const overallCoverageProgress = computed(() => Number(props.tournamentCoverage?.overallProgress ?? 0))
+const hasCoverageGames = computed(() => Boolean(props.tournamentCoverage?.hasGames))
+const activeCoverageKey = computed(() => {
+    const rows = coverageRows.value
+    const inProgress = rows.find((row) => row.total > 0 && !row.completed && row.finished > 0)
+    if (inProgress) {
+        return inProgress.key
+    }
+
+    return rows.find((row) => row.total > 0 && !row.completed)?.key ?? null
+})
+const activeCoverageRow = computed(() => coverageRows.value.find((row) => row.key === activeCoverageKey.value) ?? null)
+const formatMatchTime = (value) => value ? String(value).slice(0, 5) : '--:--'
+const teamDisplayName = (team, slot) => team?.name || slot || 'Por definir'
+const teamDisplayCode = (team, slot) => team?.code || slot || 'TBD'
+const resultTeamName = (team, slot) => team?.name || slot || 'Por definir'
+const resultTeamCode = (team, slot) => team?.code || slot || 'TBD'
+const resultTeamFlag = (team) => team?.flag_url || imageUrl(team?.flag_path)
+const toScoreNumber = (value) => {
+    const numericValue = Number(value)
+    return Number.isFinite(numericValue) ? numericValue : null
+}
+const isDrawResult = (match) => {
+    const home = toScoreNumber(match.homeScore)
+    const away = toScoreNumber(match.awayScore)
+    return home !== null && away !== null && home === away
+}
+const isHomeWinner = (match) => {
+    const home = toScoreNumber(match.homeScore)
+    const away = toScoreNumber(match.awayScore)
+    return home !== null && away !== null && home > away
+}
+const isAwayWinner = (match) => {
+    const home = toScoreNumber(match.homeScore)
+    const away = toScoreNumber(match.awayScore)
+    return home !== null && away !== null && away > home
+}
+const upcomingTitleIcon = {
+    viewBox: '0 0 512 512',
+    path: 'M464 256a208 208 0 1 1 -416 0 208 208 0 1 1 416 0zM0 256a256 256 0 1 0 512 0 256 256 0 1 0 -512 0zM232 120l0 136c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2 280 120c0-13.3-10.7-24-24-24s-24 10.7-24 24z',
+}
 
 const updateCountdown = () => {
     const difference = worldCupKickoff.getTime() - Date.now()
@@ -397,7 +515,7 @@ onBeforeUnmount(() => {
                                 :class="themedSecondaryButtonClass"
                                 class="inline-flex min-w-[190px] flex-1 items-center justify-center rounded-xl border px-5 py-3 text-sm font-semibold transition focus:outline-none lg:flex-none"
                             >
-                                Mis quinielas ({{ userPoolEntriesCount }})
+                                Mis quinielas ({{ userTournamentPoolEntriesCount }})
                             </Link>
                             <Link
                                 :href="route('predictions.worldcup')"
@@ -416,176 +534,331 @@ onBeforeUnmount(() => {
         </template>
 
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <StatCard
+            <DashboardMetricCard
                 v-for="stat in quickStats"
                 :key="stat.title"
                 :title="stat.title"
                 :value="stat.value"
-                :helper="stat.helper"
+                :description="stat.description"
+                :badge="stat.badge"
                 :tone="stat.tone"
-            >
-                {{ stat.description }}
-            </StatCard>
+                :value-tone="stat.valueTone"
+                :badge-variant="stat.badgeVariant"
+                :icon-tone="stat.iconTone"
+                :icon="stat.icon"
+                :signal="Boolean(stat.signal)"
+            />
         </section>
 
         <section class="mt-6 grid gap-6 xl:grid-cols-[1.55fr_1fr]">
             <div class="space-y-6">
-                <SectionCard
-                    title="Proximos partidos"
-                    subtitle="Un vistazo rapido a los primeros cruces del torneo."
-                >
-                    <div class="space-y-4">
-                        <div
-                            v-for="match in nextMatches"
-                            :key="`${match.date}-${match.match}`"
-                            class="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-800/40"
-                        >
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-primary-600 dark:text-primary-400">
-                                    {{ match.stage }}
-                                </p>
-                                <h3 class="mt-2 text-lg font-semibold text-slate-950 dark:text-white">
-                                    {{ match.match }}
-                                </h3>
-                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                    {{ match.venue }}
-                                </p>
-                            </div>
+                <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/85">
+                    <div class="mb-4 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                        <div>
+                            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Resultados del dia</h2>
+                            <span class="text-xs text-gray-500 dark:text-slate-400">Fecha seleccionada: {{ selectedDateLabel }}</span>
+                        </div>
 
-                            <div class="rounded-2xl bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-200">
-                                {{ match.date }}
-                            </div>
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <AppDatePicker v-model="selectedDate" placeholder="Seleccionar fecha" />
                         </div>
                     </div>
-                </SectionCard>
+
+                    <div v-if="displayedResults.length" class="-mx-5 overflow-hidden border-y border-gray-200 dark:border-slate-800">
+                        <div
+                            v-for="match in displayedResults"
+                            :key="match.id"
+                            class="border-b border-gray-200 bg-white px-5 py-3 last:border-b-0 dark:border-slate-800 dark:bg-slate-900/70"
+                        >
+                            <div class="mb-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+                                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                                    {{ match.stage === 'group' ? `Grupo ${match.group_name || '-'}` : match.stage_label }}
+                                </p>
+                                <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                    <span class="whitespace-nowrap">{{ match.display_date }} <span v-if="match.display_time">- {{ match.display_time }}</span></span>
+                                    <span class="inline-flex items-center gap-1.5 truncate">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-3.5 w-3.5 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
+                                            <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
+                                        </svg>
+                                        <span class="truncate">{{ match.venue || 'Sede por confirmar' }}</span>
+                                    </span>
+                                </div>
+                                <span class="inline-flex w-fit justify-self-end items-center rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                                    Finalizado
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+                                <div class="flex items-center gap-2">
+                                    <img
+                                        v-if="resultTeamFlag(match.home_team)"
+                                        :src="resultTeamFlag(match.home_team)"
+                                        :alt="resultTeamName(match.home_team, match.home_slot)"
+                                        class="h-5 w-7 shrink-0 rounded object-cover"
+                                    >
+                                    <span v-else class="text-xs font-semibold uppercase text-gray-400">
+                                        {{ resultTeamCode(match.home_team, match.home_slot) }}
+                                    </span>
+                                    <span class="truncate text-base font-semibold text-gray-900 dark:text-white">
+                                        {{ resultTeamName(match.home_team, match.home_slot) }}
+                                    </span>
+                                </div>
+
+                                <div class="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 text-xl font-black dark:bg-slate-800">
+                                    <span :class="(isHomeWinner(match) || isDrawResult(match)) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
+                                        {{ match.homeScore ?? 0 }}
+                                    </span>
+                                    <span class="text-slate-400 dark:text-slate-500">-</span>
+                                    <span :class="(isAwayWinner(match) || isDrawResult(match)) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
+                                        {{ match.awayScore ?? 0 }}
+                                    </span>
+                                </div>
+
+                                <div class="flex items-center justify-end gap-2 text-right">
+                                    <span class="truncate text-base font-semibold text-gray-900 dark:text-white">
+                                        {{ resultTeamName(match.away_team, match.away_slot) }}
+                                    </span>
+                                    <img
+                                        v-if="resultTeamFlag(match.away_team)"
+                                        :src="resultTeamFlag(match.away_team)"
+                                        :alt="resultTeamName(match.away_team, match.away_slot)"
+                                        class="h-5 w-7 shrink-0 rounded object-cover"
+                                    >
+                                    <span v-else class="text-xs font-semibold uppercase text-gray-400">
+                                        {{ resultTeamCode(match.away_team, match.away_slot) }}
+                                    </span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div v-else class="rounded-lg border border-dashed border-gray-200 p-6 text-center dark:border-slate-800">
+                        <p class="text-sm text-gray-500 dark:text-slate-400">No hay resultados finales para la fecha seleccionada.</p>
+                    </div>
+
+                    <div class="mt-4 flex items-center justify-end pt-3">
+                        <Link
+                            :href="route('matches.index')"
+                            class="inline-flex items-center whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-bold uppercase tracking-wide text-primary-700 transition hover:bg-gray-100 dark:text-primary-500 dark:hover:bg-gray-700"
+                        >
+                            Ver mas
+                            <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </Link>
+                    </div>
+                </div>
+
+                <AdminTableSection
+                    title="Proximos juegos"
+                    :title-icon="upcomingTitleIcon"
+                    variant="user-dashboard"
+                >
+                    <template #actions>
+                        <Link
+                            :href="route('matches.index')"
+                            class="inline-flex items-center whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-bold uppercase tracking-wide text-primary-700 transition hover:bg-gray-100 dark:text-primary-500 dark:hover:bg-gray-700"
+                        >
+                            Ver calendario
+                            <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </Link>
+                    </template>
+
+                    <table class="w-full table-auto text-left text-sm text-gray-600 dark:text-slate-300">
+                        <thead class="border-b border-t border-gray-200 bg-gray-50 text-xs uppercase text-gray-500 dark:border-slate-800 dark:bg-slate-700/70 dark:text-slate-300">
+                            <tr>
+                                <th class="w-[88px] px-4 py-3 text-center font-medium">Grupo</th>
+                                <th class="px-4 py-3 text-center font-medium">Encuentros</th>
+                                <th class="w-[240px] px-4 py-3 font-medium">Sede</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="game in props.upcomingGames" :key="game.id" class="border-b border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-900/70">
+                                <td class="px-4 py-4 text-center">{{ game.groupName || '-' }}</td>
+                                <td class="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                                    <div class="grid grid-cols-[minmax(140px,1fr)_110px_minmax(140px,1fr)] items-center gap-3">
+                                        <div class="flex items-center justify-end gap-2 pe-1 text-right">
+                                            <span class="truncate">{{ teamDisplayName(game.homeTeam, game.homeSlot) }}</span>
+                                            <img v-if="game.homeTeam?.flag_url" :src="game.homeTeam.flag_url" :alt="game.homeTeam.name" class="h-5 w-7 shrink-0 rounded object-cover">
+                                            <span v-else class="text-xs font-semibold uppercase text-gray-400">{{ teamDisplayCode(game.homeTeam, game.homeSlot) }}</span>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                                {{ game.date || '--/--/----' }}
+                                            </div>
+                                            <div class="text-2xl font-black tracking-tight text-cyan-500 dark:text-cyan-400">
+                                                {{ formatMatchTime(game.time) }}
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-2 ps-1">
+                                            <img v-if="game.awayTeam?.flag_url" :src="game.awayTeam.flag_url" :alt="game.awayTeam.name" class="h-5 w-7 shrink-0 rounded object-cover">
+                                            <span v-else class="text-xs font-semibold uppercase text-gray-400">{{ teamDisplayCode(game.awayTeam, game.awaySlot) }}</span>
+                                            <span class="truncate">{{ teamDisplayName(game.awayTeam, game.awaySlot) }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="inline-flex items-center gap-2 text-gray-900 dark:text-slate-200">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-4 w-4 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
+                                            <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
+                                        </svg>
+                                        <span class="transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ game.venue || 'Sede por confirmar' }}</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="!props.upcomingGames.length" class="bg-white dark:bg-slate-900/70">
+                                <td colspan="3" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-slate-400">No hay juegos programados.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="min-h-[48px] border-t border-gray-200 dark:border-slate-800">
+                    </div>
+                </AdminTableSection>
             </div>
 
             <div class="space-y-6">
                 <SectionCard
-                    title="Acciones rapidas"
-                    subtitle="Atajos para moverte dentro de tu experiencia de quiniela."
+                    title="Cobertura del torneo"
+                    subtitle="Indicadores globales del Mundial 2026."
                 >
-                    <div class="grid gap-3">
-                        <Link
-                            :href="route('predictions.worldcup')"
-                            class="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-4 transition hover:border-primary-300 hover:bg-white dark:border-slate-800 dark:bg-slate-800/40 dark:hover:border-primary-500 dark:hover:bg-slate-800"
-                        >
-                            <div class="flex items-center gap-3">
-                                <div class="rounded-2xl bg-primary-100 p-3 text-primary-700 dark:bg-primary-500/15 dark:text-primary-300">
-                                    <SparklesIcon class="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <p class="font-semibold text-slate-950 dark:text-white">Crear una nueva quiniela</p>
-                                    <p class="text-sm text-slate-500 dark:text-slate-400">Registra otra prediccion del Mundial.</p>
-                                </div>
-                            </div>
-                            <PlayCircleIcon class="h-5 w-5 text-slate-400" />
-                        </Link>
-
-                        <Link
-                            :href="route('pools.index')"
-                            class="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-4 transition hover:border-primary-300 hover:bg-white dark:border-slate-800 dark:bg-slate-800/40 dark:hover:border-primary-500 dark:hover:bg-slate-800"
-                        >
-                            <div class="flex items-center gap-3">
-                                <div class="rounded-2xl bg-emerald-100 p-3 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                                    <TrophyIcon class="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <p class="font-semibold text-slate-950 dark:text-white">Revisar mis quinielas</p>
-                                    <p class="text-sm text-slate-500 dark:text-slate-400">Consulta tus registros y su progreso.</p>
-                                </div>
-                            </div>
-                            <PlayCircleIcon class="h-5 w-5 text-slate-400" />
-                        </Link>
-
-                        <Link
-                            :href="route('leaderboard')"
-                            class="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-4 transition hover:border-primary-300 hover:bg-white dark:border-slate-800 dark:bg-slate-800/40 dark:hover:border-primary-500 dark:hover:bg-slate-800"
-                        >
-                            <div class="flex items-center gap-3">
-                                <div class="rounded-2xl bg-amber-100 p-3 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
-                                    <ArrowTrendingUpIcon class="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <p class="font-semibold text-slate-950 dark:text-white">Explorar ranking</p>
-                                    <p class="text-sm text-slate-500 dark:text-slate-400">Observa como se mueve la competencia.</p>
-                                </div>
-                            </div>
-                            <PlayCircleIcon class="h-5 w-5 text-slate-400" />
-                        </Link>
-                    </div>
-                </SectionCard>
-
-                <SectionCard
-                    title="Pulso de la quiniela"
-                    subtitle="Mensajes cortos para mantener el foco del torneo."
-                >
-                    <div class="space-y-3">
+                    <div v-if="hasCoverageGames && coverageRows.length" class="space-y-4">
                         <div
-                            v-for="item in pulseItems"
-                            :key="item"
-                            class="rounded-2xl bg-slate-100 p-4 text-sm leading-6 text-slate-700 dark:bg-slate-800/70 dark:text-slate-200"
+                            v-for="row in coverageRows"
+                            :key="row.key"
+                            class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3"
                         >
-                            {{ item }}
+                            <div class="flex items-center gap-3">
+                                <CalendarDaysIcon v-if="row.key === 'group'" class="h-5 w-5 text-primary-500" />
+                                <ClockIcon v-else-if="row.key === 'round_32'" class="h-5 w-5 text-primary-500" />
+                                <FireIcon v-else class="h-5 w-5 text-primary-500" />
+                                <span
+                                    class="text-sm"
+                                    :class="row.key === 'group'
+                                        ? 'font-semibold text-emerald-600 dark:text-emerald-400'
+                                        : 'text-slate-600 dark:text-slate-300'"
+                                >
+                                    {{ row.label }}
+                                </span>
+                            </div>
+                            <div class="min-w-[110px] flex justify-center">
+                                <span
+                                    v-if="row.key === 'group' && !row.completed"
+                                    class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="mr-1 h-3 w-3" fill="none" aria-hidden="true">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.122 17.645a7.185 7.185 0 0 1-2.656 2.495 7.06 7.06 0 0 1-3.52.853 6.617 6.617 0 0 1-3.306-.718 6.73 6.73 0 0 1-2.54-2.266c-2.672-4.57.287-8.846.887-9.668A4.448 4.448 0 0 0 8.07 6.31 4.49 4.49 0 0 0 7.997 4c1.284.965 6.43 3.258 5.525 10.631 1.496-1.136 2.7-3.046 2.846-6.216 1.43 1.061 3.985 5.462 1.754 9.23Z"/>
+                                    </svg>
+                                    En progreso {{ row.progress }}%
+                                </span>
+                                <span
+                                    v-else-if="row.key === 'group' && row.completed"
+                                    class="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-1 text-xs font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                                >
+                                    Finalizado {{ overallCoverageProgress }}%
+                                </span>
+                                <span
+                                    v-else-if="row.key === activeCoverageKey && !row.completed"
+                                    class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="mr-1 h-3 w-3" fill="none" aria-hidden="true">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.122 17.645a7.185 7.185 0 0 1-2.656 2.495 7.06 7.06 0 0 1-3.52.853 6.617 6.617 0 0 1-3.306-.718 6.73 6.73 0 0 1-2.54-2.266c-2.672-4.57.287-8.846.887-9.668A4.448 4.448 0 0 0 8.07 6.31 4.49 4.49 0 0 0 7.997 4c1.284.965 6.43 3.258 5.525 10.631 1.496-1.136 2.7-3.046 2.846-6.216 1.43 1.061 3.985 5.462 1.754 9.23Z"/>
+                                    </svg>
+                                    En progreso {{ row.progress }}%
+                                </span>
+                                <span
+                                    v-else-if="row.completed"
+                                    class="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-1 text-xs font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                                >
+                                    Finalizado
+                                </span>
+                            </div>
+                            <span
+                                class="text-sm font-semibold"
+                                :class="row.key === 'group'
+                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                    : 'text-slate-950 dark:text-white'"
+                            >
+                                {{ row.total }} partidos
+                            </span>
+                        </div>
+
+                        <div class="pt-1">
+                            <div class="mb-2 flex items-center justify-between">
+                                <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Avance del torneo</span>
+                                <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">{{ overallCoverageProgress }}%</span>
+                            </div>
+                            <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700/60">
+                                <div
+                                    class="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                                    :style="{ width: `${overallCoverageProgress}%` }"
+                                />
+                            </div>
                         </div>
                     </div>
-                </SectionCard>
-
-                <SectionCard
-                    title="Vista rapida del ranking"
-                    subtitle="Una referencia visual del tablero competitivo."
-                >
-                    <div class="space-y-3">
-                        <div
-                            v-for="entry in rankingPreview"
-                            :key="entry.name"
-                            class="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/40"
-                        >
-                            <div class="flex items-center gap-3">
-                                <div class="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white dark:bg-white dark:text-slate-900">
-                                    {{ entry.points }}
-                                </div>
-                                <div>
-                                    <p class="font-semibold text-slate-950 dark:text-white">{{ entry.name }}</p>
-                                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ entry.status }}</p>
-                                </div>
-                            </div>
-                            <UserGroupIcon class="h-5 w-5 text-slate-400" />
-                        </div>
+                    <div v-else class="rounded-lg border border-dashed border-gray-200 p-5 text-sm text-gray-500 dark:border-slate-700 dark:text-slate-400">
+                        No ha iniciado un torneo.
                     </div>
                 </SectionCard>
+
+                <AdminTableSection
+                    title="Quiniela 2026 - Top 15"
+                    :description="`Ranking por puntos - Actualizado: ${rankingUpdatedAt}`"
+                    variant="user-dashboard"
+                >
+                    <table class="w-full text-left text-sm text-gray-600 dark:text-slate-300">
+                        <thead class="border-b border-t border-gray-200 bg-gray-50 text-xs uppercase text-gray-500 dark:border-slate-800 dark:bg-slate-700/70 dark:text-slate-300">
+                            <tr>
+                                <th class="px-6 py-3 font-medium">Pos</th>
+                                <th class="px-6 py-3 font-medium">Quiniela</th>
+                                <th class="px-6 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">
+                                    <AppTooltip text="Exactos" placement="top">
+                                        <span class="inline-flex cursor-default">EXA</span>
+                                    </AppTooltip>
+                                </th>
+                                <th class="px-6 py-3 text-right font-medium text-sky-600 dark:text-sky-400">
+                                    <AppTooltip text="Aciertos" placement="top">
+                                        <span class="inline-flex cursor-default">ACI</span>
+                                    </AppTooltip>
+                                </th>
+                                <th class="px-6 py-3 text-right font-medium">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="entry in props.topPredictionsRanking" :key="entry.poolEntryId" class="border-b border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-900/70">
+                                <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">{{ entry.rank }}</td>
+                                <td
+                                    class="px-6 py-4 text-sm font-medium"
+                                    :class="entry.userId === currentUserId
+                                        ? 'text-emerald-600 dark:text-emerald-400'
+                                        : 'text-gray-900 dark:text-white'"
+                                >
+                                    {{ entry.poolEntryName }}
+                                </td>
+                                <td class="px-6 py-4 text-right font-semibold text-emerald-600 dark:text-emerald-400">{{ entry.exactHits }}</td>
+                                <td class="px-6 py-4 text-right font-semibold text-sky-600 dark:text-sky-400">{{ entry.correctResults }}</td>
+                                <td class="px-6 py-4 text-right font-semibold text-gray-900 dark:text-white">{{ entry.totalPoints }}</td>
+                            </tr>
+                            <tr v-if="!props.topPredictionsRanking.length" class="bg-white dark:bg-slate-900/70">
+                                <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400">No hay entradas en el ranking.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="flex items-center justify-end border-t border-gray-200 px-5 py-3 dark:border-slate-800">
+                        <Link :href="route('pools.index')" class="inline-flex items-center whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-bold uppercase tracking-wide text-primary-700 transition hover:bg-gray-100 dark:text-primary-500 dark:hover:bg-gray-700">
+                            Ver lista
+                            <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </Link>
+                    </div>
+                </AdminTableSection>
+
             </div>
-        </section>
-
-        <section class="mt-6 grid gap-6 lg:grid-cols-3">
-            <SectionCard
-                title="Cobertura del torneo"
-                subtitle="Indicadores globales del Mundial 2026."
-            >
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <CalendarDaysIcon class="h-5 w-5 text-primary-500" />
-                            <span class="text-sm text-slate-600 dark:text-slate-300">Fase de grupos</span>
-                        </div>
-                        <span class="text-sm font-semibold text-slate-950 dark:text-white">72 partidos</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <ClockIcon class="h-5 w-5 text-primary-500" />
-                            <span class="text-sm text-slate-600 dark:text-slate-300">Ronda de 32</span>
-                        </div>
-                        <span class="text-sm font-semibold text-slate-950 dark:text-white">16 partidos</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <FireIcon class="h-5 w-5 text-primary-500" />
-                            <span class="text-sm text-slate-600 dark:text-slate-300">Eliminatoria final</span>
-                        </div>
-                        <span class="text-sm font-semibold text-slate-950 dark:text-white">16 partidos</span>
-                    </div>
-                </div>
-            </SectionCard>
         </section>
 
         <FavoriteTeamModal
