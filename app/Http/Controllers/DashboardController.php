@@ -28,6 +28,7 @@ class DashboardController extends Controller
             ] : null,
             'favoriteTeams' => $this->favoriteTeams(),
             'favoriteTeamCard' => $this->favoriteTeamCard(),
+            'favoriteTeamTheme' => $this->resolveFavoriteTeamTheme(),
         ]);
     }
 
@@ -125,5 +126,38 @@ class DashboardController extends Controller
                 'ga' => 0,
             ],
         ];
+    }
+
+    private function resolveFavoriteTeamTheme(): ?array
+    {
+        $user = Auth::user();
+        $user?->loadMissing('favoriteTeam.country');
+
+        $countryCode = strtolower(trim((string) ($user?->favoriteTeam?->country?->code ?? '')));
+        $themes = config('world-cup-themes.themes', []);
+        $defaultKey = config('world-cup-themes.default');
+        $defaultTheme = $defaultKey ? ($themes[$defaultKey] ?? null) : null;
+        $baseTheme = $defaultTheme ?? ($themes['neutral'] ?? null);
+
+        if (!$baseTheme) {
+            return null;
+        }
+
+        if ($countryCode === '') {
+            return $baseTheme;
+        }
+
+        foreach ($themes as $theme) {
+            $countryCodes = array_map(
+                static fn (string $code): string => strtolower(trim($code)),
+                $theme['country_codes'] ?? []
+            );
+
+            if (in_array($countryCode, $countryCodes, true)) {
+                return array_replace($baseTheme, $theme);
+            }
+        }
+
+        return $baseTheme;
     }
 }

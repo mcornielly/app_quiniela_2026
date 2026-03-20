@@ -4,7 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 const props = defineProps({
     show: {
         type: Boolean,
-        default: false,
+        default: true,
     },
     ticker: {
         type: String,
@@ -78,17 +78,17 @@ onBeforeUnmount(() => {
 
 <template>
     <div
-        v-if="show"
-        :class="[tickerClass, tickerOpacityClass, transitionClass]"
+        v-if="props.show"
+        :class="[props.tickerClass, tickerOpacityClass, props.transitionClass]"
     >
-        <div :class="containerClass">
+        <div :class="props.containerClass">
             <slot>
-                <div v-if="ticker" class="flex items-center gap-3">
+                <div v-if="props.ticker" class="flex items-center gap-3">
                     <p class="text-sm font-medium tracking-wide text-slate-100">
-                        {{ ticker }}
+                        {{ props.ticker }}
                     </p>
                 </div>
-                <div v-else :class="defaultContentClass" aria-hidden="true" />
+                <div v-else :class="props.defaultContentClass" aria-hidden="true" />
             </slot>
         </div>
     </div>
