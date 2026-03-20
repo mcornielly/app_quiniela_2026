@@ -5,6 +5,7 @@ import ApplicationLogo from '@/Components/ApplicationLogo.vue'
 import Dropdown from '@/Components/Dropdown.vue'
 import DropdownLink from '@/Components/DropdownLink.vue'
 import AppTooltip from '@/Components/UI/AppTooltip.vue'
+import FlagRibbonTicker from '@/Components/User/FlagRibbonTicker.vue'
 import UserAvatar from '@/Components/User/UserAvatar.vue'
 import UserFooter from '@/Components/User/UserFooter.vue'
 import {
@@ -222,20 +223,19 @@ onMounted(() => {
                 </div>
             </div>
 
-            <div
-                v-if="ticker || $slots.ticker"
-                :class="props.tickerClass"
+            <FlagRibbonTicker
+                :show="Boolean(ticker || $slots.ticker)"
+                :ticker="ticker"
+                :ticker-class="props.tickerClass"
             >
-                <div class="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8">
-                    <slot name="ticker">
-                        <div class="flex items-center gap-3">
-                            <p class="text-sm font-medium tracking-wide text-slate-100">
-                                {{ ticker }}
-                            </p>
-                        </div>
-                    </slot>
-                </div>
-            </div>
+                <slot name="ticker">
+                    <div class="flex items-center gap-3">
+                        <p class="text-sm font-medium tracking-wide text-slate-100">
+                            {{ ticker }}
+                        </p>
+                    </div>
+                </slot>
+            </FlagRibbonTicker>
 
             <div v-if="mobileNavOpen" class="border-t border-slate-200/80 bg-white px-4 py-4 lg:hidden dark:border-slate-800 dark:bg-slate-950">
                 <div class="grid gap-2">
