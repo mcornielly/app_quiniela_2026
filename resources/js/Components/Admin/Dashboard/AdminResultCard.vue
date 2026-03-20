@@ -13,6 +13,10 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    showAction: {
+        type: Boolean,
+        default: true,
+    },
 })
 
 const hiddenFlags = ref({})
@@ -130,6 +134,7 @@ const actionLabel = computed(() => props.match.actionLabel || 'Resultados')
             </AppTooltip>
 
             <component
+                v-if="showAction"
                 :is="actionHref ? Link : 'button'"
                 :href="actionHref || undefined"
                 :type="actionHref ? undefined : 'button'"
