@@ -70,7 +70,7 @@ class HandleInertiaRequests extends Middleware
 
     private function resolveFavoriteTeamTheme(User $user): ?array
     {
-        $countryCode = $user->favoriteTeam?->country?->code;
+        $countryCode = strtolower(trim((string) ($user->favoriteTeam?->country?->code ?? '')));
         $themes = config('world-cup-themes.themes', []);
         $defaultKey = config('world-cup-themes.default');
         $defaultTheme = $defaultKey ? ($themes[$defaultKey] ?? null) : null;
@@ -80,12 +80,15 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
-        if (!$countryCode) {
+        if ($countryCode === '') {
             return $baseTheme;
         }
 
         foreach ($themes as $theme) {
-            $countryCodes = $theme['country_codes'] ?? [];
+            $countryCodes = array_map(
+                static fn (string $code): string => strtolower(trim($code)),
+                $theme['country_codes'] ?? []
+            );
 
             if (in_array($countryCode, $countryCodes, true)) {
                 return array_replace($baseTheme, $theme);

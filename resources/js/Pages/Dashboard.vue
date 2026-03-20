@@ -32,6 +32,10 @@ const props = defineProps({
         type: Object,
         default: null,
     },
+    favoriteTeamTheme: {
+        type: Object,
+        default: null,
+    },
 })
 
 const page = usePage()
@@ -47,7 +51,7 @@ const userPoolEntriesCount = computed(() => Number(page.props.auth?.user?.pool_e
 const tournamentLogo = computed(() => imageUrl(props.tournament?.logo))
 const tournamentTitle = computed(() => props.tournament?.name ?? 'World Cup 2026')
 const currentFavoriteTeam = computed(() => page.props.auth?.user?.favorite_team ?? null)
-const favoriteTeamTheme = computed(() => page.props.auth?.user?.favorite_team_theme ?? null)
+const favoriteTeamTheme = computed(() => props.favoriteTeamTheme ?? page.props.auth?.user?.favorite_team_theme ?? null)
 const favoriteTeamShield = computed(() => imageUrl(currentFavoriteTeam.value?.shield_path))
 const favoriteTeamFlag = computed(() => imageUrl(currentFavoriteTeam.value?.flag_path))
 const defaultIdentityShield = '/logo_world_cup_2026.png'
@@ -81,10 +85,14 @@ const tickerThemes = {
     },
 }
 
-const activeTickerTheme = computed(() => favoriteTeamTheme.value ?? tickerThemes.neutral)
+const activeTickerTheme = computed(() => ({
+    ...tickerThemes.neutral,
+    ...(favoriteTeamTheme.value ?? {}),
+}))
 const activeCounterClass = computed(() => activeTickerTheme.value?.counterClass ?? tickerThemes.neutral.counterClass)
 const activeCounterValueClass = computed(() => activeTickerTheme.value?.counterValueClass ?? tickerThemes.neutral.counterValueClass)
 const activeCounterLabelClass = computed(() => activeTickerTheme.value?.counterLabelClass ?? tickerThemes.neutral.counterLabelClass)
+const neutralTeamsTextClass = computed(() => activeTickerTheme.value?.neutralTeamsTextClass ?? 'text-slate-500 dark:text-slate-400')
 const activeRightPanelClass = computed(() => activeTickerTheme.value?.rightPanelClass ?? '')
 const activeShieldImageClass = computed(() => activeTickerTheme.value?.shieldImageClass ?? '')
 const activeShieldImageBaseClass = computed(() => activeTickerTheme.value?.shieldImageBaseClass ?? 'sm:object-cover sm:p-0')
@@ -294,7 +302,8 @@ onBeforeUnmount(() => {
                                 </div>
                                 <p
                                     v-else
-                                    class="text-center text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400"
+                                    :class="neutralTeamsTextClass"
+                                    class="text-center text-xs font-semibold uppercase tracking-[0.28em]"
                                 >
                                     USA | CANADA | MEXICO
                                 </p>
@@ -344,10 +353,10 @@ onBeforeUnmount(() => {
                                         >
                                     </div>
                                     <div>
-                                        <p :class="activeTickerTheme.eyebrowClass" class="text-[12px] font-bold uppercase tracking-[0.26em]">
+                                        <p :class="activeTickerTheme.eyebrowClass" class="text-[12px] font-bold uppercase tracking-[0.26em] dark:!text-white">
                                             Cuenta regresiva al Mundial 2026
                                         </p>
-                                        <p :class="activeTickerTheme.bodyClass" class="text-sm dark:text-slate-300">
+                                        <p :class="activeTickerTheme.bodyClass" class="text-sm dark:!text-slate-200">
                                             Cada segundo nos acerca al partido inaugural en Ciudad de Mexico.
                                         </p>
                                     </div>
@@ -356,19 +365,19 @@ onBeforeUnmount(() => {
                                 <div class="grid grid-cols-4 gap-2 md:gap-3">
                                     <div class="px-1 text-center">
                                         <p :class="activeCounterValueClass" class="text-xl font-black tracking-tight">{{ countdown.days }}</p>
-                                        <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Dias</p>
+                                        <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] dark:!text-[#6F7FA5]">Dias</p>
                                     </div>
                                     <div class="px-1 text-center">
                                         <p :class="activeCounterValueClass" class="text-xl font-black tracking-tight">{{ countdown.hours }}</p>
-                                        <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Horas</p>
+                                        <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] dark:!text-[#6F7FA5]">Horas</p>
                                     </div>
                                     <div class="px-1 text-center">
                                         <p :class="activeCounterValueClass" class="text-xl font-black tracking-tight">{{ countdown.minutes }}</p>
-                                        <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Min</p>
+                                        <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] dark:!text-[#6F7FA5]">Min</p>
                                     </div>
                                     <div class="px-1 text-center">
                                         <p :class="activeCounterValueClass" class="text-xl font-black tracking-tight">{{ countdown.seconds }}</p>
-                                        <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em]">Seg</p>
+                                        <p :class="activeCounterLabelClass" class="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] dark:!text-[#6F7FA5]">Seg</p>
                                     </div>
                                 </div>
                             </div>

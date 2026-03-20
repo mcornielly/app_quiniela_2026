@@ -4,7 +4,6 @@ import { Link, usePage } from '@inertiajs/vue3'
 import ApplicationLogo from '@/Components/ApplicationLogo.vue'
 import Dropdown from '@/Components/Dropdown.vue'
 import DropdownLink from '@/Components/DropdownLink.vue'
-import AppTooltip from '@/Components/UI/AppTooltip.vue'
 import FlagRibbonTicker from '@/Components/User/FlagRibbonTicker.vue'
 import UserAvatar from '@/Components/User/UserAvatar.vue'
 import UserFooter from '@/Components/User/UserFooter.vue'
@@ -168,22 +167,15 @@ onMounted(() => {
                 </nav>
 
                 <div class="flex items-center gap-3">
-                    <AppTooltip
-                        :text="currentTheme === 'dark' ? 'Toggle light mode' : 'Toggle dark mode'"
-                        placement="bottom"
-                        tooltip-class="border border-slate-700/90 bg-slate-800/95 shadow-lg shadow-slate-950/25 backdrop-blur-sm"
-                        arrow-class="border-slate-700/90 bg-slate-800/95"
+                    <button
+                        type="button"
+                        @click="toggleTheme()"
+                        class="hidden h-11 w-11 items-center justify-center rounded-full border border-transparent bg-transparent text-slate-500 transition-all duration-200 ease-out hover:border-slate-200 hover:bg-slate-100/90 hover:text-slate-700 focus:border-primary-200 focus:bg-primary-50/90 focus:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-200/45 active:scale-95 sm:inline-flex dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800/80 dark:hover:text-slate-100 dark:focus:border-sky-400/20 dark:focus:bg-sky-400/10 dark:focus:text-white dark:focus:ring-sky-400/15"
+                        :aria-label="currentTheme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'"
                     >
-                        <button
-                            type="button"
-                            @click="toggleTheme()"
-                            class="hidden h-11 w-11 items-center justify-center rounded-full border border-transparent bg-transparent text-slate-500 transition-all duration-200 ease-out hover:border-slate-200 hover:bg-slate-100/90 hover:text-slate-700 focus:border-primary-200 focus:bg-primary-50/90 focus:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-200/45 active:scale-95 sm:inline-flex dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800/80 dark:hover:text-slate-100 dark:focus:border-sky-400/20 dark:focus:bg-sky-400/10 dark:focus:text-white dark:focus:ring-sky-400/15"
-                            :aria-label="currentTheme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'"
-                        >
-                            <SunIcon v-if="currentTheme === 'dark'" class="h-4 w-4" />
-                            <MoonIcon v-else class="h-4 w-4" />
-                        </button>
-                    </AppTooltip>
+                        <SunIcon v-if="currentTheme === 'dark'" class="h-4 w-4" />
+                        <MoonIcon v-else class="h-4 w-4" />
+                    </button>
 
                     <div class="hidden h-8 w-px bg-slate-200 dark:bg-slate-800 sm:block" />
 
@@ -224,8 +216,7 @@ onMounted(() => {
             </div>
 
             <FlagRibbonTicker
-                :show="Boolean(ticker || $slots.ticker)"
-                :ticker="ticker"
+                :ticker="props.ticker"
                 :ticker-class="props.tickerClass"
             >
                 <slot name="ticker">
@@ -287,22 +278,15 @@ onMounted(() => {
                 </div>
 
                 <div class="mt-4 flex items-center gap-3">
-                    <AppTooltip
-                        :text="currentTheme === 'dark' ? 'Toggle light mode' : 'Toggle dark mode'"
-                        placement="top"
-                        tooltip-class="border border-slate-700/90 bg-slate-800/95 shadow-lg shadow-slate-950/25 backdrop-blur-sm"
-                        arrow-class="border-slate-700/90 bg-slate-800/95"
+                    <button
+                        type="button"
+                        @click="toggleTheme()"
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-transparent bg-transparent text-slate-500 transition-all duration-200 ease-out hover:border-slate-200 hover:bg-slate-100/90 hover:text-slate-700 focus:border-primary-200 focus:bg-primary-50/90 focus:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-200/45 active:scale-95 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800/80 dark:hover:text-slate-100 dark:focus:border-sky-400/20 dark:focus:bg-sky-400/10 dark:focus:text-white dark:focus:ring-sky-400/15"
+                        :aria-label="currentTheme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'"
                     >
-                        <button
-                            type="button"
-                            @click="toggleTheme()"
-                            class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-transparent bg-transparent text-slate-500 transition-all duration-200 ease-out hover:border-slate-200 hover:bg-slate-100/90 hover:text-slate-700 focus:border-primary-200 focus:bg-primary-50/90 focus:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-200/45 active:scale-95 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800/80 dark:hover:text-slate-100 dark:focus:border-sky-400/20 dark:focus:bg-sky-400/10 dark:focus:text-white dark:focus:ring-sky-400/15"
-                            :aria-label="currentTheme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'"
-                        >
-                            <SunIcon v-if="currentTheme === 'dark'" class="h-4 w-4" />
-                            <MoonIcon v-else class="h-4 w-4" />
-                        </button>
-                    </AppTooltip>
+                        <SunIcon v-if="currentTheme === 'dark'" class="h-4 w-4" />
+                        <MoonIcon v-else class="h-4 w-4" />
+                    </button>
                 </div>
             </div>
         </header>
