@@ -240,6 +240,7 @@ const quickStats = computed(() => [
         icon: metricIcons.transmission,
         signal: liveGamesCount.value > 0,
         description: 'Sigue la Copa en Directo',
+        href: route('live.index'),
     },
     {
         title: 'Calendario',
@@ -252,6 +253,7 @@ const quickStats = computed(() => [
         badgeVariant: hasCoverageGames.value ? 'progressSky' : 'clockSky',
         icon: metricIcons.calendar,
         description: 'Atento a tus fechas',
+        href: route('calendar.index'),
     },
     {
         title: 'Mis quinielas',
@@ -262,6 +264,7 @@ const quickStats = computed(() => [
         badgeVariant: userTournamentPoolEntriesCount.value > 0 ? 'flameAmber' : 'clockAmber',
         icon: metricIcons.trophy,
         description: 'Crea tus quinielas',
+        href: route('pools.index'),
     },
     {
         title: 'Puntos',
@@ -272,6 +275,7 @@ const quickStats = computed(() => [
         badgeVariant: userTotalPoints.value > 0 ? 'progress' : 'clock',
         icon: metricIcons.chartline,
         description: 'Total Puntos Acumulados',
+        href: route('leaderboard'),
     },
 ])
 
@@ -579,20 +583,25 @@ onBeforeUnmount(() => {
         </template>
 
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <DashboardMetricCard
+            <Link
                 v-for="stat in quickStats"
                 :key="stat.title"
-                :title="stat.title"
-                :value="stat.value"
-                :description="stat.description"
-                :badge="stat.badge"
-                :tone="stat.tone"
-                :value-tone="stat.valueTone"
-                :badge-variant="stat.badgeVariant"
-                :icon-tone="stat.iconTone"
-                :icon="stat.icon"
-                :signal="Boolean(stat.signal)"
-            />
+                :href="stat.href"
+                class="block"
+            >
+                <DashboardMetricCard
+                    :title="stat.title"
+                    :value="stat.value"
+                    :description="stat.description"
+                    :badge="stat.badge"
+                    :tone="stat.tone"
+                    :value-tone="stat.valueTone"
+                    :badge-variant="stat.badgeVariant"
+                    :icon-tone="stat.iconTone"
+                    :icon="stat.icon"
+                    :signal="Boolean(stat.signal)"
+                />
+            </Link>
         </section>
 
         <section class="mt-6 grid gap-6 xl:grid-cols-[1.55fr_1fr]">
@@ -940,7 +949,6 @@ onBeforeUnmount(() => {
         </Transition>
     </UserDashboardLayout>
 </template>
-
 
 
 

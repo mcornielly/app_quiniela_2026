@@ -87,6 +87,30 @@ class MatchesController extends Controller
         ]);
     }
 
+    public function live(): Response
+    {
+        $tournament = $this->resolveTournament();
+
+        if (! $tournament) {
+            return Inertia::render('Matches/Live', [
+                'tournament' => null,
+                'liveMatches' => [],
+            ]);
+        }
+
+        $liveMatches = $this->baseGamesQuery($tournament->id)
+            ->where('status', 'in_progress')
+            ->get()
+            ->map(fn (Game $game) => $this->transformGame($game))
+            ->values()
+            ->all();
+
+        return Inertia::render('Matches/Live', [
+            'tournament' => $this->transformTournament($tournament),
+            'liveMatches' => $liveMatches,
+        ]);
+    }
+
     private function transformGame(Game $game): array
     {
         return [
