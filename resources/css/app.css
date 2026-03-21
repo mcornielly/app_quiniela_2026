@@ -1,4 +1,69 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Flowbite datepicker fallback styling for Tailwind v3 + dark dashboard */
+.datepicker {
+    z-index: 35 !important;
+}
+
+.datepicker-dropdown {
+    margin-top: 10px !important;
+}
+
+.datepicker-picker {
+    overflow: hidden !important;
+    border-radius: 0.75rem !important;
+    background-color: rgb(30 41 59) !important;
+    border: 1px solid rgb(71 85 105) !important;
+    color: rgb(203 213 225) !important;
+    box-shadow: 0 20px 35px rgba(2, 6, 23, 0.45) !important;
+}
+
+.datepicker-header,
+.datepicker-title,
+.datepicker-main,
+.datepicker-view {
+    background-color: rgb(30 41 59) !important;
+}
+
+.datepicker-controls {
+    padding: 0.4rem 0.5rem 0.2rem !important;
+}
+
+.datepicker-controls .view-switch,
+.datepicker-controls .prev-btn,
+.datepicker-controls .next-btn {
+    border: none !important;
+    border-radius: 0.5rem !important;
+    background-color: transparent !important;
+    color: rgb(226 232 240) !important;
+}
+
+.datepicker-controls .view-switch:hover,
+.datepicker-controls .prev-btn:hover,
+.datepicker-controls .next-btn:hover,
+.datepicker-cell:hover {
+    background-color: rgb(51 65 85) !important;
+}
+
+.datepicker-footer {
+    display: none !important;
+}
+
+.datepicker-cell,
+.dow {
+    border-radius: 0.5rem !important;
+    color: rgb(203 213 225) !important;
+}
+
+.datepicker-cell.disabled {
+    color: rgb(100 116 139) !important;
+}
+
+.datepicker-cell.selected,
+.datepicker-cell.focused {
+    background-color: rgb(14 165 233) !important;
+    color: rgb(255 255 255) !important;
+    border-radius: 0.5rem !important;
+}

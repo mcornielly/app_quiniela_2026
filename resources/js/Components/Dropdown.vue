@@ -41,9 +41,14 @@ onUnmounted(() => {
 });
 
 const widthClass = computed(() => {
-    return {
+    const value = props.width.toString();
+
+    return ({
         48: 'w-48',
-    }[props.width.toString()];
+        80: 'w-80',
+        96: 'w-96',
+        112: 'w-[28rem]',
+    }[value] ?? value);
 });
 
 const alignmentClasses = computed(() => {
@@ -90,3 +95,4 @@ const open = ref(false);
         </Transition>
     </div>
 </template>
+
