@@ -14,17 +14,17 @@
 .datepicker-picker {
     overflow: hidden !important;
     border-radius: 0.75rem !important;
-    background-color: rgb(30 41 59) !important;
-    border: 1px solid rgb(71 85 105) !important;
-    color: rgb(203 213 225) !important;
-    box-shadow: 0 20px 35px rgba(2, 6, 23, 0.45) !important;
+    background-color: rgb(255 255 255) !important;
+    border: 1px solid rgb(203 213 225) !important;
+    color: rgb(51 65 85) !important;
+    box-shadow: 0 16px 30px rgba(15, 23, 42, 0.14) !important;
 }
 
 .datepicker-header,
 .datepicker-title,
 .datepicker-main,
 .datepicker-view {
-    background-color: rgb(30 41 59) !important;
+    background-color: rgb(255 255 255) !important;
 }
 
 .datepicker-controls {
@@ -37,14 +37,14 @@
     border: none !important;
     border-radius: 0.5rem !important;
     background-color: transparent !important;
-    color: rgb(226 232 240) !important;
+    color: rgb(71 85 105) !important;
 }
 
 .datepicker-controls .view-switch:hover,
 .datepicker-controls .prev-btn:hover,
 .datepicker-controls .next-btn:hover,
 .datepicker-cell:hover {
-    background-color: rgb(51 65 85) !important;
+    background-color: rgb(241 245 249) !important;
 }
 
 .datepicker-footer {
@@ -54,11 +54,11 @@
 .datepicker-cell,
 .dow {
     border-radius: 0.5rem !important;
-    color: rgb(203 213 225) !important;
+    color: rgb(71 85 105) !important;
 }
 
 .datepicker-cell.disabled {
-    color: rgb(100 116 139) !important;
+    color: rgb(148 163 184) !important;
 }
 
 .datepicker-cell.selected,
@@ -66,4 +66,40 @@
     background-color: rgb(14 165 233) !important;
     color: rgb(255 255 255) !important;
     border-radius: 0.5rem !important;
+}
+
+.dark .datepicker-picker {
+    background-color: rgb(30 41 59) !important;
+    border: 1px solid rgb(71 85 105) !important;
+    color: rgb(203 213 225) !important;
+    box-shadow: 0 20px 35px rgba(2, 6, 23, 0.45) !important;
+}
+
+.dark .datepicker-header,
+.dark .datepicker-title,
+.dark .datepicker-main,
+.dark .datepicker-view {
+    background-color: rgb(30 41 59) !important;
+}
+
+.dark .datepicker-controls .view-switch,
+.dark .datepicker-controls .prev-btn,
+.dark .datepicker-controls .next-btn {
+    color: rgb(226 232 240) !important;
+}
+
+.dark .datepicker-controls .view-switch:hover,
+.dark .datepicker-controls .prev-btn:hover,
+.dark .datepicker-controls .next-btn:hover,
+.dark .datepicker-cell:hover {
+    background-color: rgb(51 65 85) !important;
+}
+
+.dark .datepicker-cell,
+.dark .dow {
+    color: rgb(203 213 225) !important;
+}
+
+.dark .datepicker-cell.disabled {
+    color: rgb(100 116 139) !important;
 }
