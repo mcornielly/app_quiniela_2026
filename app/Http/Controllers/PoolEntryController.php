@@ -10,6 +10,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -24,21 +26,73 @@ class PoolEntryController extends Controller
     public function index(Request $request): Response
     {
         $poolEntries = PoolEntry::query()
-            ->with('tournament:id,name,year')
+            ->with([
+                'tournament:id,name,year',
+                'predictions' => fn ($query) => $query
+                    ->with([
+                        'game:id,match_date,match_time,home_team_id,away_team_id,home_slot,away_slot,home_score,away_score,status',
+                        'game.homeTeam:id,name,country_id',
+                        'game.homeTeam.country:id,code,flag_path',
+                        'game.awayTeam:id,name,country_id',
+                        'game.awayTeam.country:id,code,flag_path',
+                    ])
+                    ->latest('id'),
+            ])
             ->where('user_id', $request->user()->id)
             ->latest()
             ->get()
             ->map(function (PoolEntry $poolEntry) {
+                $orderedPredictions = $poolEntry->predictions
+                    ->filter(fn ($prediction) => $prediction->game !== null)
+                    ->sortByDesc(fn ($prediction) => ($prediction->game->match_date?->format('Y-m-d') ?? '0000-00-00') . ' ' . ($prediction->game->match_time ?? '00:00:00'))
+                    ->values();
+
+                $playedPredictions = $orderedPredictions
+                    ->filter(fn ($prediction) => $prediction->game->status === 'finished'
+                        && is_numeric($prediction->game->home_score)
+                        && is_numeric($prediction->game->away_score))
+                    ->values();
+
+                $previewPredictions = ($playedPredictions->isNotEmpty() ? $playedPredictions : $orderedPredictions)
+                    ->take(3)
+                    ->map(function ($prediction) {
+                        $game = $prediction->game;
+                        $homeCode = strtoupper($game->homeTeam?->country?->code ?? preg_replace('/[^A-Za-z]/', '', $game->home_slot ?: 'TBD'));
+                        $awayCode = strtoupper($game->awayTeam?->country?->code ?? preg_replace('/[^A-Za-z]/', '', $game->away_slot ?: 'TBD'));
+
+                        return [
+                            'homeName' => $game->homeTeam?->name ?? $game->home_slot ?? 'TBD',
+                            'awayName' => $game->awayTeam?->name ?? $game->away_slot ?? 'TBD',
+                            'homeCode' => Str::substr($homeCode, 0, 3),
+                            'awayCode' => Str::substr($awayCode, 0, 3),
+                            'homeFlagUrl' => $this->flagUrl($game->homeTeam?->country?->flag_path),
+                            'awayFlagUrl' => $this->flagUrl($game->awayTeam?->country?->flag_path),
+                            'predictedHomeScore' => (int) $prediction->home_score,
+                            'predictedAwayScore' => (int) $prediction->away_score,
+                            'predictedScore' => "{$prediction->home_score} - {$prediction->away_score}",
+                            'actualScore' => is_numeric($game->home_score) && is_numeric($game->away_score)
+                                ? "{$game->home_score} - {$game->away_score}"
+                                : null,
+                        ];
+                    })
+                    ->values();
+
+                $pointsEarned = (int) $poolEntry->predictions->sum('points');
+
                 return [
                     'id' => $poolEntry->id,
                     'registrationNumber' => $poolEntry->id,
                     'name' => $poolEntry->name,
                     'status' => $poolEntry->status,
                     'completionPercent' => $poolEntry->completion_percent,
-                    'totalPoints' => $poolEntry->total_points,
+                    'totalPoints' => $pointsEarned,
+                    'pointsEarned' => $pointsEarned,
                     'exactHits' => $poolEntry->exact_hits,
                     'correctResults' => $poolEntry->correct_results,
                     'createdAt' => $poolEntry->created_at?->format('d/m/Y H:i'),
+                    'createdDate' => $poolEntry->created_at?->format('Y-m-d'),
+                    'matchesCount' => (int) $playedPredictions->count(),
+                    'latestPredictions' => $previewPredictions,
                     'tournament' => [
                         'id' => $poolEntry->tournament?->id,
                         'name' => $poolEntry->tournament?->name,
@@ -183,5 +237,18 @@ class PoolEntryController extends Controller
             'predictedChampionName' => $predictedChampion?->name,
             'createdAt' => $poolEntry->created_at?->format('d/m/Y H:i'),
         ];
+    }
+
+    private function flagUrl(?string $flagPath): ?string
+    {
+        if (! $flagPath) {
+            return null;
+        }
+
+        if (Str::startsWith($flagPath, ['http://', 'https://', '/storage/'])) {
+            return $flagPath;
+        }
+
+        return Storage::url($flagPath);
     }
 }
