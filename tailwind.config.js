@@ -27,7 +27,8 @@ export default {
         './resources/views/**/*.blade.php',
         './resources/js/**/*.vue',
         './config/**/*.php',
-        "./node_modules/flowbite/**/*.js",
+        './node_modules/flowbite/**/*.js',
+        './node_modules/flowbite-datepicker/**/*.js',
     ],
 
     theme: {
@@ -74,3 +75,4 @@ export default {
 
     plugins: [forms, flowbite],
 };
+

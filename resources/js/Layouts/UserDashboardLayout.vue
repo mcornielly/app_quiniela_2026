@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
 import ApplicationLogo from '@/Components/ApplicationLogo.vue'
 import Dropdown from '@/Components/Dropdown.vue'
@@ -7,14 +7,11 @@ import DropdownLink from '@/Components/DropdownLink.vue'
 import FlagRibbonTicker from '@/Components/User/FlagRibbonTicker.vue'
 import UserAvatar from '@/Components/User/UserAvatar.vue'
 import UserFooter from '@/Components/User/UserFooter.vue'
+import NotificationsDropdown from '@/Components/User/NotificationsDropdown.vue'
 import {
-    Bars3Icon,
-    CalendarDaysIcon,
+    Bars3Icon,    CalendarDaysIcon,
     ChartBarSquareIcon,
-    ChevronDownIcon,
-    MoonIcon,
-    SunIcon,
-    XMarkIcon,
+    ChevronDownIcon,    XMarkIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -41,6 +38,8 @@ const user = computed(() => page.props.auth?.user ?? null)
 const mobileNavOpen = ref(false)
 const mobileWorldCupOpen = ref(false)
 const currentTheme = ref('dark')
+const notificationItems = ref([])
+const liveChannelName = 'matches.live'
 
 const worldCupNavigation = computed(() => [
     { name: 'Calendario', href: route('matches.index'), current: route().current('matches.index'), icon: 'calendar' },
@@ -57,6 +56,7 @@ const navigation = computed(() => [
 ])
 
 const isWorldCupActive = computed(() => worldCupNavigation.value.some((item) => item.current))
+const unreadNotifications = computed(() => notificationItems.value.filter((item) => !item.read).length)
 
 const applyTheme = (theme) => {
     currentTheme.value = theme
@@ -66,6 +66,34 @@ const applyTheme = (theme) => {
 
 const toggleTheme = () => {
     applyTheme(currentTheme.value === 'dark' ? 'light' : 'dark')
+}
+
+const pushNotification = (payload) => {
+    notificationItems.value = [
+        {
+            id: `${payload?.gameId ?? 'game'}-${payload?.occurredAt ?? Date.now()}`,
+            type: payload?.type === 'result' ? 'result' : 'start',
+            stageLabel: payload?.stageLabel ?? 'Mundial 2026',
+            homeTeam: payload?.homeTeam ?? 'Local',
+            awayTeam: payload?.awayTeam ?? 'Visitante',
+            homeFlagUrl: payload?.homeFlagUrl ?? null,
+            awayFlagUrl: payload?.awayFlagUrl ?? null,
+            homeScore: payload?.homeScore,
+            awayScore: payload?.awayScore,
+            matchDate: payload?.matchDate ?? null,
+            matchTime: payload?.matchTime ?? null,
+            venue: payload?.venue ?? null,
+            occurredAt: payload?.occurredAt ?? new Date().toISOString(),
+            read: false,
+        },
+        ...notificationItems.value,
+    ].slice(0, 20)
+
+    window.dispatchEvent(new CustomEvent('dashboard:game-status-updated', { detail: payload }))
+}
+
+const markNotificationsRead = () => {
+    notificationItems.value = notificationItems.value.map((item) => ({ ...item, read: true }))
 }
 
 const worldCupIconPaths = {
@@ -83,6 +111,19 @@ onMounted(() => {
         : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
 
     applyTheme(initialTheme)
+
+    if (window.Echo) {
+        window.Echo.channel(liveChannelName)
+            .listen('.game.status.updated', (payload) => {
+                pushNotification(payload)
+            })
+    }
+})
+
+onBeforeUnmount(() => {
+    if (window.Echo) {
+        window.Echo.leave(liveChannelName)
+    }
 })
 
 </script>
@@ -93,8 +134,8 @@ onMounted(() => {
 
         <header class="sticky top-0 z-40 border-b border-white/80 bg-white/88 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/92">
             <div class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-3 sm:px-6 lg:px-8">
-                <div class="flex items-center gap-3">
-                    <Link :href="route('dashboard')" class="flex items-center gap-3">
+                <div class="flex items-center gap-2">
+                    <Link :href="route('dashboard')" class="flex items-center gap-2">
                         <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-sky-500 text-white shadow-lg shadow-primary-500/25">
                             <ApplicationLogo class="h-6 w-6 fill-current" />
                         </div>
@@ -154,7 +195,7 @@ onMounted(() => {
                                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'"
                                 class="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition"
                             >
-                                <span class="flex items-center gap-3">
+                                <span class="flex items-center gap-2">
                                     <svg viewBox="0 0 512 512" class="h-4 w-4 fill-current opacity-70" aria-hidden="true">
                                         <path :d="worldCupIconPaths[item.icon]" />
                                     </svg>
@@ -166,18 +207,46 @@ onMounted(() => {
                     </div>
                 </nav>
 
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2">
+                    <Dropdown align="right" width="96" content-classes="py-0 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700">
+                        <template #trigger>
+                            <button
+                                type="button"
+                                @click="markNotificationsRead"
+                                class="relative hidden h-11 w-11 items-center justify-center rounded-lg border border-transparent bg-transparent text-gray-500 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200 active:scale-95 sm:inline-flex dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
+                            >
+                                <span class="sr-only">Ver notificaciones</span>
+                                <svg class="h-[22px] w-[22px] text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                                </svg>
+                                <span
+                                    v-if="unreadNotifications > 0"
+                                    class="absolute -right-2 -top-2 inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-rose-600 text-xs font-bold leading-none text-white dark:border-slate-900"
+                                >
+                                    {{ unreadNotifications > 9 ? '9+' : unreadNotifications }}
+                                </span>
+                            </button>
+                        </template>
+
+                        <template #content>
+                            <NotificationsDropdown
+                                :notifications="notificationItems"
+                                :view-all-href="route('dashboard')"
+                            />
+                        </template>
+                    </Dropdown>
+
                     <button
                         type="button"
                         @click="toggleTheme()"
-                        class="hidden h-11 w-11 items-center justify-center rounded-full border border-transparent bg-transparent text-slate-500 transition-all duration-200 ease-out hover:border-slate-200 hover:bg-slate-100/90 hover:text-slate-700 focus:border-primary-200 focus:bg-primary-50/90 focus:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-200/45 active:scale-95 sm:inline-flex dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800/80 dark:hover:text-slate-100 dark:focus:border-sky-400/20 dark:focus:bg-sky-400/10 dark:focus:text-white dark:focus:ring-sky-400/15"
+                        class="hidden h-11 w-11 items-center justify-center rounded-lg border border-transparent bg-transparent text-gray-500 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200 active:scale-95 sm:inline-flex dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-600"
                         :aria-label="currentTheme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'"
                     >
-                        <SunIcon v-if="currentTheme === 'dark'" class="h-4 w-4" />
-                        <MoonIcon v-else class="h-4 w-4" />
+                        <svg v-if="currentTheme === 'dark'" id="theme-toggle-light-icon" class="h-[20px] w-[20px] text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+                        <svg v-else id="theme-toggle-dark-icon" class="h-[20px] w-[20px] text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
                     </button>
 
-                    <div class="hidden h-8 w-px bg-slate-200 dark:bg-slate-800 sm:block" />
+                    <div class="hidden h-6 w-px bg-slate-200 dark:bg-slate-700 sm:block" />
 
                     <Dropdown align="right" width="48" content-classes="py-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl">
                         <template #trigger>
@@ -220,7 +289,7 @@ onMounted(() => {
                 :ticker-class="props.tickerClass"
             >
                 <slot name="ticker">
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2">
                         <p class="text-sm font-medium tracking-wide text-slate-100">
                             {{ ticker }}
                         </p>
@@ -284,8 +353,8 @@ onMounted(() => {
                         class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-transparent bg-transparent text-slate-500 transition-all duration-200 ease-out hover:border-slate-200 hover:bg-slate-100/90 hover:text-slate-700 focus:border-primary-200 focus:bg-primary-50/90 focus:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-200/45 active:scale-95 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800/80 dark:hover:text-slate-100 dark:focus:border-sky-400/20 dark:focus:bg-sky-400/10 dark:focus:text-white dark:focus:ring-sky-400/15"
                         :aria-label="currentTheme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'"
                     >
-                        <SunIcon v-if="currentTheme === 'dark'" class="h-4 w-4" />
-                        <MoonIcon v-else class="h-4 w-4" />
+                        <svg v-if="currentTheme === 'dark'" id="theme-toggle-light-icon" class="h-[20px] w-[20px] text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+                        <svg v-else id="theme-toggle-dark-icon" class="h-[20px] w-[20px] text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
                     </button>
                 </div>
             </div>
@@ -338,3 +407,15 @@ onMounted(() => {
         </main>
     </div>
 </template>
+
+
+
+
+
+
+
+
+
+
+
+

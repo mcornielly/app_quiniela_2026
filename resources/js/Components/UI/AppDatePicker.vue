@@ -1,4 +1,7 @@
 <script setup>
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { Datepicker } from 'flowbite'
+
 const props = defineProps({
     modelValue: {
         type: String,
@@ -11,6 +14,150 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue'])
+
+const inputRef = ref(null)
+let datepicker = null
+let syncingFromModel = false
+
+const isoToDisplay = (iso) => {
+    if (!iso) {
+        return ''
+    }
+
+    const [year, month, day] = String(iso).split('-')
+    if (!year || !month || !day) {
+        return ''
+    }
+
+    return `${day}/${month}/${year}`
+}
+
+const displayToIso = (display) => {
+    if (!display) {
+        return ''
+    }
+
+    const [day, month, year] = String(display).split('/')
+    if (!year || !month || !day) {
+        return ''
+    }
+
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+}
+
+const syncFromPicker = () => {
+    if (!datepicker || syncingFromModel) {
+        return
+    }
+
+    const selected = datepicker.getDate()
+    const displayValue = Array.isArray(selected) ? selected[0] : selected
+    const iso = displayToIso(displayValue)
+
+    if (iso !== props.modelValue) {
+        emit('update:modelValue', iso)
+    }
+}
+
+const syncPickerFromModel = (value) => {
+    if (!datepicker) {
+        return
+    }
+
+    syncingFromModel = true
+
+    const displayValue = isoToDisplay(value)
+    datepicker.setDate(displayValue || '')
+
+    syncingFromModel = false
+}
+
+const handleInput = () => {
+    if (!inputRef.value?.value) {
+        emit('update:modelValue', '')
+    }
+}
+
+const hidePicker = () => {
+    if (datepicker?.active) {
+        datepicker.hide()
+    }
+}
+
+const handleWindowScroll = () => {
+    hidePicker()
+}
+
+const handleWindowResize = () => {
+    hidePicker()
+}
+
+const handleKeydown = (event) => {
+    if (event.key === 'Escape') {
+        hidePicker()
+    }
+}
+
+const handleDocumentMouseDown = (event) => {
+    if (!datepicker || !inputRef.value) {
+        return
+    }
+
+    const target = event.target
+    const pickerElement = datepicker.pickerElement
+
+    if (inputRef.value.contains(target)) {
+        return
+    }
+
+    if (pickerElement && pickerElement.contains(target)) {
+        return
+    }
+
+    hidePicker()
+}
+
+onMounted(() => {
+    if (!inputRef.value) {
+        return
+    }
+
+    datepicker = new Datepicker(inputRef.value, {
+        autohide: true,
+        format: 'dd/mm/yyyy',
+        buttons: false,
+    })
+
+    syncPickerFromModel(props.modelValue)
+
+    inputRef.value.addEventListener('changeDate', syncFromPicker)
+    inputRef.value.addEventListener('input', handleInput)
+    window.addEventListener('scroll', handleWindowScroll, true)
+    window.addEventListener('resize', handleWindowResize)
+    document.addEventListener('keydown', handleKeydown)
+    document.addEventListener('mousedown', handleDocumentMouseDown)
+})
+
+watch(() => props.modelValue, (value) => {
+    syncPickerFromModel(value)
+})
+
+onBeforeUnmount(() => {
+    if (inputRef.value) {
+        inputRef.value.removeEventListener('changeDate', syncFromPicker)
+        inputRef.value.removeEventListener('input', handleInput)
+    }
+
+    window.removeEventListener('scroll', handleWindowScroll, true)
+    window.removeEventListener('resize', handleWindowResize)
+    document.removeEventListener('keydown', handleKeydown)
+    document.removeEventListener('mousedown', handleDocumentMouseDown)
+
+    if (datepicker) {
+        datepicker.destroy()
+        datepicker = null
+    }
+})
 </script>
 
 <template>
@@ -34,12 +181,13 @@ const emit = defineEmits(['update:modelValue'])
                 />
             </svg>
         </div>
+
         <input
-            :value="modelValue"
-            type="date"
+            ref="inputRef"
+            type="text"
             class="block w-full rounded-xl border border-slate-300 bg-white py-2.5 pe-3 ps-10 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-primary-400 focus:ring-primary-300/40 dark:border-white/10 dark:bg-slate-800/80 dark:text-white dark:placeholder:text-slate-400 dark:focus:border-cyan-400 dark:focus:ring-cyan-400/30"
             :placeholder="placeholder"
-            @input="emit('update:modelValue', $event.target.value)"
         >
     </div>
 </template>
+

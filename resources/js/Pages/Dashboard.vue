@@ -113,6 +113,8 @@ const countdown = ref({
 })
 
 let timerId = null
+let realtimeRefreshTimer = null
+let liveUpdatesChannel = null
 const selectedDate = ref(props.todayIso || '')
 
 const tickerThemes = {
@@ -365,15 +367,58 @@ const updateCountdown = () => {
     }
 }
 
+const onGlobalGameStatusUpdated = () => {
+    scheduleRealtimeDashboardRefresh()
+}
+
+const scheduleRealtimeDashboardRefresh = () => {
+    if (realtimeRefreshTimer) {
+        window.clearTimeout(realtimeRefreshTimer)
+    }
+
+    realtimeRefreshTimer = window.setTimeout(() => {
+        router.reload({
+            only: [
+                'dashboardMetrics',
+                'upcomingMatches',
+                'resultMatches',
+                'featuredResults',
+                'upcomingGames',
+                'topPredictionsRanking',
+                'tournamentCoverage',
+                'favoriteTeamCard',
+            ],
+            preserveState: true,
+            preserveScroll: true,
+        })
+    }, 500)
+}
 onMounted(() => {
     updateCountdown()
     timerId = window.setInterval(updateCountdown, 1000)
+
+    if (window.Echo) {
+        liveUpdatesChannel = window.Echo.channel('matches.live')
+        liveUpdatesChannel.listen('.game.status.updated', scheduleRealtimeDashboardRefresh)
+    }
+
+    window.addEventListener('dashboard:game-status-updated', onGlobalGameStatusUpdated)
 })
 
 onBeforeUnmount(() => {
     if (timerId) {
         window.clearInterval(timerId)
     }
+
+    if (realtimeRefreshTimer) {
+        window.clearTimeout(realtimeRefreshTimer)
+    }
+
+    if (liveUpdatesChannel) {
+        liveUpdatesChannel.stopListening('.game.status.updated', scheduleRealtimeDashboardRefresh)
+    }
+
+    window.removeEventListener('dashboard:game-status-updated', onGlobalGameStatusUpdated)
 })
 </script>
 
@@ -390,7 +435,7 @@ onBeforeUnmount(() => {
         </template>
 
         <template #headerContent>
-            <div class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+            <div class="overflow-visible rounded-[2rem] border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
                 <div class="flex flex-col lg:min-h-[12.75rem] lg:flex-row">
                     <div class="flex flex-col overflow-hidden border-b border-slate-200 lg:w-[24%] lg:border-b-0 lg:border-r dark:border-slate-700">
                         <div :class="activeTickerTheme.shieldContainerClass" class="h-44 sm:h-56 lg:h-auto lg:min-h-[8.25rem] lg:flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950/40">
@@ -553,13 +598,13 @@ onBeforeUnmount(() => {
         <section class="mt-6 grid gap-6 xl:grid-cols-[1.55fr_1fr]">
             <div class="space-y-6">
                 <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/85">
-                    <div class="mb-4 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                    <div class="mb-4 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
                             <h2 class="text-base font-semibold text-gray-900 dark:text-white">Resultados del dia</h2>
                             <span class="text-xs text-gray-500 dark:text-slate-400">Fecha seleccionada: {{ selectedDateLabel }}</span>
                         </div>
 
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center md:w-auto md:justify-end">
                             <AppDatePicker v-model="selectedDate" placeholder="Seleccionar fecha" />
                         </div>
                     </div>
@@ -580,7 +625,7 @@ onBeforeUnmount(() => {
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-3.5 w-3.5 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
                                             <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
                                         </svg>
-                                        <span class="truncate">{{ match.venue || 'Sede por confirmar' }}</span>
+                                        <span class="truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ match.venue || 'Sede por confirmar' }}</span>
                                     </span>
                                 </div>
                                 <span class="inline-flex w-fit justify-self-end items-center rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-red-700 dark:bg-red-900/30 dark:text-red-300">
@@ -895,3 +940,21 @@ onBeforeUnmount(() => {
         </Transition>
     </UserDashboardLayout>
 </template>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
