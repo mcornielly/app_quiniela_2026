@@ -73,6 +73,9 @@ class PoolEntryController extends Controller
                             'actualScore' => is_numeric($game->home_score) && is_numeric($game->away_score)
                                 ? "{$game->home_score} - {$game->away_score}"
                                 : null,
+                            'awardedPoints' => is_numeric($game->home_score) && is_numeric($game->away_score)
+                                ? (int) ($prediction->points ?? 0)
+                                : null,
                         ];
                     })
                     ->values();

@@ -175,6 +175,15 @@ const statusClass = (status) => {
                                     <p class="text-slate-500 dark:text-slate-400">
                                         Real:
                                         <span class="font-semibold text-slate-700 dark:text-slate-200">{{ prediction.actualScore ?? '-- - --' }}</span>
+                                        <span
+                                            v-if="prediction.awardedPoints !== null"
+                                            class="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold"
+                                            :class="prediction.awardedPoints > 0
+                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                                : 'bg-slate-200 text-slate-600 dark:bg-slate-700/70 dark:text-slate-300'"
+                                        >
+                                            +{{ prediction.awardedPoints }}
+                                        </span>
                                     </p>
                                 </div>
                             </div>
@@ -223,4 +232,3 @@ const statusClass = (status) => {
         </section>
     </UserDashboardLayout>
 </template>
-
