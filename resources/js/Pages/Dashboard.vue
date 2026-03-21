@@ -115,7 +115,7 @@ const countdown = ref({
 let timerId = null
 let realtimeRefreshTimer = null
 let liveUpdatesChannel = null
-const selectedDate = ref(props.todayIso || '')
+const selectedDate = ref('')
 
 const tickerThemes = {
     neutral: {
@@ -285,14 +285,14 @@ const filteredResultMatches = computed(() => {
 })
 const displayedResults = computed(() => {
     if (filteredResultMatches.value.length) {
-        return filteredResultMatches.value.slice(0, 5)
+        return filteredResultMatches.value.slice(0, 4)
     }
 
-    return props.featuredResults.slice(0, 5)
+    return props.featuredResults.slice(0, 4)
 })
 const selectedDateLabel = computed(() => {
     if (!selectedDate.value) {
-        return props.todayLabel || '-'
+        return '-'
     }
 
     return new Date(`${selectedDate.value}T00:00:00`).toLocaleDateString('es-VE', {
@@ -940,8 +940,6 @@ onBeforeUnmount(() => {
         </Transition>
     </UserDashboardLayout>
 </template>
-
-
 
 
 

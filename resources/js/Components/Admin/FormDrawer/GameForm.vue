@@ -23,19 +23,19 @@ const emit = defineEmits(['close'])
 const isEdit = !!props.game
 
 const form = ref({
-    tournament_id: props.game?.tournament_id || '',
-    match_number: props.game?.match_number || '',
-    home_team_id: props.game?.home_team_id || '',
-    away_team_id: props.game?.away_team_id || '',
-    home_slot: props.game?.home_slot || '',
-    away_slot: props.game?.away_slot || '',
-    home_score: props.game?.home_score || '',
-    away_score: props.game?.away_score || '',
-    winner_team_id: props.game?.winner_team_id || '',
-    stage: props.game?.stage || '',
-    venue: props.game?.venue || '',
-    match_date: props.game?.match_date_input || '',
-    match_time: props.game?.match_time_input || '',
+    tournament_id: props.game?.tournament_id ?? '',
+    match_number: props.game?.match_number ?? '',
+    home_team_id: props.game?.home_team_id ?? '',
+    away_team_id: props.game?.away_team_id ?? '',
+    home_slot: props.game?.home_slot ?? '',
+    away_slot: props.game?.away_slot ?? '',
+    home_score: props.game?.home_score ?? '',
+    away_score: props.game?.away_score ?? '',
+    winner_team_id: props.game?.winner_team_id ?? '',
+    stage: props.game?.stage ?? '',
+    venue: props.game?.venue ?? '',
+    match_date: props.game?.match_date_input ?? '',
+    match_time: props.game?.match_time_input ?? '',
 
 })
 
