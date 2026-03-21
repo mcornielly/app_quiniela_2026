@@ -40,6 +40,17 @@
     color: rgb(71 85 105) !important;
 }
 
+.datepicker-controls .view-switch {
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    letter-spacing: 0 !important;
+}
+
+.datepicker-controls .prev-btn,
+.datepicker-controls .next-btn {
+    font-weight: 600 !important;
+}
+
 .datepicker-controls .view-switch:hover,
 .datepicker-controls .prev-btn:hover,
 .datepicker-controls .next-btn:hover,
@@ -55,17 +66,42 @@
 .dow {
     border-radius: 0.5rem !important;
     color: rgb(71 85 105) !important;
+    font-weight: 600 !important;
 }
 
 .datepicker-cell.disabled {
     color: rgb(148 163 184) !important;
 }
 
-.datepicker-cell.selected,
-.datepicker-cell.focused {
+.datepicker-cell.old,
+.datepicker-cell.new,
+.datepicker-cell.prev,
+.datepicker-cell.next {
+    color: rgb(156 163 175) !important;
+    font-weight: 600 !important;
+}
+
+.datepicker-cell.selected {
     background-color: rgb(14 165 233) !important;
     color: rgb(255 255 255) !important;
     border-radius: 0.5rem !important;
+}
+
+.datepicker-cell.focused {
+    background-color: transparent !important;
+    color: rgb(51 65 85) !important;
+    border-radius: 0.5rem !important;
+}
+
+.dark .datepicker-cell.focused {
+    background-color: transparent !important;
+    color: rgb(203 213 225) !important;
+}
+
+.datepicker-cell.selected.focused,
+.dark .datepicker-cell.selected.focused {
+    background-color: rgb(14 165 233) !important;
+    color: rgb(255 255 255) !important;
 }
 
 .dark .datepicker-picker {
@@ -98,8 +134,17 @@
 .dark .datepicker-cell,
 .dark .dow {
     color: rgb(203 213 225) !important;
+    font-weight: 600 !important;
 }
 
 .dark .datepicker-cell.disabled {
     color: rgb(100 116 139) !important;
+}
+
+.dark .datepicker-cell.old,
+.dark .datepicker-cell.new,
+.dark .datepicker-cell.prev,
+.dark .datepicker-cell.next {
+    color: rgb(100 116 139) !important;
+    font-weight: 600 !important;
 }
