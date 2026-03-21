@@ -80,7 +80,7 @@ const awayScoreClass = (item) => {
 </script>
 
 <template>
-    <div class="z-50 my-2 max-w-sm overflow-hidden rounded shadow-lg">
+    <div class="max-w-sm overflow-hidden">
         <div class="block border-b border-gray-200 bg-gray-50 px-4 py-1.5 text-center text-sm font-semibold text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
             Notificaciones
         </div>
