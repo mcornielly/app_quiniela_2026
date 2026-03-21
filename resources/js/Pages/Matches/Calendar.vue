@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import {
     CalendarDaysIcon,
@@ -7,6 +7,7 @@ import {
     FunnelIcon,
     MapPinIcon,
 } from '@heroicons/vue/24/outline'
+import FilterCalendarSkeleton from '@/Components/UI/FilterCalendarSkeleton.vue'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
 
 const props = defineProps({
@@ -42,6 +43,8 @@ const activeTickerTheme = computed(() => ({
 
 const selectedGroup = ref('all')
 const selectedStage = ref('all')
+const isFiltering = ref(false)
+let filteringTimer = null
 
 const filteredMatches = computed(() => props.calendarMatches.filter((match) => {
     const groupOk = selectedGroup.value === 'all' || match.groupName === selectedGroup.value
@@ -88,6 +91,28 @@ const stageLabelEs = (label) => {
 
     return map[label] ?? label
 }
+const resetFilters = () => {
+    selectedGroup.value = 'all'
+    selectedStage.value = 'all'
+}
+
+watch([selectedGroup, selectedStage], () => {
+    if (filteringTimer) {
+        window.clearTimeout(filteringTimer)
+    }
+
+    isFiltering.value = true
+    filteringTimer = window.setTimeout(() => {
+        isFiltering.value = false
+        filteringTimer = null
+    }, 360)
+})
+
+onBeforeUnmount(() => {
+    if (filteringTimer) {
+        window.clearTimeout(filteringTimer)
+    }
+})
 </script>
 
 <template>
@@ -131,7 +156,7 @@ const stageLabelEs = (label) => {
                         <label class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100">
                             <FunnelIcon class="h-4 w-4 text-slate-400" />
                             <select v-model="selectedGroup" class="w-full border-0 bg-transparent p-0 text-sm font-medium focus:ring-0">
-                                <option value="all">All Groups</option>
+                                <option value="all">Grupos</option>
                                 <option v-for="groupName in groupOptions" :key="groupName" :value="groupName">
                                     {{ groupName }}
                                 </option>
@@ -141,7 +166,7 @@ const stageLabelEs = (label) => {
                         <label class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100">
                             <FunnelIcon class="h-4 w-4 text-slate-400" />
                             <select v-model="selectedStage" class="w-full border-0 bg-transparent p-0 text-sm font-medium focus:ring-0">
-                                <option value="all">All Stages</option>
+                                <option value="all">Etapas</option>
                                 <option v-for="stageName in stageOptions" :key="stageName" :value="stageName">
                                     {{ stageName }}
                                 </option>
@@ -150,9 +175,20 @@ const stageLabelEs = (label) => {
                     </div>
                 </div>
                 <div class="mt-[6px] border-b border-slate-300 dark:border-slate-700" />
+                <div class="mt-2 flex justify-end">
+                    <button
+                        type="button"
+                        class="text-xs font-semibold uppercase tracking-wide text-rose-600 transition hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
+                        @click="resetFilters"
+                    >
+                        Reiniciar Filtro
+                    </button>
+                </div>
             </div>
 
-            <div v-if="groupedByDate.length" class="mt-6 space-y-6">
+            <FilterCalendarSkeleton v-if="isFiltering" :rows="3" />
+
+            <div v-else-if="groupedByDate.length" class="mt-6 space-y-6">
                 <section v-for="group in groupedByDate" :key="group.dateIso" class="space-y-3">
                     <div class="flex items-center gap-3 border-b border-slate-200 pb-2 dark:border-slate-800">
                         <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-500">
@@ -164,15 +200,15 @@ const stageLabelEs = (label) => {
                     <article
                         v-for="match in group.matches"
                         :key="match.id"
-                        class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/75"
+                        class="rounded-2xl border border-slate-200 bg-white px-5 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/75"
                     >
-                        <div class="grid grid-cols-1 items-center gap-4 xl:grid-cols-[170px_1fr_180px]">
+                        <div class="grid grid-cols-1 items-center gap-3 xl:grid-cols-[170px_1fr_180px]">
                             <div>
                                 <p class="text-sm text-slate-500 dark:text-slate-400">{{ match.groupName || '-' }}</p>
                                 <p class="text-2xl font-black text-cyan-500 dark:text-cyan-400">{{ match.matchTime }}</p>
                             </div>
 
-                            <div class="space-y-2">
+                            <div class="space-y-1.5">
                                 <div class="inline-flex w-full items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                                     <MapPinIcon class="h-4 w-4 text-cyan-500 dark:text-cyan-400" />
                                     <span class="truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ match.venue || 'Venue TBD' }}</span>

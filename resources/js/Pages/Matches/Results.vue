@@ -1,8 +1,9 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import { CheckCircleIcon, FunnelIcon } from '@heroicons/vue/24/outline'
 import AppDatePicker from '@/Components/UI/AppDatePicker.vue'
+import FilterResultsSkeleton from '@/Components/UI/FilterResultsSkeleton.vue'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
 
 const props = defineProps({
@@ -34,6 +35,8 @@ const activeTickerTheme = computed(() => ({
 
 const orderedResults = computed(() => props.results)
 const selectedDate = ref('')
+const isFiltering = ref(false)
+let filteringTimer = null
 const filteredResults = computed(() => {
     if (!selectedDate.value) {
         return orderedResults.value
@@ -45,6 +48,24 @@ const hasResult = (match) => Number.isInteger(match.homeScore) && Number.isInteg
 const isDraw = (match) => hasResult(match) && match.homeScore === match.awayScore
 const isHomeWinner = (match) => hasResult(match) && match.homeScore > match.awayScore
 const isAwayWinner = (match) => hasResult(match) && match.awayScore > match.homeScore
+
+watch(selectedDate, () => {
+    if (filteringTimer) {
+        window.clearTimeout(filteringTimer)
+    }
+
+    isFiltering.value = true
+    filteringTimer = window.setTimeout(() => {
+        isFiltering.value = false
+        filteringTimer = null
+    }, 360)
+})
+
+onBeforeUnmount(() => {
+    if (filteringTimer) {
+        window.clearTimeout(filteringTimer)
+    }
+})
 </script>
 
 <template>
@@ -92,7 +113,9 @@ const isAwayWinner = (match) => hasResult(match) && match.awayScore > match.home
                 </div>
                 <div class="mt-[6px] border-b border-slate-300 dark:border-slate-700" />
 
-                <div v-if="filteredResults.length" class="mt-4 space-y-3">
+                <FilterResultsSkeleton v-if="isFiltering" :rows="4" />
+
+                <div v-else-if="filteredResults.length" class="mt-4 space-y-3">
                     <article
                         v-for="match in filteredResults"
                         :key="match.id"
