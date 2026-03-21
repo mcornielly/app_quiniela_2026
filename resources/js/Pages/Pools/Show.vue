@@ -56,10 +56,19 @@ const rowStatusClass = (prediction) => {
     return 'bg-slate-200 text-slate-700 dark:bg-slate-700/70 dark:text-slate-200'
 }
 
-const hasResult = (prediction) => Number.isInteger(prediction.actualHomeScore) && Number.isInteger(prediction.actualAwayScore)
-const isDraw = (prediction) => hasResult(prediction) && prediction.actualHomeScore === prediction.actualAwayScore
-const isHomeWinner = (prediction) => hasResult(prediction) && prediction.actualHomeScore > prediction.actualAwayScore
-const isAwayWinner = (prediction) => hasResult(prediction) && prediction.actualAwayScore > prediction.actualHomeScore
+const isPredictedDraw = (prediction) => prediction.predictedHomeScore === prediction.predictedAwayScore
+const isPredictedHomeWinner = (prediction) => prediction.predictedHomeScore > prediction.predictedAwayScore
+const isPredictedAwayWinner = (prediction) => prediction.predictedAwayScore > prediction.predictedHomeScore
+
+const groupStageLabel = (prediction) => {
+    if (prediction.groupName) {
+        const groupLetter = String(prediction.groupName).trim().split(' ').pop()?.toUpperCase() ?? ''
+
+        return `Fase de grupo ${groupLetter}`
+    }
+
+    return prediction.stageLabel
+}
 
 const activeTab = ref('played')
 const tabItems = computed(() => ([
@@ -301,66 +310,73 @@ onBeforeUnmount(() => {
                     <article
                         v-for="(prediction, index) in visiblePredictions"
                         :key="`${activeTab}-${prediction.id}`"
-                        class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/75"
+                        class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/75"
                         :data-index="index"
                     >
-                        <div class="grid grid-cols-1 items-center gap-4 lg:grid-cols-[170px_1fr_170px]">
-                            <div>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">{{ prediction.groupName || prediction.stageLabel }}</p>
-                                <p class="mt-1 text-3xl font-black leading-none text-cyan-500 dark:text-cyan-400">{{ prediction.matchTime }}</p>
-                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ prediction.matchDate }}</p>
-                            </div>
-
-                            <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
-                                <div class="flex items-center justify-end gap-2 text-right">
-                                    <span class="truncate text-base font-semibold text-slate-900 dark:text-white">{{ prediction.homeTeamName }}</span>
-                                    <span class="text-base font-semibold uppercase text-slate-500 dark:text-slate-400">{{ prediction.homeTeamCode }}</span>
-                                    <img v-if="prediction.homeFlagUrl" :src="prediction.homeFlagUrl" :alt="prediction.homeTeamName" class="h-5 w-7 rounded object-cover">
-                                </div>
-
-                                <div class="inline-flex min-w-[96px] items-center justify-center gap-3 rounded-xl bg-slate-100 px-3 py-2 text-2xl font-black dark:bg-slate-800">
-                                    <span :class="hasResult(prediction) && (isHomeWinner(prediction) || isDraw(prediction)) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
-                                        {{ prediction.predictedHomeScore }}
-                                    </span>
-                                    <span class="text-slate-400 dark:text-slate-500">-</span>
-                                    <span :class="hasResult(prediction) && (isAwayWinner(prediction) || isDraw(prediction)) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
-                                        {{ prediction.predictedAwayScore }}
+                        <div class="grid gap-3">
+                            <div class="grid grid-cols-[11.5rem_1fr_8.5rem] items-center gap-3 text-xs">
+                                <div>
+                                    <span class="inline-flex w-max rounded-md bg-primary-700 px-2 py-0.5 font-semibold uppercase tracking-wide text-white dark:bg-primary-500 dark:text-slate-950">
+                                        {{ groupStageLabel(prediction) }}
                                     </span>
                                 </div>
 
-                                <div class="flex items-center gap-2">
-                                    <span class="text-base font-semibold uppercase text-slate-500 dark:text-slate-400">{{ prediction.awayTeamCode }}</span>
-                                    <span class="truncate text-base font-semibold text-slate-900 dark:text-white">{{ prediction.awayTeamName }}</span>
-                                    <img v-if="prediction.awayFlagUrl" :src="prediction.awayFlagUrl" :alt="prediction.awayTeamName" class="h-5 w-7 rounded object-cover">
+                                <div class="flex min-w-0 items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
+                                    <span>{{ prediction.matchDate }} - <span class="font-semibold">{{ prediction.matchTime }}</span></span>
+                                    <span class="inline-flex min-w-0 items-center gap-1" :title="prediction.venue || 'Sede por confirmar'">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-3.5 w-3.5 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
+                                            <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
+                                        </svg>
+                                        <span class="truncate transition duration-200 hover:text-cyan-300 hover:[text-shadow:0_0_8px_rgba(34,211,238,0.9)] dark:hover:text-cyan-200 dark:hover:[text-shadow:0_0_10px_rgba(34,211,238,0.95)]">{{ prediction.venue || 'Sede por confirmar' }}</span>
+                                    </span>
+                                </div>
+
+                                <div class="flex justify-end">
+                                    <span class="inline-flex items-center rounded-full bg-cyan-100 px-3 py-1 text-sm font-black text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300">
+                                        +{{ prediction.awardedPoints ?? 0 }} pts
+                                    </span>
                                 </div>
                             </div>
 
-                            <div class="text-left lg:text-right">
-                                <p class="text-xs text-slate-500 dark:text-slate-400">
-                                    <template v-if="prediction.groupName && prediction.matchNumber">
-                                        Partido #{{ prediction.matchNumber }}
-                                    </template>
-                                    <template v-else>
-                                        {{ prediction.stageLabel }}
-                                    </template>
+                            <div class="grid grid-cols-[11.5rem_1fr_8.5rem] items-center gap-3">
+                                <div />
+
+                                <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+                                    <div class="flex items-center justify-end gap-2 text-right">
+                                        <span class="truncate text-base font-semibold text-slate-900 dark:text-white">{{ prediction.homeTeamName }}</span>
+                                        <img v-if="prediction.homeFlagUrl" :src="prediction.homeFlagUrl" :alt="prediction.homeTeamName" class="h-5 w-7 rounded object-cover">
+                                    </div>
+
+                                    <div class="inline-flex min-w-[96px] items-center justify-center gap-3 rounded-xl bg-slate-100 px-3 py-2 text-2xl font-black dark:bg-slate-800">
+                                        <span :class="isPredictedHomeWinner(prediction) || isPredictedDraw(prediction) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
+                                            {{ prediction.predictedHomeScore }}
+                                        </span>
+                                        <span class="text-slate-400 dark:text-slate-500">-</span>
+                                        <span :class="isPredictedAwayWinner(prediction) || isPredictedDraw(prediction) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
+                                            {{ prediction.predictedAwayScore }}
+                                        </span>
+                                    </div>
+
+                                    <div class="flex items-center gap-2">
+                                        <span class="truncate text-base font-semibold text-slate-900 dark:text-white">{{ prediction.awayTeamName }}</span>
+                                        <img v-if="prediction.awayFlagUrl" :src="prediction.awayFlagUrl" :alt="prediction.awayTeamName" class="h-5 w-7 rounded object-cover">
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-end">
+                                    <span :class="rowStatusClass(prediction)" class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold">
+                                        <CheckCircleIcon v-if="prediction.hasOfficialResult" class="h-3.5 w-3.5" />
+                                        <ClockIcon v-else class="h-3.5 w-3.5" />
+                                        {{ prediction.statusLabel }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
+                                <p>
+                                    <span class="font-semibold">Resultado oficial:</span>
+                                    <span class="ml-1 font-black text-slate-700 dark:text-slate-200">{{ prediction.actualScore ?? '-- - --' }}</span>
                                 </p>
-                                <span :class="rowStatusClass(prediction)" class="mt-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold">
-                                    <CheckCircleIcon v-if="prediction.hasOfficialResult" class="h-3.5 w-3.5" />
-                                    <ClockIcon v-else class="h-3.5 w-3.5" />
-                                    {{ prediction.statusLabel }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
-                            <p class="text-slate-500 dark:text-slate-400">
-                                Real:
-                                <span class="font-bold text-slate-700 dark:text-slate-200">{{ prediction.actualScore ?? '-- - --' }}</span>
-                            </p>
-                            <div class="flex items-center gap-2">
-                                <span class="rounded-full bg-cyan-100 px-3 py-1 font-bold text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300">
-                                    +{{ prediction.awardedPoints ?? 0 }} pts
-                                </span>
                                 <span
                                     v-if="prediction.hasOfficialResult && prediction.isExactHit"
                                     class="rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
