@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\PoolEntryController as AdminPoolEntryController;
 use App\Http\Controllers\Admin\TournamentParticipantController;
 use App\Http\Controllers\PoolEntryController;
 use App\Http\Controllers\QuinielaWorldCupController;
+use App\Http\Controllers\MatchesController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -135,7 +136,9 @@ Route::get('/quiniela-2026', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::patch('/dashboard/favorite-team', [DashboardController::class, 'updateFavoriteTeam'])->name('dashboard.favorite-team.update');
-    Route::get('/quiniela/matches', fn() => Inertia::render('Matches'))->name('matches.index');
+    Route::get('/quiniela/matches', [MatchesController::class, 'calendar'])->name('matches.index');
+    Route::get('/quiniela/calendar', [MatchesController::class, 'calendar'])->name('calendar.index');
+    Route::get('/quiniela/results', [MatchesController::class, 'results'])->name('results.index');
     Route::get('/quiniela/groups', fn() => Inertia::render('Groups'))->name('groups.index');
     Route::get('/quiniela/leaderboard', fn() => Inertia::render('Leaderboard'))->name('leaderboard');
     Route::get('/quiniela/predictions', fn() => Inertia::render('Predictions/Index'))->name('predictions.index');

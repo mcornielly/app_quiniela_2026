@@ -42,9 +42,9 @@ const notificationItems = ref([])
 const liveChannelName = 'matches.live'
 
 const worldCupNavigation = computed(() => [
-    { name: 'Calendario', href: route('matches.index'), current: route().current('matches.index'), icon: 'calendar' },
+    { name: 'Calendario', href: route('calendar.index'), current: route().current('calendar.index') || route().current('matches.index'), icon: 'calendar' },
     { name: 'Juegos', href: route('predictions.worldcup'), current: route().current('predictions.worldcup'), icon: 'ball' },
-    { name: 'Resultados', href: route('pools.index'), current: route().current('pools.index'), icon: 'score' },
+    { name: 'Resultados', href: route('results.index'), current: route().current('results.index'), icon: 'score' },
     { name: 'Estadisticas', href: route('leaderboard'), current: route().current('leaderboard'), icon: 'chart' },
     { name: 'Roadmap', href: route('groups.index'), current: route().current('groups.index'), icon: 'roadmap' },
 ])
@@ -407,7 +407,6 @@ onBeforeUnmount(() => {
         </main>
     </div>
 </template>
-
 
 
 

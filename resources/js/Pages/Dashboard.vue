@@ -684,7 +684,7 @@ onBeforeUnmount(() => {
 
                     <div class="mt-4 flex items-center justify-end pt-3">
                         <Link
-                            :href="route('matches.index')"
+                            :href="route('results.index')"
                             class="inline-flex items-center whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-bold uppercase tracking-wide text-primary-700 transition hover:bg-gray-100 dark:text-primary-500 dark:hover:bg-gray-700"
                         >
                             Ver mas
@@ -702,7 +702,7 @@ onBeforeUnmount(() => {
                 >
                     <template #actions>
                         <Link
-                            :href="route('matches.index')"
+                            :href="route('calendar.index')"
                             class="inline-flex items-center whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-bold uppercase tracking-wide text-primary-700 transition hover:bg-gray-100 dark:text-primary-500 dark:hover:bg-gray-700"
                         >
                             Ver calendario
@@ -940,7 +940,6 @@ onBeforeUnmount(() => {
         </Transition>
     </UserDashboardLayout>
 </template>
-
 
 
 
