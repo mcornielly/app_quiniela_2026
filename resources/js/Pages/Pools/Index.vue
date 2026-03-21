@@ -197,17 +197,17 @@ const statusClass = (status) => {
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between border-t border-slate-200 px-5 py-4 dark:border-slate-800">
-                        <Link
-                            :href="route('predictions.worldcup')"
-                            class="inline-flex items-center whitespace-nowrap rounded-md px-1 py-1 text-xs font-bold uppercase tracking-wide text-primary-700 transition hover:bg-gray-100 dark:text-primary-500 dark:hover:bg-gray-700"
-                        >
+                    <Link
+                        :href="`/pools/${poolEntry.id}`"
+                        class="flex items-center justify-between border-t border-slate-200 px-5 py-4 transition hover:bg-slate-50/70 dark:border-slate-800 dark:hover:bg-slate-800/30"
+                    >
+                        <span class="inline-flex items-center whitespace-nowrap rounded-md px-1 py-1 text-xs font-bold uppercase tracking-wide text-primary-700 dark:text-primary-500">
                             Ver detalles
-                        </Link>
+                        </span>
                         <svg class="h-5 w-5 text-primary-600 dark:text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                         </svg>
-                    </div>
+                    </Link>
                 </article>
             </div>
 

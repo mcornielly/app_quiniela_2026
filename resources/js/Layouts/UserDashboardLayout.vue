@@ -51,7 +51,7 @@ const worldCupNavigation = computed(() => [
 
 const navigation = computed(() => [
     { name: 'Inicio', href: route('dashboard'), current: route().current('dashboard') },
-    { name: 'Mis quinielas', href: route('pools.index'), current: route().current('pools.index') },
+    { name: 'Mis quinielas', href: route('pools.index'), current: route().current('pools.*') },
     { name: 'Crear quiniela', href: route('predictions.worldcup'), current: route().current('predictions.worldcup') },
 ])
 
@@ -407,7 +407,6 @@ onBeforeUnmount(() => {
         </main>
     </div>
 </template>
-
 
 
 
