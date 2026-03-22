@@ -6,6 +6,7 @@ import {
     CheckCircleIcon,
     ClockIcon,
 } from '@heroicons/vue/24/outline'
+import AppTooltip from '@/Components/UI/AppTooltip.vue'
 import FilterSelect from '@/Components/UI/FilterSelect.vue'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
 import { formatRegistrationNumber } from '@/Utils/format'
@@ -520,8 +521,10 @@ onBeforeUnmount(() => {
 
                                 <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
                                     <div class="flex items-center justify-end gap-2 text-right">
-                                        <span class="truncate text-base font-semibold text-slate-900 dark:text-white">{{ prediction.homeTeamName }}</span>
-                                        <img v-if="prediction.homeFlagUrl" :src="prediction.homeFlagUrl" :alt="prediction.homeTeamName" class="h-5 w-7 rounded object-cover">
+                                        <span class="hidden truncate text-base font-semibold text-slate-900 dark:text-white sm:inline">{{ prediction.homeTeamName }}</span>
+                                        <AppTooltip :text="prediction.homeTeamName" placement="top" tooltip-class="max-w-none whitespace-nowrap">
+                                            <img v-if="prediction.homeFlagUrl" :src="prediction.homeFlagUrl" :alt="prediction.homeTeamName" class="h-5 w-7 rounded object-cover">
+                                        </AppTooltip>
                                     </div>
 
                                     <div class="inline-flex min-w-[96px] items-center justify-center gap-3 rounded-xl bg-slate-100 px-3 py-2 text-2xl font-black dark:bg-slate-800">
@@ -535,8 +538,10 @@ onBeforeUnmount(() => {
                                     </div>
 
                                     <div class="flex items-center justify-start gap-2">
-                                        <span class="truncate text-base font-semibold text-slate-900 dark:text-white">{{ prediction.awayTeamName }}</span>
-                                        <img v-if="prediction.awayFlagUrl" :src="prediction.awayFlagUrl" :alt="prediction.awayTeamName" class="h-5 w-7 rounded object-cover">
+                                        <AppTooltip :text="prediction.awayTeamName" placement="top" tooltip-class="max-w-none whitespace-nowrap">
+                                            <img v-if="prediction.awayFlagUrl" :src="prediction.awayFlagUrl" :alt="prediction.awayTeamName" class="h-5 w-7 rounded object-cover">
+                                        </AppTooltip>
+                                        <span class="hidden truncate text-base font-semibold text-slate-900 dark:text-white sm:inline">{{ prediction.awayTeamName }}</span>
                                     </div>
                                 </div>
 

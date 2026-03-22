@@ -161,7 +161,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="relative max-w-sm">
+    <div class="relative w-full max-w-full">
         <div class="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3">
             <svg
                 class="h-4 w-4 text-slate-400"
@@ -190,4 +190,3 @@ onBeforeUnmount(() => {
         >
     </div>
 </template>
-

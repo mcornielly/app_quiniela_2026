@@ -641,28 +641,53 @@ onBeforeUnmount(() => {
                         </div>
                     </div>
 
-                    <div v-if="displayedResults.length" class="-mx-5 overflow-hidden border-y border-gray-200 dark:border-slate-800">
+                    <div v-if="displayedResults.length" class="overflow-hidden border-y border-gray-200 dark:border-slate-800">
                         <div
                             v-for="match in displayedResults"
                             :key="match.id"
-                            class="border-b border-gray-200 bg-white px-5 py-3 last:border-b-0 dark:border-slate-800 dark:bg-slate-900/70"
+                            class="border-b border-gray-200 bg-white px-4 py-3 last:border-b-0 sm:px-5 dark:border-slate-800 dark:bg-slate-900/70"
                         >
-                            <div class="mb-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
-                                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                                    {{ match.stage === 'group' ? `Grupo ${match.group_name || '-'}` : match.stage_label }}
-                                </p>
-                                <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                            <div class="mb-3 space-y-2 md:hidden">
+                                <div class="flex items-start justify-between gap-2">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                                        {{ match.stage === 'group' ? `Grupo ${match.group_name || '-'}` : match.stage_label }}
+                                    </p>
+                                    <span
+                                        :class="resultRowStatusClass(match)"
+                                        class="inline-flex w-fit shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                                    >
+                                        <CheckCircleIcon v-if="match.status === 'FT'" class="h-3 w-3" />
+                                        <ClockIcon v-else class="h-3 w-3" />
+                                        {{ resultStatusLabel(match) }}
+                                    </span>
+                                </div>
+                                <div class="flex min-w-0 flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                                     <span class="whitespace-nowrap">{{ match.display_date }} <span v-if="match.display_time">- {{ match.display_time }}</span></span>
-                                    <span class="inline-flex items-center gap-1.5 truncate">
+                                    <span class="inline-flex min-w-0 items-center gap-1.5 truncate">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-3.5 w-3.5 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
                                             <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
                                         </svg>
-                                        <span class="truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ match.venue || 'Sede por confirmar' }}</span>
+                                        <span class="max-w-[52vw] truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ match.venue || 'Sede por confirmar' }}</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3 hidden md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center md:gap-3">
+                                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                                    {{ match.stage === 'group' ? `Grupo ${match.group_name || '-'}` : match.stage_label }}
+                                </p>
+                                <div class="flex min-w-0 items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                    <span class="whitespace-nowrap">{{ match.display_date }} <span v-if="match.display_time">- {{ match.display_time }}</span></span>
+                                    <span class="inline-flex min-w-0 items-center gap-1.5 truncate">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-3.5 w-3.5 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
+                                            <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
+                                        </svg>
+                                        <span class="max-w-[42vw] truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400 md:max-w-none">{{ match.venue || 'Sede por confirmar' }}</span>
                                     </span>
                                 </div>
                                 <span
                                     :class="resultRowStatusClass(match)"
-                                    class="inline-flex w-fit justify-self-end items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold"
+                                    class="inline-flex w-fit shrink-0 items-center justify-self-end gap-1 rounded-full px-2 py-1 text-[11px] font-bold"
                                 >
                                     <CheckCircleIcon v-if="match.status === 'FT'" class="h-3.5 w-3.5" />
                                     <ClockIcon v-else class="h-3.5 w-3.5" />
@@ -670,20 +695,22 @@ onBeforeUnmount(() => {
                                 </span>
                             </div>
 
-                            <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
-                                <div class="flex items-center gap-2">
-                                    <img
-                                        v-if="resultTeamFlag(match.home_team)"
-                                        :src="resultTeamFlag(match.home_team)"
-                                        :alt="resultTeamName(match.home_team, match.home_slot)"
-                                        class="h-5 w-7 shrink-0 rounded object-cover"
-                                    >
-                                    <span v-else class="text-xs font-semibold uppercase text-gray-400">
-                                        {{ resultTeamCode(match.home_team, match.home_slot) }}
-                                    </span>
-                                    <span class="truncate text-base font-semibold text-gray-900 dark:text-white">
+                            <div class="mx-auto flex w-full max-w-[720px] items-center justify-center gap-3">
+                                <div class="flex w-auto min-w-0 items-center justify-end gap-2 md:w-[230px]">
+                                    <span class="hidden min-w-0 truncate text-base font-semibold text-gray-900 dark:text-white md:inline">
                                         {{ resultTeamName(match.home_team, match.home_slot) }}
                                     </span>
+                                    <AppTooltip :text="resultTeamName(match.home_team, match.home_slot)" placement="top" tooltip-class="max-w-none whitespace-nowrap">
+                                        <img
+                                            v-if="resultTeamFlag(match.home_team)"
+                                            :src="resultTeamFlag(match.home_team)"
+                                            :alt="resultTeamName(match.home_team, match.home_slot)"
+                                            class="h-5 w-7 shrink-0 rounded object-cover"
+                                        >
+                                        <span v-else class="inline-flex h-5 min-w-7 items-center justify-center rounded bg-slate-300 px-1 text-[10px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                                            {{ resultTeamCode(match.home_team, match.home_slot) }}
+                                        </span>
+                                    </AppTooltip>
                                 </div>
 
                                 <div class="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 text-xl font-black dark:bg-slate-800">
@@ -696,18 +723,20 @@ onBeforeUnmount(() => {
                                     </span>
                                 </div>
 
-                                <div class="flex items-center justify-end gap-2 text-right">
-                                    <span class="truncate text-base font-semibold text-gray-900 dark:text-white">
+                                <div class="flex w-auto min-w-0 items-center justify-start gap-2 md:w-[230px]">
+                                    <AppTooltip :text="resultTeamName(match.away_team, match.away_slot)" placement="top" tooltip-class="max-w-none whitespace-nowrap">
+                                        <img
+                                            v-if="resultTeamFlag(match.away_team)"
+                                            :src="resultTeamFlag(match.away_team)"
+                                            :alt="resultTeamName(match.away_team, match.away_slot)"
+                                            class="h-5 w-7 shrink-0 rounded object-cover"
+                                        >
+                                        <span v-else class="inline-flex h-5 min-w-7 items-center justify-center rounded bg-slate-300 px-1 text-[10px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                                            {{ resultTeamCode(match.away_team, match.away_slot) }}
+                                        </span>
+                                    </AppTooltip>
+                                    <span class="hidden min-w-0 truncate text-base font-semibold text-gray-900 dark:text-white md:inline">
                                         {{ resultTeamName(match.away_team, match.away_slot) }}
-                                    </span>
-                                    <img
-                                        v-if="resultTeamFlag(match.away_team)"
-                                        :src="resultTeamFlag(match.away_team)"
-                                        :alt="resultTeamName(match.away_team, match.away_slot)"
-                                        class="h-5 w-7 shrink-0 rounded object-cover"
-                                    >
-                                    <span v-else class="text-xs font-semibold uppercase text-gray-400">
-                                        {{ resultTeamCode(match.away_team, match.away_slot) }}
                                     </span>
                                 </div>
                             </div>
@@ -749,53 +778,93 @@ onBeforeUnmount(() => {
                         </Link>
                     </template>
 
-                    <table class="w-full table-auto text-left text-sm text-gray-600 dark:text-slate-300">
-                        <thead class="border-b border-t border-gray-200 bg-gray-50 text-xs uppercase text-gray-500 dark:border-slate-800 dark:bg-slate-700/70 dark:text-slate-300">
-                            <tr>
-                                <th class="w-[88px] px-4 py-3 text-center font-medium">Grupo</th>
-                                <th class="px-4 py-3 text-center font-medium">Encuentros</th>
-                                <th class="w-[240px] px-4 py-3 font-medium">Sede</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="game in props.upcomingGames" :key="game.id" class="border-b border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-900/70">
-                                <td class="px-4 py-4 text-center">{{ game.groupName || '-' }}</td>
-                                <td class="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                    <div class="grid grid-cols-[minmax(140px,1fr)_110px_minmax(140px,1fr)] items-center gap-3">
-                                        <div class="flex items-center justify-end gap-2 pe-1 text-right">
-                                            <span class="truncate">{{ teamDisplayName(game.homeTeam, game.homeSlot) }}</span>
-                                            <img v-if="game.homeTeam?.flag_url" :src="game.homeTeam.flag_url" :alt="game.homeTeam.name" class="h-5 w-7 shrink-0 rounded object-cover">
-                                            <span v-else class="text-xs font-semibold uppercase text-gray-400">{{ teamDisplayCode(game.homeTeam, game.homeSlot) }}</span>
-                                        </div>
-                                        <div class="text-center">
-                                            <div class="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                                {{ game.date || '--/--/----' }}
+                    <div class="space-y-3 md:hidden">
+                        <div
+                            v-for="game in props.upcomingGames"
+                            :key="`upcoming-mobile-${game.id}`"
+                            class="rounded-lg border border-gray-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/70"
+                        >
+                            <div class="mb-2 flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                                <span class="font-semibold uppercase tracking-[0.14em]">{{ game.groupName || '-' }}</span>
+                                <span class="whitespace-nowrap">{{ game.date || '--/--/----' }} - {{ formatMatchTime(game.time) }}</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+                                <div class="flex min-w-0 items-center gap-2">
+                                    <img v-if="game.homeTeam?.flag_url" :src="game.homeTeam.flag_url" :alt="game.homeTeam.name" class="h-5 w-7 shrink-0 rounded object-cover">
+                                    <span v-else class="inline-flex h-5 min-w-7 items-center justify-center rounded bg-slate-300 px-1 text-[10px] font-bold uppercase text-slate-700 dark:bg-slate-700 dark:text-slate-200">{{ teamDisplayCode(game.homeTeam, game.homeSlot) }}</span>
+                                    <span class="truncate">{{ teamDisplayName(game.homeTeam, game.homeSlot) }}</span>
+                                </div>
+                                <span class="text-slate-400">vs</span>
+                                <div class="flex min-w-0 items-center justify-end gap-2">
+                                    <span class="truncate">{{ teamDisplayName(game.awayTeam, game.awaySlot) }}</span>
+                                    <img v-if="game.awayTeam?.flag_url" :src="game.awayTeam.flag_url" :alt="game.awayTeam.name" class="h-5 w-7 shrink-0 rounded object-cover">
+                                    <span v-else class="inline-flex h-5 min-w-7 items-center justify-center rounded bg-slate-300 px-1 text-[10px] font-bold uppercase text-slate-700 dark:bg-slate-700 dark:text-slate-200">{{ teamDisplayCode(game.awayTeam, game.awaySlot) }}</span>
+                                </div>
+                            </div>
+                            <div class="mt-2 inline-flex min-w-0 items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-3.5 w-3.5 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
+                                    <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
+                                </svg>
+                                <span class="truncate">{{ game.venue || 'Sede por confirmar' }}</span>
+                            </div>
+                        </div>
+                        <div
+                            v-if="!props.upcomingGames.length"
+                            class="rounded-lg border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500 dark:border-slate-700 dark:text-slate-400"
+                        >
+                            No hay juegos programados.
+                        </div>
+                    </div>
+
+                    <div class="hidden w-full overflow-x-auto md:block">
+                        <table class="w-full min-w-[740px] table-auto text-left text-sm text-gray-600 dark:text-slate-300">
+                            <thead class="border-b border-t border-gray-200 bg-gray-50 text-xs uppercase text-gray-500 dark:border-slate-800 dark:bg-slate-700/70 dark:text-slate-300">
+                                <tr>
+                                    <th class="w-[88px] px-4 py-3 text-center font-medium">Grupo</th>
+                                    <th class="px-4 py-3 text-center font-medium">Encuentros</th>
+                                    <th class="w-[240px] px-4 py-3 font-medium">Sede</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="game in props.upcomingGames" :key="game.id" class="border-b border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-900/70">
+                                    <td class="px-4 py-4 text-center">{{ game.groupName || '-' }}</td>
+                                    <td class="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                                        <div class="grid grid-cols-[minmax(140px,1fr)_110px_minmax(140px,1fr)] items-center gap-3">
+                                            <div class="flex items-center justify-end gap-2 pe-1 text-right">
+                                                <span class="truncate">{{ teamDisplayName(game.homeTeam, game.homeSlot) }}</span>
+                                                <img v-if="game.homeTeam?.flag_url" :src="game.homeTeam.flag_url" :alt="game.homeTeam.name" class="h-5 w-7 shrink-0 rounded object-cover">
+                                                <span v-else class="text-xs font-semibold uppercase text-gray-400">{{ teamDisplayCode(game.homeTeam, game.homeSlot) }}</span>
                                             </div>
-                                            <div class="text-2xl font-black tracking-tight text-cyan-500 dark:text-cyan-400">
-                                                {{ formatMatchTime(game.time) }}
+                                            <div class="text-center">
+                                                <div class="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                                    {{ game.date || '--/--/----' }}
+                                                </div>
+                                                <div class="text-2xl font-black tracking-tight text-cyan-500 dark:text-cyan-400">
+                                                    {{ formatMatchTime(game.time) }}
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-2 ps-1">
+                                                <img v-if="game.awayTeam?.flag_url" :src="game.awayTeam.flag_url" :alt="game.awayTeam.name" class="h-5 w-7 shrink-0 rounded object-cover">
+                                                <span v-else class="text-xs font-semibold uppercase text-gray-400">{{ teamDisplayCode(game.awayTeam, game.awaySlot) }}</span>
+                                                <span class="truncate">{{ teamDisplayName(game.awayTeam, game.awaySlot) }}</span>
                                             </div>
                                         </div>
-                                        <div class="flex items-center gap-2 ps-1">
-                                            <img v-if="game.awayTeam?.flag_url" :src="game.awayTeam.flag_url" :alt="game.awayTeam.name" class="h-5 w-7 shrink-0 rounded object-cover">
-                                            <span v-else class="text-xs font-semibold uppercase text-gray-400">{{ teamDisplayCode(game.awayTeam, game.awaySlot) }}</span>
-                                            <span class="truncate">{{ teamDisplayName(game.awayTeam, game.awaySlot) }}</span>
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <div class="inline-flex items-center gap-2 text-gray-900 dark:text-slate-200">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-4 w-4 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
+                                                <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
+                                            </svg>
+                                            <span class="transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ game.venue || 'Sede por confirmar' }}</span>
                                         </div>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4">
-                                    <div class="inline-flex items-center gap-2 text-gray-900 dark:text-slate-200">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-4 w-4 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
-                                            <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
-                                        </svg>
-                                        <span class="transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ game.venue || 'Sede por confirmar' }}</span>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr v-if="!props.upcomingGames.length" class="bg-white dark:bg-slate-900/70">
-                                <td colspan="3" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-slate-400">No hay juegos programados.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                    </td>
+                                </tr>
+                                <tr v-if="!props.upcomingGames.length" class="bg-white dark:bg-slate-900/70">
+                                    <td colspan="3" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-slate-400">No hay juegos programados.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
                     <div class="min-h-[48px] border-t border-gray-200 dark:border-slate-800">
                     </div>
@@ -811,7 +880,7 @@ onBeforeUnmount(() => {
                         <div
                             v-for="row in coverageRows"
                             :key="row.key"
-                            class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3"
+                            class="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-3"
                         >
                             <div class="flex items-center gap-3">
                                 <CalendarDaysIcon v-if="row.key === 'group'" class="h-5 w-5 text-primary-500" />
@@ -826,7 +895,7 @@ onBeforeUnmount(() => {
                                     {{ row.label }}
                                 </span>
                             </div>
-                            <div class="min-w-[110px] flex justify-center">
+                            <div class="min-w-[110px] flex justify-start sm:justify-center">
                                 <span
                                     v-if="row.key === 'group' && !row.completed"
                                     class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
@@ -861,7 +930,7 @@ onBeforeUnmount(() => {
                                 </span>
                             </div>
                             <span
-                                class="text-sm font-semibold"
+                                class="text-sm font-semibold sm:text-right"
                                 :class="row.key === 'group'
                                     ? 'text-emerald-600 dark:text-emerald-400'
                                     : 'text-slate-950 dark:text-white'"
@@ -893,44 +962,81 @@ onBeforeUnmount(() => {
                     :description="`Ranking por puntos - Actualizado: ${rankingUpdatedAt}`"
                     variant="user-dashboard"
                 >
-                    <table class="w-full text-left text-sm text-gray-600 dark:text-slate-300">
-                        <thead class="border-b border-t border-gray-200 bg-gray-50 text-xs uppercase text-gray-500 dark:border-slate-800 dark:bg-slate-700/70 dark:text-slate-300">
-                            <tr>
-                                <th class="px-6 py-3 font-medium">Pos</th>
-                                <th class="px-6 py-3 font-medium">Quiniela</th>
-                                <th class="px-6 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">
-                                    <AppTooltip text="Exactos" placement="top">
-                                        <span class="inline-flex cursor-default">EXA</span>
-                                    </AppTooltip>
-                                </th>
-                                <th class="px-6 py-3 text-right font-medium text-sky-600 dark:text-sky-400">
-                                    <AppTooltip text="Aciertos" placement="top">
-                                        <span class="inline-flex cursor-default">ACI</span>
-                                    </AppTooltip>
-                                </th>
-                                <th class="px-6 py-3 text-right font-medium">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="entry in props.topPredictionsRanking" :key="entry.poolEntryId" class="border-b border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-900/70">
-                                <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">{{ entry.rank }}</td>
-                                <td
-                                    class="px-6 py-4 text-sm font-medium"
-                                    :class="entry.userId === currentUserId
-                                        ? 'text-emerald-600 dark:text-emerald-400'
-                                        : 'text-gray-900 dark:text-white'"
-                                >
-                                    {{ entry.poolEntryName }}
-                                </td>
-                                <td class="px-6 py-4 text-right font-semibold text-emerald-600 dark:text-emerald-400">{{ entry.exactHits }}</td>
-                                <td class="px-6 py-4 text-right font-semibold text-sky-600 dark:text-sky-400">{{ entry.correctResults }}</td>
-                                <td class="px-6 py-4 text-right font-semibold text-gray-900 dark:text-white">{{ entry.totalPoints }}</td>
-                            </tr>
-                            <tr v-if="!props.topPredictionsRanking.length" class="bg-white dark:bg-slate-900/70">
-                                <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400">No hay entradas en el ranking.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="space-y-2 md:hidden">
+                        <div
+                            v-for="entry in props.topPredictionsRanking"
+                            :key="`ranking-mobile-${entry.poolEntryId}`"
+                            class="rounded-lg border border-gray-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/70"
+                        >
+                            <div class="mb-1 flex items-center justify-between gap-2">
+                                <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Pos #{{ entry.rank }}</span>
+                                <span class="text-sm font-black text-slate-900 dark:text-white">{{ entry.totalPoints }} pts</span>
+                            </div>
+                            <p
+                                class="truncate text-sm font-semibold"
+                                :class="entry.userId === currentUserId
+                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                    : 'text-gray-900 dark:text-white'"
+                            >
+                                {{ entry.poolEntryName }}
+                            </p>
+                            <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
+                                <div class="rounded bg-emerald-50 px-2 py-1 font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
+                                    EXA: {{ entry.exactHits }}
+                                </div>
+                                <div class="rounded bg-sky-50 px-2 py-1 font-semibold text-sky-700 dark:bg-sky-900/20 dark:text-sky-300">
+                                    ACI: {{ entry.correctResults }}
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            v-if="!props.topPredictionsRanking.length"
+                            class="rounded-lg border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500 dark:border-slate-700 dark:text-slate-400"
+                        >
+                            No hay entradas en el ranking.
+                        </div>
+                    </div>
+
+                    <div class="hidden w-full overflow-x-auto md:block">
+                        <table class="w-full min-w-[620px] text-left text-sm text-gray-600 dark:text-slate-300">
+                            <thead class="border-b border-t border-gray-200 bg-gray-50 text-xs uppercase text-gray-500 dark:border-slate-800 dark:bg-slate-700/70 dark:text-slate-300">
+                                <tr>
+                                    <th class="px-6 py-3 font-medium">Pos</th>
+                                    <th class="px-6 py-3 font-medium">Quiniela</th>
+                                    <th class="px-6 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">
+                                        <AppTooltip text="Exactos" placement="top">
+                                            <span class="inline-flex cursor-default">EXA</span>
+                                        </AppTooltip>
+                                    </th>
+                                    <th class="px-6 py-3 text-right font-medium text-sky-600 dark:text-sky-400">
+                                        <AppTooltip text="Aciertos" placement="top">
+                                            <span class="inline-flex cursor-default">ACI</span>
+                                        </AppTooltip>
+                                    </th>
+                                    <th class="px-6 py-3 text-right font-medium">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="entry in props.topPredictionsRanking" :key="entry.poolEntryId" class="border-b border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-900/70">
+                                    <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">{{ entry.rank }}</td>
+                                    <td
+                                        class="px-6 py-4 text-sm font-medium"
+                                        :class="entry.userId === currentUserId
+                                            ? 'text-emerald-600 dark:text-emerald-400'
+                                            : 'text-gray-900 dark:text-white'"
+                                    >
+                                        {{ entry.poolEntryName }}
+                                    </td>
+                                    <td class="px-6 py-4 text-right font-semibold text-emerald-600 dark:text-emerald-400">{{ entry.exactHits }}</td>
+                                    <td class="px-6 py-4 text-right font-semibold text-sky-600 dark:text-sky-400">{{ entry.correctResults }}</td>
+                                    <td class="px-6 py-4 text-right font-semibold text-gray-900 dark:text-white">{{ entry.totalPoints }}</td>
+                                </tr>
+                                <tr v-if="!props.topPredictionsRanking.length" class="bg-white dark:bg-slate-900/70">
+                                    <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400">No hay entradas en el ranking.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
                     <div class="flex items-center justify-end border-t border-gray-200 px-5 py-3 dark:border-slate-800">
                         <Link :href="route('pools.index')" class="inline-flex items-center whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-bold uppercase tracking-wide text-primary-700 transition hover:bg-gray-100 dark:text-primary-500 dark:hover:bg-gray-700">
@@ -979,15 +1085,3 @@ onBeforeUnmount(() => {
         </Transition>
     </UserDashboardLayout>
 </template>
-
-
-
-
-
-
-
-
-
-
-
-
