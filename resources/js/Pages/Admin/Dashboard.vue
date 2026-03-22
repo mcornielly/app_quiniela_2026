@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { Link } from '@inertiajs/vue3'
-import AdminLayout from '@/Layouts/AppLayout3.vue'
+import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AppDatePicker from '@/Components/UI/AppDatePicker.vue'
 import AdminResultCard from '@/Components/Admin/Dashboard/AdminResultCard.vue'
 import AdminGroupMatchesTable from '@/Components/Admin/Dashboard/AdminGroupMatchesTable.vue'

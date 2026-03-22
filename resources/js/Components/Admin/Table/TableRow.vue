@@ -30,6 +30,7 @@ const imageFields = [
 
 const dateFields = [
     'match_date',
+    'deadline_at',
     'created_at',
     'updated_at',
     'paid_at'

@@ -1,7 +1,6 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head } from '@inertiajs/vue3';
-import Breadcrumb from '@/Components/Admin/Breadcrumb.vue';
 import { router } from '@inertiajs/vue3';
 import { route } from 'ziggy-js';
 import { ref, computed } from 'vue';
