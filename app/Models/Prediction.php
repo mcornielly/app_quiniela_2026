@@ -11,6 +11,9 @@ class Prediction extends Model
 
         'pool_entry_id',
         'game_id',
+        'predicted_home_team_id',
+        'predicted_away_team_id',
+        'predicted_winner_team_id',
         'home_score',
         'away_score',
         'points'
@@ -31,5 +34,20 @@ class Prediction extends Model
     public function poolEntry(): BelongsTo
     {
         return $this->belongsTo(PoolEntry::class);
+    }
+
+    public function predictedHomeTeam(): BelongsTo
+    {
+        return $this->belongsTo(Team::class, 'predicted_home_team_id');
+    }
+
+    public function predictedAwayTeam(): BelongsTo
+    {
+        return $this->belongsTo(Team::class, 'predicted_away_team_id');
+    }
+
+    public function predictedWinnerTeam(): BelongsTo
+    {
+        return $this->belongsTo(Team::class, 'predicted_winner_team_id');
     }
 }

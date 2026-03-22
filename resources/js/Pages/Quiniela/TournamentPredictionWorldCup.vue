@@ -23,6 +23,10 @@ const props = defineProps({
         type: Object,
         default: () => ({}),
     },
+    participationRules: {
+        type: Object,
+        default: () => ({}),
+    },
 })
 
 const page = usePage()
@@ -160,6 +164,7 @@ const canSubmitPoolEntry = computed(() => {
     return progress.value.total > 0
         && progress.value.filled === progress.value.total
         && !hasInvalidKnockoutDraws.value
+        && props.participationRules?.isOpen !== false
 })
 
 const createdPoolEntry = computed(() => page.props.flash?.created_pool_entry ?? null)
@@ -667,6 +672,10 @@ watch(
 
                 <div v-if="flashError" class="mt-6 rounded-2xl border border-rose-300/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
                     {{ flashError }}
+                </div>
+
+                <div v-if="props.participationRules?.isOpen === false" class="mt-4 rounded-2xl border border-rose-300/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+                    La participacion de quinielas esta cerrada desde el {{ props.participationRules?.closeAtLabel ?? 'limite configurado' }}.
                 </div>
 
                 <div v-if="hasInvalidKnockoutDraws" class="mt-4 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">

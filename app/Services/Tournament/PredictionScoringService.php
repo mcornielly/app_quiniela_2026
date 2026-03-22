@@ -4,6 +4,7 @@ namespace App\Services\Tournament;
 
 use App\Models\Game;
 use App\Models\Prediction;
+use App\Models\Rule;
 use Illuminate\Support\Facades\DB;
 
 class PredictionScoringService
@@ -22,9 +23,17 @@ class PredictionScoringService
 
         $affectedEntries = [];
 
+        $rule = Rule::query()
+            ->where('active', true)
+            ->where('tournament_id', $game->tournament_id)
+            ->first();
+
+        $exactScorePoints = (int) ($rule?->exact_score_points ?? 5);
+        $correctResultPoints = (int) ($rule?->correct_result_points ?? 3);
+
         foreach ($predictions as $prediction) {
 
-            $points = $this->calculatePoints($game, $prediction);
+            $points = $this->calculatePoints($game, $prediction, $exactScorePoints, $correctResultPoints);
 
             // actualizar puntos de la predicción
             $prediction->update([
@@ -59,22 +68,34 @@ class PredictionScoringService
                 exact_hits = (
                     SELECT COUNT(*)
                     FROM predictions p
+                    INNER JOIN games g ON g.id = p.game_id
                     WHERE p.pool_entry_id = pool_entries.id
-                    AND p.points = 5
+                    AND g.home_score IS NOT NULL
+                    AND g.away_score IS NOT NULL
+                    AND p.home_score = g.home_score
+                    AND p.away_score = g.away_score
                 ),
 
                 correct_results = (
                     SELECT COUNT(*)
                     FROM predictions p
+                    INNER JOIN games g ON g.id = p.game_id
                     WHERE p.pool_entry_id = pool_entries.id
-                    AND p.points = 3
+                    AND g.home_score IS NOT NULL
+                    AND g.away_score IS NOT NULL
+                    AND (
+                        (p.home_score > p.away_score AND g.home_score > g.away_score)
+                        OR (p.home_score < p.away_score AND g.home_score < g.away_score)
+                        OR (p.home_score = p.away_score AND g.home_score = g.away_score)
+                    )
+                    AND NOT (p.home_score = g.home_score AND p.away_score = g.away_score)
                 )
 
             WHERE id IN ($placeholders)
         ", $entryIds);
     }
 
-    private function calculatePoints(Game $game, Prediction $prediction)
+    private function calculatePoints(Game $game, Prediction $prediction, int $exactScorePoints, int $correctResultPoints)
     {
         /*
         |--------------------------------------------------------------------------
@@ -86,7 +107,7 @@ class PredictionScoringService
             $prediction->home_score == $game->home_score &&
             $prediction->away_score == $game->away_score
         ) {
-            return 5;
+            return $exactScorePoints;
         }
 
         /*
@@ -109,7 +130,7 @@ class PredictionScoringService
         */
 
         if ($predictedResult === $realResult) {
-            return 3;
+            return $correctResultPoints;
         }
 
         return 0;

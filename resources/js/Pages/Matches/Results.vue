@@ -152,7 +152,7 @@ onBeforeUnmount(() => {
                             </div>
 
                             <div class="lg:justify-end">
-                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-[11px] font-bold text-red-700 dark:bg-red-900/30 dark:text-red-300">
                                     <CheckCircleIcon class="h-3.5 w-3.5" />
                                     <span>Finalizado</span>
                                 </span>
@@ -168,4 +168,3 @@ onBeforeUnmount(() => {
         </section>
     </UserDashboardLayout>
 </template>
-

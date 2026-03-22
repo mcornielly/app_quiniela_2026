@@ -32,10 +32,10 @@ const wrapperClass = computed(() => {
 
 const headerClass = computed(() => {
     if (isUserDashboard.value) {
-        return 'flex flex-col gap-4 border-b border-gray-200 p-5 dark:border-slate-800 sm:flex-row sm:items-start sm:justify-between'
+        return 'flex items-start justify-between gap-4 border-b border-gray-200 p-5 dark:border-slate-800'
     }
 
-    return 'flex flex-col gap-4 border-b border-gray-200 p-5 dark:border-gray-700 sm:flex-row sm:items-start sm:justify-between'
+    return 'flex items-start justify-between gap-4 border-b border-gray-200 p-5 dark:border-gray-700'
 })
 
 const descriptionClass = computed(() => {
@@ -50,7 +50,7 @@ const descriptionClass = computed(() => {
 <template>
     <div :class="wrapperClass">
         <div :class="headerClass">
-            <div>
+            <div class="min-w-0 flex-1">
                 <h2 class="flex items-center gap-2 text-lg font-medium text-gray-900 dark:text-white">
                     <svg
                         v-if="titleIcon?.path"
@@ -66,7 +66,7 @@ const descriptionClass = computed(() => {
                     {{ description }}
                 </p>
             </div>
-            <div v-if="$slots.actions" class="flex items-center gap-2 self-start">
+            <div v-if="$slots.actions" class="ml-auto flex shrink-0 items-center gap-2 self-start">
                 <slot name="actions" />
             </div>
         </div>
