@@ -4,7 +4,6 @@ import { Head, Link, usePage } from '@inertiajs/vue3'
 import {
     CalendarDaysIcon,
     CheckCircleIcon,
-    MapPinIcon,
 } from '@heroicons/vue/24/outline'
 import FilterCalendarSkeleton from '@/Components/UI/FilterCalendarSkeleton.vue'
 import FilterSelect from '@/Components/UI/FilterSelect.vue'
@@ -119,6 +118,18 @@ const stageLabelEs = (label) => {
     }
 
     return map[label] ?? label
+}
+
+const groupLabelEs = (label) => {
+    if (!label) {
+        return '-'
+    }
+
+    const normalized = String(label)
+        .replace(/^group\s+/i, 'Grupo ')
+        .trim()
+
+    return normalized
 }
 const resetFilters = () => {
     selectedGroup.value = 'all'
@@ -240,18 +251,28 @@ onBeforeUnmount(() => {
                         :key="match.id"
                         class="rounded-2xl border border-slate-200 bg-white px-5 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/75"
                     >
-                        <div class="grid grid-cols-1 items-center gap-3 xl:grid-cols-[170px_1fr_180px]">
+                        <div class="space-y-2">
+                            <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-xs">
+                                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                                    {{ groupLabelEs(match.groupName) }}
+                                </p>
+                                <div class="inline-flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-3.5 w-3.5 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
+                                        <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
+                                    </svg>
+                                    <span class="truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ match.venue || 'Venue TBD' }}</span>
+                                </div>
+                                <p class="text-right text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                                    {{ stageLabelEs(match.stageLabel) }}
+                                </p>
+                            </div>
+
+                            <div class="grid grid-cols-1 items-center gap-3 xl:grid-cols-[170px_1fr_180px]">
                             <div>
-                                <p class="text-sm text-slate-500 dark:text-slate-400">{{ match.groupName || '-' }}</p>
                                 <p class="text-2xl font-black text-cyan-500 dark:text-cyan-400">{{ match.matchTime }}</p>
                             </div>
 
-                            <div class="space-y-1.5">
-                                <div class="inline-flex w-full items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                                    <MapPinIcon class="h-4 w-4 text-cyan-500 dark:text-cyan-400" />
-                                    <span class="truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ match.venue || 'Venue TBD' }}</span>
-                                </div>
-                                <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+                            <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
                                     <div class="flex items-center justify-end gap-2 text-right">
                                         <span class="truncate text-lg font-semibold text-slate-900 dark:text-white">{{ match.homeTeam }}</span>
                                         <span class="text-base font-semibold uppercase text-slate-500 dark:text-slate-400">{{ match.homeCode }}</span>
@@ -259,7 +280,7 @@ onBeforeUnmount(() => {
 
                                     <div
                                         v-if="hasResult(match)"
-                                        class="inline-flex min-w-[92px] items-center justify-center gap-3 rounded-xl bg-slate-100 px-3 py-2 text-2xl font-black dark:bg-slate-800"
+                                        class="inline-flex min-w-[92px] items-center justify-center gap-3 rounded-xl bg-slate-100 px-3 py-1.5 text-2xl font-black dark:bg-slate-800"
                                     >
                                         <span :class="(isHomeWinner(match) || isDraw(match)) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
                                             {{ match.homeScore }}
@@ -269,7 +290,7 @@ onBeforeUnmount(() => {
                                             {{ match.awayScore }}
                                         </span>
                                     </div>
-                                    <div v-else class="inline-flex min-w-[92px] items-center justify-center rounded-xl bg-slate-100 px-3 py-2 text-sm font-bold uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                                    <div v-else class="inline-flex min-w-[92px] items-center justify-center rounded-xl bg-slate-100 px-3 py-1.5 text-sm font-bold uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-300">
                                         vs
                                     </div>
 
@@ -277,11 +298,9 @@ onBeforeUnmount(() => {
                                         <span class="text-base font-semibold uppercase text-slate-500 dark:text-slate-400">{{ match.awayCode }}</span>
                                         <span class="truncate text-lg font-semibold text-slate-900 dark:text-white">{{ match.awayTeam }}</span>
                                     </div>
-                                </div>
                             </div>
 
                             <div class="flex flex-col items-start gap-2 text-sm text-slate-500 dark:text-slate-400 xl:items-end">
-                                <p class="text-xs text-slate-500 dark:text-slate-400">{{ stageLabelEs(match.stageLabel) }}</p>
                                 <span
                                     class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold tracking-wide"
                                     :class="match.status === 'finished'
@@ -294,6 +313,7 @@ onBeforeUnmount(() => {
                                     <span>{{ match.status === 'finished' ? 'Finalizado' : match.statusLabel }}</span>
                                 </span>
                             </div>
+                        </div>
                         </div>
                     </article>
                 </section>

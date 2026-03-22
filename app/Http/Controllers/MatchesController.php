@@ -115,7 +115,7 @@ class MatchesController extends Controller
     {
         return [
             'id' => $game->id,
-            'groupName' => $game->group_name ? "Group {$game->group_name}" : null,
+            'groupName' => $game->group_name ? "Grupo {$game->group_name}" : null,
             'stageLabel' => $this->stageLabel($game->stage),
             'stage' => $game->stage,
             'status' => $game->status,
