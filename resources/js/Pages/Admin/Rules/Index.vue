@@ -159,10 +159,10 @@ const handleCreate = () => {
 
             <div v-else class="flex flex-col">
 
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto overflow-y-visible">
                     <div class="inline-block min-w-full align-middle">
 
-                        <div class="overflow-hidden shadow">
+                        <div class="overflow-visible shadow">
 
                             <DataTable
                                 :rows="rules.data"

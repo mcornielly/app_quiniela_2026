@@ -24,10 +24,10 @@ const isUserDashboard = computed(() => props.variant === 'user-dashboard')
 
 const wrapperClass = computed(() => {
     if (isUserDashboard.value) {
-        return 'relative overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/85'
+        return 'relative overflow-x-auto overflow-y-visible rounded-lg border border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/85'
     }
 
-    return 'relative overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800'
+    return 'relative overflow-x-auto overflow-y-visible rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800'
 })
 
 const headerClass = computed(() => {

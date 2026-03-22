@@ -46,7 +46,7 @@ watch(() => props.rows, () => {
 
 <template>
     <div class="flex flex-col">
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto overflow-y-visible">
             <div class="inline-block min-w-full align-middle">
                 <table class="min-w-full divide-y divide-gray-200 table-fixed dark:divide-gray-600">
                     <TableHead

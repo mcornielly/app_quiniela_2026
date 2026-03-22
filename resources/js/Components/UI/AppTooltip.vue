@@ -41,14 +41,14 @@ const arrowClasses = {
 
         <div
             role="tooltip"
-            class="pointer-events-none absolute z-20 invisible inline-block max-w-[220px] whitespace-normal break-words rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white opacity-0 shadow-sm transition-opacity duration-300 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 sm:max-w-[320px] sm:whitespace-nowrap"
+            class="pointer-events-none absolute z-[9999] invisible inline-block max-w-[220px] whitespace-normal break-words rounded-base bg-slate-900 px-3 py-2 text-sm font-semibold text-white opacity-0 shadow-xs transition-opacity duration-300 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 dark:bg-slate-900 sm:max-w-[320px] sm:whitespace-nowrap"
             :class="[placementClasses[placement] || placementClasses.top, tooltipClass]"
         >
             <slot name="content">
                 {{ text }}
             </slot>
             <div
-                class="absolute h-2.5 w-2.5 rotate-45 bg-slate-800"
+                class="absolute h-2.5 w-2.5 rotate-45 bg-slate-900 dark:bg-slate-900"
                 :class="[arrowClasses[placement] || arrowClasses.top, arrowClass]"
                 data-popper-arrow
             />
