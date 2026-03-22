@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
+import AppTooltip from '@/Components/UI/AppTooltip.vue'
 
 const props = defineProps({
     tournament: {
@@ -120,8 +121,16 @@ const filteredParticipants = computed(() => {
                                     ? 'text-emerald-600 dark:text-emerald-400'
                                     : 'text-slate-900 dark:text-white'"
                             >
-                                <div>{{ participant.name }}</div>
-                                <div v-if="participant.email" class="text-xs text-slate-500 dark:text-slate-400">{{ participant.email }}</div>
+                                <AppTooltip :text="participant.name" placement="top" tooltip-class="max-w-none whitespace-nowrap">
+                                    <div class="max-w-[120px] truncate text-sm sm:max-w-[220px] sm:text-base lg:max-w-none">
+                                        {{ participant.name }}
+                                    </div>
+                                </AppTooltip>
+                                <AppTooltip v-if="participant.email" :text="participant.email" placement="top" tooltip-class="max-w-none whitespace-nowrap">
+                                    <div class="max-w-[120px] truncate text-xs text-slate-500 dark:text-slate-400 sm:max-w-[220px] lg:max-w-none">
+                                        {{ participant.email }}
+                                    </div>
+                                </AppTooltip>
                             </td>
                             <td class="px-6 py-4 text-right">{{ participant.poolsCount }}</td>
                             <td class="px-6 py-4 text-right font-semibold text-emerald-600 dark:text-emerald-400">{{ participant.exactHits }}</td>
@@ -139,4 +148,3 @@ const filteredParticipants = computed(() => {
         </section>
     </UserDashboardLayout>
 </template>
-
