@@ -1,6 +1,7 @@
 <script setup>
 import 'flowbite'
 import { onMounted, onBeforeUnmount } from 'vue'
+import { Link } from '@inertiajs/vue3'
 
 let onClick = null
 
@@ -700,10 +701,10 @@ onBeforeUnmount(() => {
                 aria-labelledby="dropdown"
                 >
                 <li>
-                    <a
-                    href="#"
+                    <Link
+                    :href="route('admin.profile.edit')"
                     class="block py-2 px-4 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-400 dark:hover:text-white"
-                    >My profile</a
+                    >My profile</Link
                     >
                 </li>
                 <li>
@@ -796,10 +797,12 @@ onBeforeUnmount(() => {
                 aria-labelledby="dropdown"
                 >
                 <li>
-                    <a
-                    href="#"
-                    class="block py-2 px-4 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                    >Sign out</a
+                    <Link
+                    :href="route('logout')"
+                    method="post"
+                    as="button"
+                    class="block w-full py-2 px-4 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                    >Sign out</Link
                     >
                 </li>
                 </ul>

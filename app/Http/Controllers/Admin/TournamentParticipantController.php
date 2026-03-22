@@ -52,6 +52,10 @@ class TournamentParticipantController extends Controller
                 'type' => $tournament->type,
             ],
             'participants' => $participants,
+            'tiebreakers' => [
+                'use_fifa_ranking' => (bool) config('tournament_rules.tiebreakers.use_fifa_ranking', false),
+                'use_fair_play' => (bool) config('tournament_rules.tiebreakers.use_fair_play', false),
+            ],
         ]);
     }
 
@@ -59,10 +63,20 @@ class TournamentParticipantController extends Controller
     {
         abort_unless($participant->tournament_id === $tournament->id, 404);
 
-        $validated = $request->validate([
-            'fifa_ranking' => ['nullable', 'integer', 'min:1', 'max:999'],
-            'fair_play_points' => ['required', 'integer', 'max:0'],
-        ]);
+        $useFifaRanking = (bool) config('tournament_rules.tiebreakers.use_fifa_ranking', false);
+        $useFairPlay = (bool) config('tournament_rules.tiebreakers.use_fair_play', false);
+
+        $rules = [];
+
+        if ($useFifaRanking) {
+            $rules['fifa_ranking'] = ['nullable', 'integer', 'min:1', 'max:999'];
+        }
+
+        if ($useFairPlay) {
+            $rules['fair_play_points'] = ['required', 'integer', 'max:0'];
+        }
+
+        $validated = empty($rules) ? [] : $request->validate($rules);
 
         $participant->update($validated);
 

@@ -3,9 +3,9 @@ import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
 import { confirmDelete, notifySuccess, notifyError } from '@/Utils/notify'
-import { singular } from '@/Utils/format'
+import { singular, formatDateTime } from '@/Utils/format'
 import DeleteDrawer from '@/Components/Admin/Drawer/DeleteDrawer.vue'
-import AdminLayout from '@/Layouts/AppLayout3.vue'
+import AdminLayout from '@/Layouts/AdminLayout.vue'
 import Header from '@/Layouts/Partials/Header.vue'
 import SearchBar from '@/Layouts/Partials/SearchBar.vue'
 import DataTable from '@/Components/Admin/Table/DataTable.vue'
@@ -28,7 +28,7 @@ const columns = [
     { key: 'year', label: 'Year' },
     { key: 'host_countries', label: 'Host Countries' },
     { key: 'logo', label: 'Logo' },
-    { key: 'deadline_at', label: 'Deadline At' },
+    { key: 'deadline_at', label: 'Deadline At', format: (v) => formatDateTime(v, 'es-VE') },
     { key: 'status', label: 'Status' },
     { key: 'type', label: 'Type' },
 

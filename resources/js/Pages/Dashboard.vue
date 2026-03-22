@@ -1003,19 +1003,19 @@ onBeforeUnmount(() => {
                         No hay entradas en el ranking.
                     </div>
 
-                    <div class="hidden w-full overflow-x-auto md:block">
+                    <div class="hidden w-full overflow-x-auto overflow-y-visible md:block">
                         <table class="w-full min-w-[620px] text-left text-sm text-gray-600 dark:text-slate-300">
                             <thead class="border-b border-t border-gray-200 bg-gray-50 text-xs uppercase text-gray-500 dark:border-slate-800 dark:bg-slate-700/70 dark:text-slate-300">
                                 <tr>
                                     <th class="px-6 py-3 font-medium">Pos</th>
                                     <th class="px-6 py-3 font-medium">Quiniela</th>
                                     <th class="px-6 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">
-                                        <AppTooltip text="Exactos" placement="top">
+                                        <AppTooltip text="Exactos" placement="bottom">
                                             <span class="inline-flex cursor-default">EXA</span>
                                         </AppTooltip>
                                     </th>
                                     <th class="px-6 py-3 text-right font-medium text-sky-600 dark:text-sky-400">
-                                        <AppTooltip text="Aciertos" placement="top">
+                                        <AppTooltip text="Aciertos" placement="bottom">
                                             <span class="inline-flex cursor-default">ACI</span>
                                         </AppTooltip>
                                     </th>

@@ -1,6 +1,6 @@
 <script setup>
 
-import AdminLayout from '@/Layouts/AppLayout3.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import SearchBar from '@/Layouts/Partials/SearchBar.vue';
 import Header from '@/Layouts/Partials/Header.vue';
 

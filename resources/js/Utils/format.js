@@ -30,6 +30,23 @@ export function formatDate(date) {
 
 }
 
+export function formatDateTime(date, locale = 'es-VE') {
+    if (!date) return '—'
+
+    const d = new Date(date)
+
+    if (Number.isNaN(d.getTime())) return '—'
+
+    return d.toLocaleString(locale, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    })
+}
+
 export function formatRegistrationNumber(value, digits = 5) {
     const numericValue = Number.parseInt(value, 10)
 

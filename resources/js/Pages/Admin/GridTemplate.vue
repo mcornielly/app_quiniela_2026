@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout3.vue';
+import AppLayout from '@/Layouts/AdminLayout.vue';
 import 'flowbite'
 
 

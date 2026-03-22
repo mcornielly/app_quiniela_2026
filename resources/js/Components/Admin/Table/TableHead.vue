@@ -1,4 +1,5 @@
 <script setup>
+import AppTooltip from '@/Components/UI/AppTooltip.vue'
 
 const props = defineProps({
     columns: Array,
@@ -35,9 +36,24 @@ const toggle = (event) => {
                 v-for="column in columns"
                 :key="column.key"
                 scope="col"
-                class="px-6 py-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400"
+                :class="[
+                    'px-6 py-4 text-xs font-medium text-gray-500 uppercase dark:text-gray-400',
+                    column.align === 'center' ? 'text-center' : 'text-left'
+                ]"
             >
-                {{ column.label }}
+                <AppTooltip
+                    v-if="column.tooltip"
+                    :text="column.tooltip"
+                    placement="bottom"
+                    tooltip-class="max-w-none whitespace-nowrap"
+                >
+                    <span class="inline-flex items-center cursor-default">
+                        {{ column.label }}
+                    </span>
+                </AppTooltip>
+                <span v-else>
+                    {{ column.label }}
+                </span>
             </th>
 
             <!-- actions -->

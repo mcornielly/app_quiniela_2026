@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\CalendarController;
 use App\Http\Controllers\Admin\MatchController;
 use App\Http\Controllers\Admin\PoolEntriesController;
 use App\Http\Controllers\Admin\PoolEntryController as AdminPoolEntryController;
+use App\Http\Controllers\Admin\RuleController;
 use App\Http\Controllers\Admin\TournamentParticipantController;
 use App\Http\Controllers\PoolEntryController;
 use App\Http\Controllers\QuinielaWorldCupController;
@@ -55,6 +56,10 @@ Route::middleware(['auth', 'verified', 'admin'])
 
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])
         ->name('dashboard');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     /*
     |--------------------------------------------------------------------------
@@ -96,6 +101,9 @@ Route::middleware(['auth', 'verified', 'admin'])
     Route::get('/calendar', [GameController::class, 'calendar'])->name('calendar.index');
 
     Route::resource('/pools', AdminPoolEntryController::class)->only(['index']);
+    Route::delete('rules/bulk-delete', [RuleController::class, 'bulkDelete'])
+        ->name('rules.bulkDelete');
+    Route::resource('rules', RuleController::class)->only(['index','store','update','destroy']);
 
 
     Route::get('/predictions', fn () => Inertia::render('Admin/Predictions/Index'))
