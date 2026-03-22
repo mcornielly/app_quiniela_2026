@@ -648,26 +648,26 @@ onBeforeUnmount(() => {
                             class="border-b border-gray-200 bg-white px-4 py-3 last:border-b-0 sm:px-5 dark:border-slate-800 dark:bg-slate-900/70"
                         >
                             <div class="mb-3 space-y-2 md:hidden">
-                                <div class="flex items-start justify-between gap-2">
+                                <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-2">
                                     <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                                         {{ match.stage === 'group' ? `Grupo ${match.group_name || '-'}` : match.stage_label }}
                                     </p>
+                                    <div class="flex min-w-0 items-center justify-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                                        <span class="whitespace-nowrap">{{ match.display_date }} <span v-if="match.display_time">- {{ match.display_time }}</span></span>
+                                        <span class="inline-flex min-w-0 items-center gap-1 truncate">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-3 w-3 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
+                                                <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
+                                            </svg>
+                                            <span class="max-w-[28vw] truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ match.venue || 'Sede por confirmar' }}</span>
+                                        </span>
+                                    </div>
                                     <span
                                         :class="resultRowStatusClass(match)"
-                                        class="inline-flex w-fit shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                                        class="inline-flex w-fit shrink-0 items-center justify-self-end gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
                                     >
                                         <CheckCircleIcon v-if="match.status === 'FT'" class="h-3 w-3" />
                                         <ClockIcon v-else class="h-3 w-3" />
                                         {{ resultStatusLabel(match) }}
-                                    </span>
-                                </div>
-                                <div class="flex min-w-0 flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                                    <span class="whitespace-nowrap">{{ match.display_date }} <span v-if="match.display_time">- {{ match.display_time }}</span></span>
-                                    <span class="inline-flex min-w-0 items-center gap-1.5 truncate">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-3.5 w-3.5 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
-                                            <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
-                                        </svg>
-                                        <span class="max-w-[52vw] truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ match.venue || 'Sede por confirmar' }}</span>
                                     </span>
                                 </div>
                             </div>
@@ -778,92 +778,86 @@ onBeforeUnmount(() => {
                         </Link>
                     </template>
 
-                    <div class="space-y-3 md:hidden">
+                    <div v-if="props.upcomingGames.length" class="overflow-hidden border-y border-gray-200 dark:border-slate-800">
                         <div
                             v-for="game in props.upcomingGames"
-                            :key="`upcoming-mobile-${game.id}`"
-                            class="rounded-lg border border-gray-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/70"
+                            :key="game.id"
+                            class="border-b border-gray-200 bg-white px-4 py-3 last:border-b-0 sm:px-5 dark:border-slate-800 dark:bg-slate-900/70"
                         >
-                            <div class="mb-2 flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-                                <span class="font-semibold uppercase tracking-[0.14em]">{{ game.groupName || '-' }}</span>
-                                <span class="whitespace-nowrap">{{ game.date || '--/--/----' }} - {{ formatMatchTime(game.time) }}</span>
-                            </div>
-                            <div class="flex items-center justify-between gap-2 text-sm font-semibold text-slate-900 dark:text-white">
-                                <div class="flex min-w-0 items-center gap-2">
-                                    <img v-if="game.homeTeam?.flag_url" :src="game.homeTeam.flag_url" :alt="game.homeTeam.name" class="h-5 w-7 shrink-0 rounded object-cover">
-                                    <span v-else class="inline-flex h-5 min-w-7 items-center justify-center rounded bg-slate-300 px-1 text-[10px] font-bold uppercase text-slate-700 dark:bg-slate-700 dark:text-slate-200">{{ teamDisplayCode(game.homeTeam, game.homeSlot) }}</span>
-                                    <span class="truncate">{{ teamDisplayName(game.homeTeam, game.homeSlot) }}</span>
+                            <div class="mb-3 space-y-2 md:hidden">
+                                <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-2">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                                        {{ game.groupName || '-' }}
+                                    </p>
+                                    <div class="flex min-w-0 items-center justify-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                                        <span class="whitespace-nowrap">{{ game.date || '--/--/----' }} - {{ formatMatchTime(game.time) }}</span>
+                                        <span class="inline-flex min-w-0 items-center gap-1 truncate">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-3 w-3 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
+                                                <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
+                                            </svg>
+                                            <span class="max-w-[28vw] truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ game.venue || 'Sede por confirmar' }}</span>
+                                        </span>
+                                    </div>
+                                    <span class="inline-flex w-fit shrink-0 items-center justify-self-end gap-1 rounded-full bg-cyan-100 px-2 py-0.5 text-[10px] font-bold text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300">
+                                        <ClockIcon class="h-3 w-3" />
+                                        Proximo
+                                    </span>
                                 </div>
-                                <span class="text-slate-400">vs</span>
-                                <div class="flex min-w-0 items-center justify-end gap-2">
-                                    <span class="truncate">{{ teamDisplayName(game.awayTeam, game.awaySlot) }}</span>
-                                    <img v-if="game.awayTeam?.flag_url" :src="game.awayTeam.flag_url" :alt="game.awayTeam.name" class="h-5 w-7 shrink-0 rounded object-cover">
-                                    <span v-else class="inline-flex h-5 min-w-7 items-center justify-center rounded bg-slate-300 px-1 text-[10px] font-bold uppercase text-slate-700 dark:bg-slate-700 dark:text-slate-200">{{ teamDisplayCode(game.awayTeam, game.awaySlot) }}</span>
+                            </div>
+
+                            <div class="mb-3 hidden md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center md:gap-3">
+                                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                                    {{ game.groupName || '-' }}
+                                </p>
+                                <div class="flex min-w-0 items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                    <span class="whitespace-nowrap">{{ game.date || '--/--/----' }} - {{ formatMatchTime(game.time) }}</span>
+                                    <span class="inline-flex min-w-0 items-center gap-1.5 truncate">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-3.5 w-3.5 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
+                                            <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
+                                        </svg>
+                                        <span class="max-w-[42vw] truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400 md:max-w-none">{{ game.venue || 'Sede por confirmar' }}</span>
+                                    </span>
+                                </div>
+                                <span class="inline-flex w-fit shrink-0 items-center justify-self-end gap-1 rounded-full bg-cyan-100 px-2 py-1 text-[11px] font-bold text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300">
+                                    <ClockIcon class="h-3.5 w-3.5" />
+                                    Proximo
+                                </span>
+                            </div>
+
+                            <div class="mx-auto flex w-full max-w-[720px] items-center justify-center gap-3">
+                                <div class="flex w-auto min-w-0 items-center justify-end gap-2 md:w-[230px]">
+                                    <span class="hidden min-w-0 truncate text-base font-semibold text-gray-900 dark:text-white md:inline">
+                                        {{ teamDisplayName(game.homeTeam, game.homeSlot) }}
+                                    </span>
+                                    <AppTooltip :text="teamDisplayName(game.homeTeam, game.homeSlot)" placement="top" tooltip-class="max-w-none whitespace-nowrap">
+                                        <img v-if="game.homeTeam?.flag_url" :src="game.homeTeam.flag_url" :alt="teamDisplayName(game.homeTeam, game.homeSlot)" class="h-5 w-7 shrink-0 rounded object-cover">
+                                        <span v-else class="inline-flex h-5 min-w-7 items-center justify-center rounded bg-slate-300 px-1 text-[10px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                                            {{ teamDisplayCode(game.homeTeam, game.homeSlot) }}
+                                        </span>
+                                    </AppTooltip>
+                                </div>
+
+                                <div class="rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-black uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                                    vs
+                                </div>
+
+                                <div class="flex w-auto min-w-0 items-center justify-start gap-2 md:w-[230px]">
+                                    <AppTooltip :text="teamDisplayName(game.awayTeam, game.awaySlot)" placement="top" tooltip-class="max-w-none whitespace-nowrap">
+                                        <img v-if="game.awayTeam?.flag_url" :src="game.awayTeam.flag_url" :alt="teamDisplayName(game.awayTeam, game.awaySlot)" class="h-5 w-7 shrink-0 rounded object-cover">
+                                        <span v-else class="inline-flex h-5 min-w-7 items-center justify-center rounded bg-slate-300 px-1 text-[10px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                                            {{ teamDisplayCode(game.awayTeam, game.awaySlot) }}
+                                        </span>
+                                    </AppTooltip>
+                                    <span class="hidden min-w-0 truncate text-base font-semibold text-gray-900 dark:text-white md:inline">
+                                        {{ teamDisplayName(game.awayTeam, game.awaySlot) }}
+                                    </span>
                                 </div>
                             </div>
-                            <div class="mt-2 inline-flex min-w-0 items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-3.5 w-3.5 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
-                                    <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
-                                </svg>
-                                <span class="truncate">{{ game.venue || 'Sede por confirmar' }}</span>
-                            </div>
-                        </div>
-                        <div
-                            v-if="!props.upcomingGames.length"
-                            class="rounded-lg border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500 dark:border-slate-700 dark:text-slate-400"
-                        >
-                            No hay juegos programados.
                         </div>
                     </div>
 
-                    <div class="hidden w-full overflow-x-auto md:block">
-                        <table class="w-full min-w-[740px] table-auto text-left text-sm text-gray-600 dark:text-slate-300">
-                            <thead class="border-b border-t border-gray-200 bg-gray-50 text-xs uppercase text-gray-500 dark:border-slate-800 dark:bg-slate-700/70 dark:text-slate-300">
-                                <tr>
-                                    <th class="w-[88px] px-4 py-3 text-center font-medium">Grupo</th>
-                                    <th class="px-4 py-3 text-center font-medium">Encuentros</th>
-                                    <th class="w-[240px] px-4 py-3 font-medium">Sede</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="game in props.upcomingGames" :key="game.id" class="border-b border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-900/70">
-                                    <td class="px-4 py-4 text-center">{{ game.groupName || '-' }}</td>
-                                    <td class="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                        <div class="grid grid-cols-[minmax(140px,1fr)_110px_minmax(140px,1fr)] items-center gap-3">
-                                            <div class="flex items-center justify-end gap-2 pe-1 text-right">
-                                                <span class="truncate">{{ teamDisplayName(game.homeTeam, game.homeSlot) }}</span>
-                                                <img v-if="game.homeTeam?.flag_url" :src="game.homeTeam.flag_url" :alt="game.homeTeam.name" class="h-5 w-7 shrink-0 rounded object-cover">
-                                                <span v-else class="text-xs font-semibold uppercase text-gray-400">{{ teamDisplayCode(game.homeTeam, game.homeSlot) }}</span>
-                                            </div>
-                                            <div class="text-center">
-                                                <div class="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                                    {{ game.date || '--/--/----' }}
-                                                </div>
-                                                <div class="text-2xl font-black tracking-tight text-cyan-500 dark:text-cyan-400">
-                                                    {{ formatMatchTime(game.time) }}
-                                                </div>
-                                            </div>
-                                            <div class="flex items-center gap-2 ps-1">
-                                                <img v-if="game.awayTeam?.flag_url" :src="game.awayTeam.flag_url" :alt="game.awayTeam.name" class="h-5 w-7 shrink-0 rounded object-cover">
-                                                <span v-else class="text-xs font-semibold uppercase text-gray-400">{{ teamDisplayCode(game.awayTeam, game.awaySlot) }}</span>
-                                                <span class="truncate">{{ teamDisplayName(game.awayTeam, game.awaySlot) }}</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-4">
-                                        <div class="inline-flex items-center gap-2 text-gray-900 dark:text-slate-200">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-4 w-4 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
-                                                <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
-                                            </svg>
-                                            <span class="transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ game.venue || 'Sede por confirmar' }}</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr v-if="!props.upcomingGames.length" class="bg-white dark:bg-slate-900/70">
-                                    <td colspan="3" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-slate-400">No hay juegos programados.</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div v-else class="rounded-lg border border-dashed border-gray-200 p-6 text-center dark:border-slate-800">
+                        <p class="text-sm text-gray-500 dark:text-slate-400">No hay juegos programados.</p>
                     </div>
 
                     <div class="min-h-[48px] border-t border-gray-200 dark:border-slate-800">
@@ -962,11 +956,23 @@ onBeforeUnmount(() => {
                     :description="`Ranking por puntos - Actualizado: ${rankingUpdatedAt}`"
                     variant="user-dashboard"
                 >
-                    <div class="space-y-2 md:hidden">
+                    <template #actions>
+                        <Link
+                            :href="route('pools.index')"
+                            class="inline-flex items-center whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-bold uppercase tracking-wide text-primary-700 transition hover:bg-gray-100 dark:text-primary-500 dark:hover:bg-gray-700"
+                        >
+                            Ver lista
+                            <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </Link>
+                    </template>
+
+                    <div v-if="props.topPredictionsRanking.length" class="overflow-hidden border-y border-gray-200 md:hidden dark:border-slate-800">
                         <div
                             v-for="entry in props.topPredictionsRanking"
                             :key="`ranking-mobile-${entry.poolEntryId}`"
-                            class="rounded-lg border border-gray-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/70"
+                            class="border-b border-gray-200 bg-white px-4 py-3 last:border-b-0 dark:border-slate-800 dark:bg-slate-900/70"
                         >
                             <div class="mb-1 flex items-center justify-between gap-2">
                                 <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Pos #{{ entry.rank }}</span>
@@ -989,12 +995,12 @@ onBeforeUnmount(() => {
                                 </div>
                             </div>
                         </div>
-                        <div
-                            v-if="!props.topPredictionsRanking.length"
-                            class="rounded-lg border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500 dark:border-slate-700 dark:text-slate-400"
-                        >
-                            No hay entradas en el ranking.
-                        </div>
+                    </div>
+                    <div
+                        v-else
+                        class="rounded-lg border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500 md:hidden dark:border-slate-700 dark:text-slate-400"
+                    >
+                        No hay entradas en el ranking.
                     </div>
 
                     <div class="hidden w-full overflow-x-auto md:block">
@@ -1038,13 +1044,7 @@ onBeforeUnmount(() => {
                         </table>
                     </div>
 
-                    <div class="flex items-center justify-end border-t border-gray-200 px-5 py-3 dark:border-slate-800">
-                        <Link :href="route('pools.index')" class="inline-flex items-center whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-bold uppercase tracking-wide text-primary-700 transition hover:bg-gray-100 dark:text-primary-500 dark:hover:bg-gray-700">
-                            Ver lista
-                            <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                            </svg>
-                        </Link>
+                    <div class="min-h-[48px] border-t border-gray-200 dark:border-slate-800">
                     </div>
                 </AdminTableSection>
 
