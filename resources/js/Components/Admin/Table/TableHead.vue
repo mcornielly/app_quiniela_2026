@@ -1,4 +1,6 @@
 <script setup>
+import { onMounted } from 'vue'
+import { initFlowbite } from 'flowbite'
 
 const props = defineProps({
     columns: Array,
@@ -11,6 +13,10 @@ const emit = defineEmits(['toggle-all'])
 const toggle = (event) => {
     emit('toggle-all', event.target.checked)
 }
+
+onMounted(() => {
+    initFlowbite()
+})
 </script>
 <template>
     <thead class="bg-gray-100 dark:bg-gray-700">
@@ -35,9 +41,31 @@ const toggle = (event) => {
                 v-for="column in columns"
                 :key="column.key"
                 scope="col"
-                class="px-6 py-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400"
+                :class="[
+                    'px-6 py-4 text-xs font-medium text-gray-500 uppercase dark:text-gray-400',
+                    column.align === 'center' ? 'text-center' : 'text-left'
+                ]"
             >
-                {{ column.label }}
+                <span
+                    v-if="column.tooltip"
+                    class="inline-flex items-center gap-1 cursor-help"
+                    :data-tooltip-target="`tooltip-head-${column.key}`"
+                    data-tooltip-placement="top"
+                >
+                    {{ column.label }}
+                </span>
+                <span v-else>
+                    {{ column.label }}
+                </span>
+                <div
+                    v-if="column.tooltip"
+                    :id="`tooltip-head-${column.key}`"
+                    role="tooltip"
+                    class="absolute z-10 invisible inline-block px-3 py-2 text-xs font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700 normal-case tracking-normal"
+                >
+                    {{ column.tooltip }}
+                    <div class="tooltip-arrow" data-popper-arrow></div>
+                </div>
             </th>
 
             <!-- actions -->

@@ -39,6 +39,25 @@ const dateFields = [
 const isDateField = (key) => dateFields.includes(key)
 
 const isImageField = (key) => imageFields.includes(key)
+const hasCustomFormat = (column) => typeof column?.format === 'function'
+
+const formatValue = (column) => {
+    const value = props.row[column.key]
+
+    if (hasCustomFormat(column)) {
+        return column.format(value, props.row)
+    }
+
+    return value
+}
+
+const formatDateValue = (column) => {
+    if (hasCustomFormat(column)) {
+        return formatValue(column)
+    }
+
+    return formatDate(props.row[column.key])
+}
 </script>
 
 <template>
@@ -60,7 +79,10 @@ const isImageField = (key) => imageFields.includes(key)
         <td
             v-for="column in columns"
             :key="column.key"
-            class="px-6 py-4 text-gray-900 whitespace-nowrap dark:text-white"
+            :class="[
+                'px-6 py-4 text-gray-900 whitespace-nowrap dark:text-white',
+                column.align === 'center' ? 'text-center' : 'text-left'
+            ]"
         >
 
             <!-- 🖼 IMAGE FIELDS -->
@@ -79,12 +101,12 @@ const isImageField = (key) => imageFields.includes(key)
 
             <!-- 📅 DATE FIELD -->
             <span v-else-if="isDateField(column.key)">
-                {{ formatDate(row[column.key]) }}
+                {{ formatDateValue(column) }}
             </span>
 
             <!-- 🧾 NORMAL FIELD -->
             <span v-else>
-                {{ row[column.key] ?? '—' }}
+                {{ formatValue(column) ?? '—' }}
             </span>
 
         </td>

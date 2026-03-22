@@ -11,26 +11,29 @@ import SearchBar from '@/Layouts/Partials/SearchBar.vue'
 import DataTable from '@/Components/Admin/Table/DataTable.vue'
 import Pagination from '@/Components/Admin/Table/Pagination.vue'
 import FormDrawer from '@/Components/Admin/Drawer/FormDrawer.vue'
-import TournamentForm from '@/Components/Admin/FormDrawer/TournamentForm.vue'
+import RuleForm from '@/Components/Admin/FormDrawer/RuleForm.vue'
 import debounce from 'lodash/debounce'
 import 'flowbite'
 
-const title = 'Tournaments'
+const title = 'Rules'
 
 const props = defineProps({
     filters: Object,
-    tournaments: Object
+    rules: Object,
+        tournaments: Array,
+
 })
 
 // Column configuration (can be adjusted after generation)
 const columns = [
+        { key: 'tournament', label: 'Tournament' },
     { key: 'name', label: 'Name' },
-    { key: 'year', label: 'Year' },
-    { key: 'host_countries', label: 'Host Countries' },
-    { key: 'logo', label: 'Logo' },
-    { key: 'deadline_at', label: 'Deadline At', format: (v) => formatDateTime(v, 'es-VE') },
-    { key: 'status', label: 'Status' },
-    { key: 'type', label: 'Type' },
+    { key: 'tournament_starts_at', label: 'Tournament Starts', format: (v) => formatDateTime(v, 'es-VE') },
+    { key: 'participation_closes_at', label: 'Participation Closes', format: (v) => formatDateTime(v, 'es-VE') },
+    { key: 'exact_score_points', label: 'Exact', tooltip: 'Exact Score Points', align: 'center' },
+    { key: 'correct_result_points', label: 'Result', tooltip: 'Correct Result Points', align: 'center' },
+    { key: 'unpaid_after_window_action', label: 'Unpaid', tooltip: 'Unpaid After Window Action', align: 'center' },
+    { key: 'active', label: 'Active', align: 'center' },
 
 ]
 
@@ -43,16 +46,14 @@ const selectedItems = ref([])
 const itemToDelete = ref(null)
 
 const actions = {
-    show: true,
+    show: false,
     edit: true,
-    delete: true,
-    new: true,
-    checkbox : true,
+    delete: true
 }
 
 const handleSearch = debounce((query) => {
     router.get(
-        route('admin.tournaments.index'),
+        route('admin.rules.index'),
         { search: query },
         { preserveState: true, replace: true }
     )
@@ -67,21 +68,21 @@ const handleToolbarAction = (action) => {
 const deleteSelected = async () => {
 
     if(selectedItems.value.length === 0){
-        notifyError("No tournaments selected")
+        notifyError("No rules selected")
         return
     }
 
     try{
 
-        await confirmDelete(`Delete ${selectedItems.value.length} tournaments?`)
+        await confirmDelete(`Delete ${selectedItems.value.length} rules?`)
 
-        router.delete(route('admin.tournaments.bulkDelete'), {
+        router.delete(route('admin.rules.bulkDelete'), {
             data: {
                 ids: selectedItems.value
             },
             preserveScroll: true,
             onSuccess: () => {
-                notifySuccess("Tournaments deleted")
+                notifySuccess("Rules deleted")
                 selectedItems.value = []
                 router.reload()
             }
@@ -94,10 +95,10 @@ const deleteSelected = async () => {
 
 const confirmDeleteItem = (item) => {
 
-    router.delete(route('admin.tournaments.destroy', item.id), {
+    router.delete(route('admin.rules.destroy', item.id), {
         preserveScroll: true,
         onSuccess: () => {
-            notifySuccess('Tournament deleted')
+            notifySuccess('Rule deleted')
             itemToDelete.value = null
         }
     })
@@ -114,10 +115,6 @@ const openEdit = (item) => {
 
 const openDelete = (item) => {
     itemToDelete.value = item
-}
-
-const openParticipants = (item) => {
-    router.visit(route('admin.tournaments.participants.index', item.id))
 }
 
 const handleCreate = () => {
@@ -145,7 +142,6 @@ const handleCreate = () => {
                         />
 
                         <button
-                            v-if = "actions.new"
                             @click="showCreateDrawer = true"
                             class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
                             type="button"
@@ -169,20 +165,19 @@ const handleCreate = () => {
                         <div class="overflow-hidden shadow">
 
                             <DataTable
-                                :rows="tournaments.data"
+                                :rows="rules.data"
                                 :columns="columns"
                                 :actions="actions"
                                 @selection-change="handleSelectionChange"
-                                @view="openParticipants"
                                 @edit="openEdit"
                                 @delete="openDelete"
                             />
 
-                            <div v-if="tournaments.data.length === 0" class="py-12 text-center text-gray-500 dark:text-gray-400">
-                                No tournaments found.
+                            <div v-if="rules.data.length === 0" class="py-12 text-center text-gray-500 dark:text-gray-400">
+                                No rules found.
                             </div>
 
-                            <Pagination :meta="tournaments" />
+                            <Pagination :meta="rules" />
 
                         </div>
 
@@ -190,35 +185,39 @@ const handleCreate = () => {
                 </div>
 
                 <FormDrawer
-                    title="Add Tournament"
+                    title="Add Rule"
                     :show="showCreateDrawer"
                     @close="showCreateDrawer = false"
                 >
-                    <TournamentForm
+                    <RuleForm
+                                :tournaments="tournaments"
+
                         @saved="handleCreate"
                         @close="showCreateDrawer = false"
                     />
                 </FormDrawer>
 
                 <FormDrawer
-                    title="Update Tournament"
+                    title="Update Rule"
                     :show="!!selectedItem"
                     @close="selectedItem = null"
                 >
-                    <TournamentForm
-                        :tournament="selectedItem"
+                    <RuleForm
+                                :tournaments="tournaments"
+
+                        :rule="selectedItem"
                         @close="selectedItem = null"
                     />
                 </FormDrawer>
 
                 <FormDrawer
                     :show="!!itemToDelete"
-                    title="Delete Tournament"
+                    title="Delete Rule"
                     @close="itemToDelete = null"
                 >
                     <DeleteDrawer
                         :show="!!itemToDelete"
-                        entityName="Tournament"
+                        entityName="Rule"
                         :item="itemToDelete"
                         @close="itemToDelete = null"
                         @confirm="confirmDeleteItem"

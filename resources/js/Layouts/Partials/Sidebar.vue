@@ -217,6 +217,26 @@ const isActive = (name) => {
                         <span class="ml-3">Pools</span>
                     </Link>
                 </li>
+                <!-- Rules -->
+                <li>
+                    <Link
+                        :href="route('admin.rules.index')" :active="route().current('admin.rules.*')"
+                        :class="[
+                            'flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group',
+                            isActive('admin.rules.*') && 'bg-gray-300 dark:bg-gray-400 text-gray-900 dark:text-white'
+                        ]">
+                        <svg
+                            aria-hidden="true"
+                            class="w-6 h-6 text-gray-500 transition duration-75 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white"
+                            fill="currentColor"
+                            viewBox="0 0 512 512"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path d="M184 48H328c4.4 0 8 3.6 8 8V96H176V56c0-4.4 3.6-8 8-8zM176 144H336c53 0 96 43 96 96V432c0 17.7-14.3 32-32 32H112c-17.7 0-32-14.3-32-32V240c0-53 43-96 96-96zm72 80c-13.3 0-24 10.7-24 24v16c0 13.3 10.7 24 24 24h16c13.3 0 24-10.7 24-24V248c0-13.3-10.7-24-24-24H248zm-56 96c-13.3 0-24 10.7-24 24v16c0 13.3 10.7 24 24 24h128c13.3 0 24-10.7 24-24V344c0-13.3-10.7-24-24-24H192z"/>
+                        </svg>
+                        <span class="ml-3">Rules</span>
+                    </Link>
+                </li>
                 <!-- Users -->
                 <li>
                     <Link
