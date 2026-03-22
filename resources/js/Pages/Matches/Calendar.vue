@@ -276,7 +276,7 @@ onBeforeUnmount(() => {
                             <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 justify-self-center">
                                     <div class="flex items-center justify-end gap-2 text-right">
                                         <span class="hidden truncate text-lg font-semibold text-slate-900 dark:text-white sm:inline">{{ match.homeTeam }}</span>
-                                        <AppTooltip :text="match.homeTeam" placement="top">
+                                        <AppTooltip :text="match.homeTeam" placement="top" tooltip-class="max-w-none whitespace-nowrap">
                                             <img
                                                 v-if="match.homeFlagUrl"
                                                 :src="match.homeFlagUrl"
@@ -309,7 +309,7 @@ onBeforeUnmount(() => {
                                     </div>
 
                                     <div class="flex items-center gap-2">
-                                        <AppTooltip :text="match.awayTeam" placement="top">
+                                        <AppTooltip :text="match.awayTeam" placement="top" tooltip-class="max-w-none whitespace-nowrap">
                                             <img
                                                 v-if="match.awayFlagUrl"
                                                 :src="match.awayFlagUrl"
