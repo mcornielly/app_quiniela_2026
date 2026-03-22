@@ -5,6 +5,7 @@ import {
     CalendarDaysIcon,
     CheckCircleIcon,
 } from '@heroicons/vue/24/outline'
+import AppTooltip from '@/Components/UI/AppTooltip.vue'
 import FilterCalendarSkeleton from '@/Components/UI/FilterCalendarSkeleton.vue'
 import FilterSelect from '@/Components/UI/FilterSelect.vue'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
@@ -267,15 +268,28 @@ onBeforeUnmount(() => {
                                 </p>
                             </div>
 
-                            <div class="grid grid-cols-1 items-center gap-3 xl:grid-cols-[170px_1fr_180px]">
-                            <div>
-                                <p class="text-2xl font-black text-cyan-500 dark:text-cyan-400">{{ match.matchTime }}</p>
+                            <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                            <div class="justify-self-start">
+                                <p class="text-xl font-black text-cyan-500 dark:text-cyan-400 sm:text-2xl">{{ match.matchTime }}</p>
                             </div>
 
-                            <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+                            <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 justify-self-center">
                                     <div class="flex items-center justify-end gap-2 text-right">
-                                        <span class="truncate text-lg font-semibold text-slate-900 dark:text-white">{{ match.homeTeam }}</span>
-                                        <span class="text-base font-semibold uppercase text-slate-500 dark:text-slate-400">{{ match.homeCode }}</span>
+                                        <span class="hidden truncate text-lg font-semibold text-slate-900 dark:text-white sm:inline">{{ match.homeTeam }}</span>
+                                        <AppTooltip :text="match.homeTeam" placement="top">
+                                            <img
+                                                v-if="match.homeFlagUrl"
+                                                :src="match.homeFlagUrl"
+                                                :alt="match.homeTeam"
+                                                class="h-5 w-7 rounded object-cover"
+                                            >
+                                            <span
+                                                v-else
+                                                class="inline-flex h-5 min-w-7 items-center justify-center rounded bg-slate-300 px-1 text-[10px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                                            >
+                                                {{ match.homeCode }}
+                                            </span>
+                                        </AppTooltip>
                                     </div>
 
                                     <div
@@ -295,12 +309,25 @@ onBeforeUnmount(() => {
                                     </div>
 
                                     <div class="flex items-center gap-2">
-                                        <span class="text-base font-semibold uppercase text-slate-500 dark:text-slate-400">{{ match.awayCode }}</span>
-                                        <span class="truncate text-lg font-semibold text-slate-900 dark:text-white">{{ match.awayTeam }}</span>
+                                        <AppTooltip :text="match.awayTeam" placement="top">
+                                            <img
+                                                v-if="match.awayFlagUrl"
+                                                :src="match.awayFlagUrl"
+                                                :alt="match.awayTeam"
+                                                class="h-5 w-7 rounded object-cover"
+                                            >
+                                            <span
+                                                v-else
+                                                class="inline-flex h-5 min-w-7 items-center justify-center rounded bg-slate-300 px-1 text-[10px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                                            >
+                                                {{ match.awayCode }}
+                                            </span>
+                                        </AppTooltip>
+                                        <span class="hidden truncate text-lg font-semibold text-slate-900 dark:text-white sm:inline">{{ match.awayTeam }}</span>
                                     </div>
                             </div>
 
-                            <div class="flex flex-col items-start gap-2 text-sm text-slate-500 dark:text-slate-400 xl:items-end">
+                            <div class="flex justify-end justify-self-end text-sm text-slate-500 dark:text-slate-400">
                                 <span
                                     class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold tracking-wide"
                                     :class="match.status === 'finished'
