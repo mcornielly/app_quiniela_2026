@@ -54,12 +54,33 @@ const stageSelectOptions = computed(() => ([
     ...props.stageOptions.map((stageName) => ({ value: stageName, label: stageName })),
 ]))
 
+const normalizeStageValue = (value) => String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+
+const isGroupStageSelected = computed(() => {
+    const normalized = normalizeStageValue(selectedStage.value)
+
+    return normalized === 'group'
+        || normalized === 'group stage'
+        || normalized === 'fase de grupo'
+        || normalized === 'fase de grupos'
+})
+
+const isGroupFilterEnabled = computed(() => selectedStage.value === 'all' || isGroupStageSelected.value)
+
 const filteredMatches = computed(() => props.calendarMatches.filter((match) => {
-    const groupOk = selectedGroup.value === 'all' || match.groupName === selectedGroup.value
+    const groupOk = !isGroupFilterEnabled.value
+        || selectedGroup.value === 'all'
+        || match.groupName === selectedGroup.value
     const stageOk = selectedStage.value === 'all' || match.stageLabel === selectedStage.value
 
     return groupOk && stageOk
 }))
+
+const filteredMatchesCount = computed(() => filteredMatches.value.length)
 
 const groupedByDate = computed(() => {
     const grouped = new Map()
@@ -116,6 +137,12 @@ watch([selectedGroup, selectedStage], () => {
     }, 360)
 })
 
+watch(selectedStage, () => {
+    if (!isGroupFilterEnabled.value && selectedGroup.value !== 'all') {
+        selectedGroup.value = 'all'
+    }
+})
+
 onBeforeUnmount(() => {
     if (filteringTimer) {
         window.clearTimeout(filteringTimer)
@@ -168,6 +195,7 @@ onBeforeUnmount(() => {
                             :options="groupSelectOptions"
                             container-class="w-full"
                             select-class="w-full"
+                            :disabled="!isGroupFilterEnabled"
                         />
 
                         <FilterSelect
@@ -179,14 +207,20 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
                 <div class="mt-[6px] border-b border-slate-300 dark:border-slate-700" />
-                <div class="mt-2 flex justify-end">
-                    <button
-                        type="button"
-                        class="text-[10px] font-semibold uppercase tracking-wide text-rose-600 transition hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
-                        @click="resetFilters"
-                    >
-                        Reiniciar Filtro
-                    </button>
+                <div class="mt-2 grid grid-cols-3 items-center">
+                    <div />
+                    <p class="text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        Total: {{ filteredMatchesCount }} partidos
+                    </p>
+                    <div class="flex justify-end">
+                        <button
+                            type="button"
+                            class="text-[10px] font-semibold uppercase tracking-wide text-rose-600 transition hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
+                            @click="resetFilters"
+                        >
+                            Reiniciar Filtro
+                        </button>
+                    </div>
                 </div>
             </div>
 
