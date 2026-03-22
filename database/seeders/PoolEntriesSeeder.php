@@ -36,7 +36,7 @@ class PoolEntriesSeeder extends Seeder
                         'name' => "User {$user->id} Pool #{$entryNumber}",
                     ],
                     [
-                        'status' => 'complete',
+                        'status' => 'paid_locked',
                         'completion_percent' => $completionPercent,
                         'exact_hits' => 0,
                         'correct_results' => 0,

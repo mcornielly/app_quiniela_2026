@@ -45,3 +45,23 @@ export function confirmDelete(message) {
     })
 
 }
+
+export async function confirmAction({
+    message,
+    title = 'Confirmar',
+    confirmButtonText = 'Aceptar',
+    cancelButtonText = 'Cancelar',
+    type = 'warning',
+} = {}) {
+    try {
+        await ElMessageBox.confirm(message, title, {
+            confirmButtonText,
+            cancelButtonText,
+            type,
+        })
+
+        return true
+    } catch (error) {
+        return false
+    }
+}

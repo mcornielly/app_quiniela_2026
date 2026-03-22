@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Team;
 use App\Models\Tournament;
+use App\Services\Tournament\PoolEntryRuleService;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -11,6 +12,11 @@ use Inertia\Response;
 
 class QuinielaWorldCupController extends Controller
 {
+    public function __construct(
+        private readonly PoolEntryRuleService $poolEntryRuleService,
+    ) {
+    }
+
     public function __invoke(): Response
     {
         $tournament = Tournament::query()
@@ -71,6 +77,9 @@ class QuinielaWorldCupController extends Controller
             })
             ->all();
 
+        $rule = $this->poolEntryRuleService->resolveRuleForTournament($tournament);
+        $isParticipationOpen = $this->poolEntryRuleService->isParticipationOpen($tournament);
+
         return Inertia::render('Quiniela/TournamentPredictionWorldCup', [
             'tournament' => [
                 'id' => $tournament->id,
@@ -81,6 +90,12 @@ class QuinielaWorldCupController extends Controller
             'groups' => $groups,
             'games' => $games,
             'bracketRules' => config('tournament_brackets.' . $this->bracketKey($tournament), []),
+            'participationRules' => [
+                'isOpen' => $isParticipationOpen,
+                'tournamentStartsAt' => $rule->tournament_starts_at?->format('Y-m-d H:i:s'),
+                'participationClosesAt' => $rule->participation_closes_at?->format('Y-m-d H:i:s'),
+                'closeAtLabel' => $rule->participation_closes_at?->format('d/m/Y H:i'),
+            ],
         ]);
     }
 

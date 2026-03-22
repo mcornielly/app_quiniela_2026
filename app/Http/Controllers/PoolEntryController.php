@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Game;
 use App\Models\PoolEntry;
 use App\Models\Tournament;
+use App\Services\Tournament\PoolEntryRuleService;
 use App\Services\Tournament\PredictionBracketResolverService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,12 +21,14 @@ class PoolEntryController extends Controller
 {
     public function __construct(
         private readonly PredictionBracketResolverService $predictionBracketResolverService,
+        private readonly PoolEntryRuleService $poolEntryRuleService,
     ) {
     }
 
     public function index(Request $request): Response
     {
         $poolEntries = PoolEntry::query()
+            ->withTrashed()
             ->with([
                 'tournament:id,name,year',
                 'predictions' => fn ($query) => $query
@@ -46,6 +49,10 @@ class PoolEntryController extends Controller
             ->latest()
             ->get()
             ->map(function (PoolEntry $poolEntry) {
+                if (!$poolEntry->trashed()) {
+                    $this->poolEntryRuleService->syncPoolEntryStatus($poolEntry);
+                }
+                $state = $this->poolEntryRuleService->evaluatePoolEntry($poolEntry);
                 $orderedPredictions = $poolEntry->predictions
                     ->filter(fn ($prediction) => $prediction->game !== null)
                     ->sortByDesc(fn ($prediction) => ($prediction->game->match_date?->format('Y-m-d') ?? '0000-00-00') . ' ' . ($prediction->game->match_time ?? '00:00:00'))
@@ -92,7 +99,12 @@ class PoolEntryController extends Controller
                     'id' => $poolEntry->id,
                     'registrationNumber' => $poolEntry->id,
                     'name' => $poolEntry->name,
-                    'status' => $poolEntry->status,
+                    'status' => $poolEntry->trashed() ? 'inactive' : $poolEntry->status,
+                    'isInactive' => $poolEntry->trashed(),
+                    'isLocked' => $state['is_locked'],
+                    'canEdit' => $state['can_edit'],
+                    'canInactivate' => !$poolEntry->trashed() && $state['can_inactivate'],
+                    'canRestore' => $poolEntry->trashed() && $state['can_inactivate'],
                     'completionPercent' => $poolEntry->completion_percent,
                     'totalPoints' => $pointsEarned,
                     'pointsEarned' => $pointsEarned,
@@ -144,6 +156,8 @@ class PoolEntryController extends Controller
                 ])
                 ->latest('id'),
         ]);
+        $this->poolEntryRuleService->syncPoolEntryStatus($poolEntry);
+        $state = $this->poolEntryRuleService->evaluatePoolEntry($poolEntry);
 
         $predictions = $poolEntry->predictions
             ->filter(fn ($prediction) => $prediction->game !== null)
@@ -239,6 +253,9 @@ class PoolEntryController extends Controller
                 'name' => $poolEntry->name,
                 'status' => $poolEntry->status,
                 'statusLabel' => $this->statusLabelFromPool($poolEntry->status),
+                'isLocked' => $state['is_locked'],
+                'canEdit' => $state['can_edit'],
+                'canInactivate' => $state['can_inactivate'],
                 'completionPercent' => (int) ($poolEntry->completion_percent ?? 0),
                 'createdAt' => $poolEntry->created_at?->format('d/m/Y H:i'),
                 'createdDate' => $poolEntry->created_at?->format('Y-m-d'),
@@ -274,6 +291,13 @@ class PoolEntryController extends Controller
 
         $user = $request->user();
         $tournament = Tournament::query()->findOrFail($validated['tournament_id']);
+        $participationOpen = $this->poolEntryRuleService->isParticipationOpen($tournament);
+
+        if (! $participationOpen) {
+            return redirect()
+                ->route('predictions.worldcup')
+                ->with('error', 'La ventana de participacion para esta quiniela ya cerro.');
+        }
 
         /** @var \Illuminate\Support\Collection<int, array<string, int>> $predictionPayloads */
         $predictionPayloads = collect($validated['predictions']);
@@ -337,7 +361,7 @@ class PoolEntryController extends Controller
                     'tournament_id' => $tournament->id,
                     'user_id' => $user->id,
                     'name' => 'Quiniela en registro',
-                    'status' => 'complete',
+                    'status' => 'draft',
                     'completion_percent' => 100,
                 ]);
 
@@ -366,6 +390,8 @@ class PoolEntryController extends Controller
                     'name' => "Quiniela #{$poolEntry->id}",
                 ])->save();
 
+                $this->poolEntryRuleService->syncPoolEntryStatus($poolEntry);
+
                 return $poolEntry->fresh(['predictions', 'tournament']);
             });
         } catch (Throwable $exception) {
@@ -380,6 +406,61 @@ class PoolEntryController extends Controller
             ->route('predictions.worldcup')
             ->with('success', 'La quiniela fue registrada exitosamente.')
             ->with('created_pool_entry', $this->buildCreatedPoolEntryPayload($poolEntry, $resolvedBracket['predictedChampion'] ?? null));
+    }
+
+    public function destroy(Request $request, PoolEntry $poolEntry): RedirectResponse
+    {
+        abort_unless((int) $poolEntry->user_id === (int) $request->user()->id, 403);
+
+        $poolEntry->loadMissing('tournament');
+        $state = $this->poolEntryRuleService->evaluatePoolEntry($poolEntry);
+
+        if (! $state['can_inactivate']) {
+            return redirect()
+                ->route('pools.index')
+                ->with('error', 'Esta quiniela no se puede inactivar por su estado actual (pago o ventana cerrada).');
+        }
+
+        $poolEntry->forceFill([
+            'status' => 'inactive',
+        ])->save();
+
+        $poolEntry->delete();
+
+        return redirect()
+            ->route('pools.index')
+            ->with('success', 'La quiniela fue inactivada correctamente.');
+    }
+
+    public function restore(Request $request, int $poolEntry): RedirectResponse
+    {
+        $entry = PoolEntry::withTrashed()
+            ->where('id', $poolEntry)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
+
+        if (!$entry->trashed()) {
+            return redirect()
+                ->route('pools.index')
+                ->with('success', 'La quiniela ya estaba activa.');
+        }
+
+        $state = $this->poolEntryRuleService->evaluatePoolEntry($entry);
+        if (!$state['can_inactivate']) {
+            return redirect()
+                ->route('pools.index')
+                ->with('error', 'No se puede reactivar esta quiniela por su estado actual (pago o ventana cerrada).');
+        }
+
+        $entry->restore();
+        $entry->forceFill([
+            'status' => 'draft',
+        ])->save();
+        $this->poolEntryRuleService->syncPoolEntryStatus($entry);
+
+        return redirect()
+            ->route('pools.index')
+            ->with('success', 'La quiniela fue reactivada correctamente.');
     }
 
     private function buildCreatedPoolEntryPayload(PoolEntry $poolEntry, $predictedChampion): array
@@ -472,6 +553,10 @@ class PoolEntryController extends Controller
         return match ($status) {
             'draft' => 'Borrador',
             'finished' => 'Finalizada',
+            'inactive' => 'Inactiva',
+            'locked' => 'Bloqueada',
+            'cancelled' => 'Cancelada',
+            'paid_locked' => 'Activa',
             default => 'Activa',
         };
     }

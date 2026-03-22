@@ -1,13 +1,15 @@
 <script setup>
 import { computed } from 'vue'
-import { Head, Link, usePage } from '@inertiajs/vue3'
+import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import {
     BoltIcon,
     CheckCircleIcon,
+    PauseCircleIcon,
 } from '@heroicons/vue/24/outline'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
 import AppTooltip from '@/Components/UI/AppTooltip.vue'
 import { formatRegistrationNumber } from '@/Utils/format'
+import { confirmAction } from '@/Utils/notify'
 
 const props = defineProps({
     poolEntries: {
@@ -39,12 +41,19 @@ const statusLabel = (status) => {
         paid_locked: 'Activa',
         live: 'Activa',
         finished: 'Finalizada',
+        inactive: 'Inactiva',
+        locked: 'Bloqueada',
+        cancelled: 'Cancelada',
     }
 
     return labels[status] ?? 'Activa'
 }
 
 const statusClass = (status) => {
+    if (status === 'inactive') {
+        return 'bg-slate-200 text-slate-700 dark:bg-slate-700/70 dark:text-slate-200'
+    }
+
     if (status === 'finished') {
         return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
     }
@@ -52,7 +61,92 @@ const statusClass = (status) => {
     return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
 }
 
-const statusIcon = (status) => (status === 'finished' ? CheckCircleIcon : BoltIcon)
+const statusIcon = (status) => {
+    if (status === 'finished') {
+        return CheckCircleIcon
+    }
+
+    if (status === 'inactive') {
+        return PauseCircleIcon
+    }
+
+    return BoltIcon
+}
+
+const inactivatePoolEntry = async (poolEntry) => {
+    if (!poolEntry?.canInactivate) {
+        return false
+    }
+
+    const confirmed = await confirmAction({
+        title: 'Inactivar quiniela',
+        message: `Desea inactivar la quiniela "${poolEntry.name}"?`,
+        confirmButtonText: 'Inactivar',
+        cancelButtonText: 'Cancelar',
+        type: 'warning',
+    })
+
+    if (!confirmed) {
+        return false
+    }
+
+    router.delete(route('pools.destroy', poolEntry.id), {
+        preserveScroll: true,
+    })
+
+    return true
+}
+
+const restorePoolEntry = async (poolEntry) => {
+    if (!poolEntry?.canRestore) {
+        return false
+    }
+
+    const confirmed = await confirmAction({
+        title: 'Reactivar quiniela',
+        message: `Desea reactivar la quiniela "${poolEntry.name}"?`,
+        confirmButtonText: 'Reactivar',
+        cancelButtonText: 'Cancelar',
+        type: 'info',
+    })
+
+    if (!confirmed) {
+        return false
+    }
+
+    router.post(route('pools.restore', poolEntry.id), {}, {
+        preserveScroll: true,
+    })
+
+    return true
+}
+
+const onStatusToggle = async (poolEntry, event) => {
+    const wantsActive = Boolean(event?.target?.checked)
+
+    if (wantsActive) {
+        if (!poolEntry?.canRestore) {
+            event.target.checked = false
+            return
+        }
+
+        const restored = await restorePoolEntry(poolEntry)
+        if (!restored) {
+            event.target.checked = false
+        }
+        return
+    }
+
+    if (!poolEntry?.canInactivate) {
+        event.target.checked = true
+        return
+    }
+
+    const inactivated = await inactivatePoolEntry(poolEntry)
+    if (!inactivated) {
+        event.target.checked = true
+    }
+}
 </script>
 
 <template>
@@ -132,16 +226,17 @@ const statusIcon = (status) => (status === 'finished' ? CheckCircleIcon : BoltIc
                             </span>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-2 gap-3 pt-2">
                             <div>
+                                <p class="text-5xl font-black leading-none text-slate-900 dark:text-white">{{ poolEntry.matchesCount ?? 0 }}</p>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Partidos</p>
+                            </div>
+                            <div class="text-right">
                                 <p class="text-5xl font-black leading-none text-cyan-500 dark:text-cyan-400">{{ poolEntry.totalPoints ?? 0 }}</p>
                                 <p class="text-sm text-slate-500 dark:text-slate-400">pts</p>
                             </div>
-                            <div class="text-right">
-                                <p class="text-3xl font-black leading-none text-slate-900 dark:text-white">{{ poolEntry.matchesCount ?? 0 }}</p>
-                                <p class="text-sm text-slate-500 dark:text-slate-400">Partidos</p>
-                            </div>
                         </div>
+                        <div class="!mt-[2px] border-b border-slate-200/80 dark:border-slate-700/70" />
 
                         <div class="space-y-2">
                             <div
@@ -206,17 +301,38 @@ const statusIcon = (status) => (status === 'finished' ? CheckCircleIcon : BoltIc
                         </div>
                     </div>
 
-                    <Link
-                        :href="`/pools/${poolEntry.id}`"
-                        class="flex items-center justify-between border-t border-slate-200 px-5 py-4 transition hover:bg-slate-50/70 dark:border-slate-800 dark:hover:bg-slate-800/30"
-                    >
-                        <span class="inline-flex items-center whitespace-nowrap rounded-md px-1 py-1 text-xs font-bold uppercase tracking-wide text-primary-700 dark:text-primary-500">
-                            Ver detalles
-                        </span>
-                        <svg class="h-5 w-5 text-primary-600 dark:text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </Link>
+                    <div class="flex items-center justify-between border-t border-slate-200 px-5 py-4 dark:border-slate-800">
+                        <div class="flex items-center gap-2">
+                            <label class="inline-flex items-center" :class="(poolEntry.canInactivate || poolEntry.canRestore) ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'">
+                                <span class="select-none text-xs font-semibold text-slate-600 dark:text-slate-300">Inactiva</span>
+                                <input
+                                    type="checkbox"
+                                    class="peer sr-only"
+                                    :checked="!poolEntry.isInactive"
+                                    :disabled="!(poolEntry.canInactivate || poolEntry.canRestore)"
+                                    @change="onStatusToggle(poolEntry, $event)"
+                                >
+                                <div class="relative mx-2 h-5 w-9 rounded-full bg-slate-300 after:absolute after:start-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-200 dark:bg-slate-700 dark:peer-focus:ring-cyan-900 peer-checked:bg-cyan-500 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full" />
+                                <span class="select-none text-xs font-semibold text-slate-600 dark:text-slate-300">Activa</span>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <Link
+                                v-if="!poolEntry.isInactive"
+                                :href="`/pools/${poolEntry.id}`"
+                                class="inline-flex items-center whitespace-nowrap rounded-md px-1 py-1 text-xs font-bold uppercase tracking-wide text-primary-700 transition hover:text-primary-600 dark:text-primary-500 dark:hover:text-primary-400"
+                            >
+                                Ver detalles
+                            </Link>
+                            <span v-else class="inline-flex items-center whitespace-nowrap rounded-md px-1 py-1 text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                Quiniela inactiva
+                            </span>
+                            <svg v-if="!poolEntry.isInactive" class="h-5 w-5 text-primary-600 dark:text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </div>
+                    </div>
                 </article>
             </div>
 

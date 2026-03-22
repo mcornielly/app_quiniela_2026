@@ -52,4 +52,9 @@ class Tournament extends Model
     {
         return $this->hasMany(PoolEntry::class);
     }
+
+    public function rule()
+    {
+        return $this->hasOne(Rule::class);
+    }
 }

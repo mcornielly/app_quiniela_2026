@@ -8,10 +8,12 @@ use App\Models\User;
 use App\Models\Prediction;
 use App\Models\Concerns\FormatsDates;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PoolEntry extends Model
 {
     use FormatsDates;
+    use SoftDeletes;
 
     protected $fillable = [
         'tournament_id',
@@ -24,7 +26,8 @@ class PoolEntry extends Model
         'total_points',
         'entry_fee',
         'paid_at',
-        'payment_ref'
+        'payment_ref',
+        'deleted_at',
     ];
 
     protected $casts = [

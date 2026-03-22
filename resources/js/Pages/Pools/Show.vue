@@ -485,7 +485,7 @@ onBeforeUnmount(() => {
                         :data-index="index"
                     >
                         <div class="grid gap-3">
-                            <div class="grid grid-cols-[11.5rem_1fr_8.5rem] items-center gap-3 text-xs">
+                            <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-xs">
                                 <div>
                                     <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                                         <template v-if="stageHeaderSuffix(prediction)">
@@ -498,16 +498,6 @@ onBeforeUnmount(() => {
                                     </span>
                                 </div>
 
-                                <div class="flex min-w-0 items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
-                                    <span>{{ prediction.matchDate }} - <span class="font-semibold">{{ prediction.matchTime }}</span></span>
-                                    <span class="inline-flex items-center gap-1.5 truncate" :title="prediction.venue || 'Sede por confirmar'">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-3.5 w-3.5 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
-                                            <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
-                                        </svg>
-                                        <span class="truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ prediction.venue || 'Sede por confirmar' }}</span>
-                                    </span>
-                                </div>
-
                                 <div class="flex justify-end">
                                     <span class="inline-flex items-center rounded-full bg-cyan-100 px-3 py-1 text-sm font-black text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300">
                                         +{{ prediction.awardedPoints ?? 0 }} pts
@@ -515,8 +505,18 @@ onBeforeUnmount(() => {
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-[11.5rem_1fr_8.5rem] items-center gap-3">
-                                <div />
+                            <div class="flex min-w-0 flex-wrap items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400 md:gap-3">
+                                    <span>{{ prediction.matchDate }} - <span class="font-semibold">{{ prediction.matchTime }}</span></span>
+                                    <span class="inline-flex min-w-0 items-center gap-1.5 truncate" :title="prediction.venue || 'Sede por confirmar'">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-3.5 w-3.5 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
+                                            <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
+                                        </svg>
+                                        <span class="truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ prediction.venue || 'Sede por confirmar' }}</span>
+                                    </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-2 md:grid-cols-[11.5rem_1fr_8.5rem] md:items-center md:gap-3">
+                                <div class="hidden md:block" />
 
                                 <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
                                     <div class="flex items-center justify-end gap-2 text-right">
@@ -534,28 +534,22 @@ onBeforeUnmount(() => {
                                         </span>
                                     </div>
 
-                                    <div class="flex items-center gap-2">
+                                    <div class="flex items-center justify-start gap-2">
                                         <span class="truncate text-base font-semibold text-slate-900 dark:text-white">{{ prediction.awayTeamName }}</span>
                                         <img v-if="prediction.awayFlagUrl" :src="prediction.awayFlagUrl" :alt="prediction.awayTeamName" class="h-5 w-7 rounded object-cover">
                                     </div>
                                 </div>
 
-                                <div class="flex justify-end">
-                                    <span :class="rowStatusClass(prediction)" class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold">
-                                        <CheckCircleIcon v-if="prediction.hasOfficialResult" class="h-3.5 w-3.5" />
-                                        <ClockIcon v-else class="h-3.5 w-3.5" />
-                                        {{ prediction.statusLabel }}
-                                    </span>
-                                </div>
                             </div>
 
-                            <div class="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
+                            <div class="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500 dark:text-slate-400">
                                 <p class="inline-flex items-center gap-2">
                                     <span class="font-semibold">Resultado oficial:</span>
                                     <span
-                                        v-if="prediction.hasOfficialResult"
-                                        class="inline-flex min-w-[62px] items-center justify-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-sm font-black dark:bg-slate-800"
+                                        class="inline-flex min-w-[62px] items-center justify-center gap-1 rounded-md bg-slate-100 px-1.5 text-sm font-black leading-none dark:bg-slate-800"
+                                        :class="prediction.hasOfficialResult ? 'py-0.5' : 'py-1.5'"
                                     >
+                                        <template v-if="prediction.hasOfficialResult">
                                         <span :class="isOfficialHomeWinner(prediction) || isOfficialDraw(prediction) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
                                             {{ prediction.actualHomeScore }}
                                         </span>
@@ -563,21 +557,35 @@ onBeforeUnmount(() => {
                                         <span :class="isOfficialAwayWinner(prediction) || isOfficialDraw(prediction) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
                                             {{ prediction.actualAwayScore }}
                                         </span>
+                                        </template>
+                                        <template v-else>
+                                            <span class="text-slate-500 dark:text-slate-300">--</span>
+                                            <span class="text-slate-400 dark:text-slate-500">-</span>
+                                            <span class="text-slate-500 dark:text-slate-300">--</span>
+                                        </template>
                                     </span>
-                                    <span v-else class="ml-1 font-black text-slate-700 dark:text-slate-200">-- - --</span>
                                 </p>
-                                <span
-                                    v-if="prediction.hasOfficialResult && prediction.isExactHit"
-                                    class="rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                                >
-                                    Exacto
-                                </span>
-                                <span
-                                    v-else-if="prediction.hasOfficialResult && prediction.isCorrectResult"
-                                    class="rounded-full bg-sky-100 px-2 py-1 text-xs font-bold text-sky-700 dark:bg-sky-900/30 dark:text-sky-300"
-                                >
-                                    Resultado
-                                </span>
+                                <div class="ml-auto flex items-center gap-2">
+                                    <span
+                                        v-if="prediction.hasOfficialResult && prediction.isExactHit"
+                                        class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                                    >
+                                        <CheckCircleIcon class="h-3.5 w-3.5" />
+                                        Exacto
+                                    </span>
+                                    <span
+                                        v-else-if="prediction.hasOfficialResult && prediction.isCorrectResult"
+                                        class="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-1 text-[11px] font-bold text-sky-700 dark:bg-sky-900/30 dark:text-sky-300"
+                                    >
+                                        <CheckCircleIcon class="h-3.5 w-3.5" />
+                                        Resultado
+                                    </span>
+                                    <span :class="rowStatusClass(prediction)" class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold">
+                                        <CheckCircleIcon v-if="prediction.hasOfficialResult" class="h-3.5 w-3.5" />
+                                        <ClockIcon v-else class="h-3.5 w-3.5" />
+                                        {{ prediction.statusLabel }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </article>

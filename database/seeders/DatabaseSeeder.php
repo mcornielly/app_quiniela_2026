@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             TestUsersSeeder::class,
             CountriesSeeder::class,
             TournamentSeeder::class,
+            RulesSeeder::class,
             WorldCupSeeder::class,
             NormalizeWorldCupSpecialSlotsSeeder::class,
             BackfillTeamCountryIdsSeeder::class,
