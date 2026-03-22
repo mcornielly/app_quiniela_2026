@@ -3,9 +3,11 @@ import { computed } from 'vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import {
     BoltIcon,
+    CheckCircleIcon,
 } from '@heroicons/vue/24/outline'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
 import AppTooltip from '@/Components/UI/AppTooltip.vue'
+import { formatRegistrationNumber } from '@/Utils/format'
 
 const props = defineProps({
     poolEntries: {
@@ -44,11 +46,13 @@ const statusLabel = (status) => {
 
 const statusClass = (status) => {
     if (status === 'finished') {
-        return 'bg-slate-200 text-slate-700 dark:bg-slate-700/70 dark:text-slate-200'
+        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
     }
 
     return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
 }
+
+const statusIcon = (status) => (status === 'finished' ? CheckCircleIcon : BoltIcon)
 </script>
 
 <template>
@@ -115,10 +119,15 @@ const statusClass = (status) => {
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <h3 class="text-2xl font-bold text-slate-900 dark:text-white">{{ poolEntry.name }}</h3>
-                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Creada: {{ poolEntry.createdDate || '-' }}</p>
+                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                    Creada: <span class="font-semibold text-slate-600 dark:text-slate-300">{{ poolEntry.createdDate || '-' }}</span>
+                                </p>
+                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                    Registro: <span class="font-semibold text-slate-600 dark:text-slate-300">{{ formatRegistrationNumber(poolEntry.registrationNumber) }}</span>
+                                </p>
                             </div>
                             <span :class="statusClass(poolEntry.status)" class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-bold">
-                                <BoltIcon class="h-3.5 w-3.5" />
+                                <component :is="statusIcon(poolEntry.status)" class="h-3.5 w-3.5" />
                                 {{ statusLabel(poolEntry.status) }}
                             </span>
                         </div>

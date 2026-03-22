@@ -35,6 +35,10 @@ class PoolEntryController extends Controller
                         'game.homeTeam.country:id,code,flag_path',
                         'game.awayTeam:id,name,country_id',
                         'game.awayTeam.country:id,code,flag_path',
+                        'predictedHomeTeam:id,name,country_id',
+                        'predictedHomeTeam.country:id,code,flag_path',
+                        'predictedAwayTeam:id,name,country_id',
+                        'predictedAwayTeam.country:id,code,flag_path',
                     ])
                     ->latest('id'),
             ])
@@ -57,16 +61,18 @@ class PoolEntryController extends Controller
                     ->take(3)
                     ->map(function ($prediction) {
                         $game = $prediction->game;
-                        $homeCode = strtoupper($game->homeTeam?->country?->code ?? preg_replace('/[^A-Za-z]/', '', $game->home_slot ?: 'TBD'));
-                        $awayCode = strtoupper($game->awayTeam?->country?->code ?? preg_replace('/[^A-Za-z]/', '', $game->away_slot ?: 'TBD'));
+                        $predictedHomeTeam = $prediction->predictedHomeTeam ?? $game->homeTeam;
+                        $predictedAwayTeam = $prediction->predictedAwayTeam ?? $game->awayTeam;
+                        $homeCode = strtoupper($predictedHomeTeam?->country?->code ?? preg_replace('/[^A-Za-z]/', '', $game->home_slot ?: 'TBD'));
+                        $awayCode = strtoupper($predictedAwayTeam?->country?->code ?? preg_replace('/[^A-Za-z]/', '', $game->away_slot ?: 'TBD'));
 
                         return [
-                            'homeName' => $game->homeTeam?->name ?? $game->home_slot ?? 'TBD',
-                            'awayName' => $game->awayTeam?->name ?? $game->away_slot ?? 'TBD',
+                            'homeName' => $predictedHomeTeam?->name ?? $game->home_slot ?? 'TBD',
+                            'awayName' => $predictedAwayTeam?->name ?? $game->away_slot ?? 'TBD',
                             'homeCode' => Str::substr($homeCode, 0, 3),
                             'awayCode' => Str::substr($awayCode, 0, 3),
-                            'homeFlagUrl' => $this->flagUrl($game->homeTeam?->country?->flag_path),
-                            'awayFlagUrl' => $this->flagUrl($game->awayTeam?->country?->flag_path),
+                            'homeFlagUrl' => $this->flagUrl($predictedHomeTeam?->country?->flag_path),
+                            'awayFlagUrl' => $this->flagUrl($predictedAwayTeam?->country?->flag_path),
                             'predictedHomeScore' => (int) $prediction->home_score,
                             'predictedAwayScore' => (int) $prediction->away_score,
                             'predictedScore' => "{$prediction->home_score} - {$prediction->away_score}",
@@ -123,22 +129,47 @@ class PoolEntryController extends Controller
             'predictions' => fn ($query) => $query
                 ->with([
                     'game:id,match_number,stage,match_date,match_time,venue,status,home_team_id,away_team_id,home_slot,away_slot,home_score,away_score',
-                    'game.homeTeam:id,name,country_id',
+                    'game.homeTeam:id,name,country_id,group_id',
                     'game.homeTeam.country:id,code,flag_path',
-                    'game.awayTeam:id,name,country_id',
+                    'game.awayTeam:id,name,country_id,group_id',
                     'game.awayTeam.country:id,code,flag_path',
                     'game.homeTeam.group:id,name',
                     'game.awayTeam.group:id,name',
+                    'predictedHomeTeam:id,name,country_id,group_id',
+                    'predictedHomeTeam.country:id,code,flag_path',
+                    'predictedHomeTeam.group:id,name',
+                    'predictedAwayTeam:id,name,country_id,group_id',
+                    'predictedAwayTeam.country:id,code,flag_path',
+                    'predictedAwayTeam.group:id,name',
                 ])
                 ->latest('id'),
         ]);
 
         $predictions = $poolEntry->predictions
             ->filter(fn ($prediction) => $prediction->game !== null)
-            ->sortBy(fn ($prediction) => ($prediction->game->match_date?->format('Y-m-d') ?? '9999-12-31') . ' ' . ($prediction->game->match_time ?? '23:59:59'))
+            ->sortBy(function ($prediction) {
+                $stageOrder = [
+                    'group' => 10,
+                    'round_32' => 20,
+                    'round_16' => 30,
+                    'quarter' => 40,
+                    'semi' => 50,
+                    'third_place' => 60,
+                    'final' => 70,
+                ];
+
+                $stageKey = $stageOrder[$prediction->game->stage] ?? 999;
+                $matchNumber = (int) ($prediction->game->match_number ?? 999);
+                $dateKey = $prediction->game->match_date?->format('Y-m-d') ?? '9999-12-31';
+                $timeKey = $prediction->game->match_time ?? '23:59:59';
+
+                return sprintf('%03d-%03d-%s-%s', $stageKey, $matchNumber, $dateKey, $timeKey);
+            })
             ->values()
             ->map(function ($prediction) {
                 $game = $prediction->game;
+                $predictedHomeTeam = $prediction->predictedHomeTeam ?? $game->homeTeam;
+                $predictedAwayTeam = $prediction->predictedAwayTeam ?? $game->awayTeam;
                 $hasOfficialResult = $game->status === 'finished'
                     && is_numeric($game->home_score)
                     && is_numeric($game->away_score);
@@ -152,6 +183,10 @@ class PoolEntryController extends Controller
                 $officialOutcome = $hasOfficialResult
                     ? $this->outcomeForScores($officialHomeScore, $officialAwayScore)
                     : null;
+                $resolvedGroupName = $predictedHomeTeam?->group?->name
+                    ?? $predictedAwayTeam?->group?->name
+                    ?? $game->homeTeam?->group?->name
+                    ?? $game->awayTeam?->group?->name;
 
                 return [
                     'id' => $prediction->id,
@@ -159,19 +194,19 @@ class PoolEntryController extends Controller
                     'matchNumber' => $game->match_number,
                     'stage' => $game->stage,
                     'stageLabel' => $this->stageLabel($game->stage),
-                    'groupName' => $game->group_name ? "Grupo {$game->group_name}" : null,
+                    'groupName' => $resolvedGroupName ? "Grupo {$resolvedGroupName}" : null,
                     'status' => $game->status,
                     'statusLabel' => $this->statusLabel($game->status),
                     'matchDateIso' => $game->match_date?->format('Y-m-d'),
                     'matchDate' => $game->match_date?->format('d/m/Y'),
                     'matchTime' => $game->match_time ? Str::substr($game->match_time, 0, 5) : '--:--',
                     'venue' => $game->venue,
-                    'homeTeamName' => $game->homeTeam?->name ?? $game->home_slot ?? 'Por definir',
-                    'awayTeamName' => $game->awayTeam?->name ?? $game->away_slot ?? 'Por definir',
-                    'homeTeamCode' => Str::upper(Str::substr($game->homeTeam?->country?->code ?? preg_replace('/[^A-Za-z]/', '', $game->home_slot ?: 'TBD'), 0, 3)),
-                    'awayTeamCode' => Str::upper(Str::substr($game->awayTeam?->country?->code ?? preg_replace('/[^A-Za-z]/', '', $game->away_slot ?: 'TBD'), 0, 3)),
-                    'homeFlagUrl' => $this->flagUrl($game->homeTeam?->country?->flag_path),
-                    'awayFlagUrl' => $this->flagUrl($game->awayTeam?->country?->flag_path),
+                    'homeTeamName' => $predictedHomeTeam?->name ?? $game->home_slot ?? 'Por definir',
+                    'awayTeamName' => $predictedAwayTeam?->name ?? $game->away_slot ?? 'Por definir',
+                    'homeTeamCode' => Str::upper(Str::substr($predictedHomeTeam?->country?->code ?? preg_replace('/[^A-Za-z]/', '', $game->home_slot ?: 'TBD'), 0, 3)),
+                    'awayTeamCode' => Str::upper(Str::substr($predictedAwayTeam?->country?->code ?? preg_replace('/[^A-Za-z]/', '', $game->away_slot ?: 'TBD'), 0, 3)),
+                    'homeFlagUrl' => $this->flagUrl($predictedHomeTeam?->country?->flag_path),
+                    'awayFlagUrl' => $this->flagUrl($predictedAwayTeam?->country?->flag_path),
                     'predictedHomeScore' => $predictedHomeScore,
                     'predictedAwayScore' => $predictedAwayScore,
                     'predictedScore' => "{$predictedHomeScore} - {$predictedAwayScore}",
@@ -294,8 +329,10 @@ class PoolEntryController extends Controller
                 ->with('error', 'No pudimos validar el bracket de tu quiniela. Revisa los cruces y vuelve a intentarlo.');
         }
 
+        $resolvedBracketTeamsByGameId = $this->resolvedBracketTeamsByGameId($resolvedBracket);
+
         try {
-            $poolEntry = DB::transaction(function () use ($user, $tournament, $predictionPayloads, $games) {
+            $poolEntry = DB::transaction(function () use ($user, $tournament, $predictionPayloads, $games, $resolvedBracketTeamsByGameId) {
                 $poolEntry = PoolEntry::query()->create([
                     'tournament_id' => $tournament->id,
                     'user_id' => $user->id,
@@ -306,12 +343,16 @@ class PoolEntryController extends Controller
 
                 $poolEntry->predictions()->createMany(
                     $predictionPayloads
-                        ->map(function (array $prediction) use ($games) {
+                        ->map(function (array $prediction) use ($games, $resolvedBracketTeamsByGameId) {
                             /** @var \App\Models\Game $game */
                             $game = $games->get($prediction['game_id']);
+                            $resolvedTeams = $resolvedBracketTeamsByGameId[$game->id] ?? [];
 
                             return [
                                 'game_id' => $game->id,
+                                'predicted_home_team_id' => $resolvedTeams['predicted_home_team_id'] ?? null,
+                                'predicted_away_team_id' => $resolvedTeams['predicted_away_team_id'] ?? null,
+                                'predicted_winner_team_id' => $resolvedTeams['predicted_winner_team_id'] ?? null,
                                 'home_score' => $prediction['home_score'],
                                 'away_score' => $prediction['away_score'],
                                 'points' => 0,
@@ -353,6 +394,28 @@ class PoolEntryController extends Controller
             'predictedChampionName' => $predictedChampion?->name,
             'createdAt' => $poolEntry->created_at?->format('d/m/Y H:i'),
         ];
+    }
+
+    private function resolvedBracketTeamsByGameId(array $resolvedBracket): array
+    {
+        $gamesByMatchNumber = $resolvedBracket['gamesByMatchNumber'] ?? [];
+        $resolvedByGameId = [];
+
+        foreach ($gamesByMatchNumber as $resolvedGame) {
+            $gameId = (int) ($resolvedGame['id'] ?? 0);
+
+            if ($gameId <= 0) {
+                continue;
+            }
+
+            $resolvedByGameId[$gameId] = [
+                'predicted_home_team_id' => $resolvedGame['home_team']?->id ?? null,
+                'predicted_away_team_id' => $resolvedGame['away_team']?->id ?? null,
+                'predicted_winner_team_id' => $resolvedGame['winner_team']?->id ?? null,
+            ];
+        }
+
+        return $resolvedByGameId;
     }
 
     private function flagUrl(?string $flagPath): ?string

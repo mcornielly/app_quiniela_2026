@@ -6,7 +6,9 @@ import {
     CheckCircleIcon,
     ClockIcon,
 } from '@heroicons/vue/24/outline'
+import FilterSelect from '@/Components/UI/FilterSelect.vue'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
+import { formatRegistrationNumber } from '@/Utils/format'
 
 const props = defineProps({
     poolEntry: {
@@ -38,15 +40,27 @@ const stats = computed(() => props.poolEntry?.stats ?? {
 
 const statusClass = (status) => {
     if (status === 'finished') {
-        return 'bg-slate-200 text-slate-700 dark:bg-slate-700/70 dark:text-slate-200'
+        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
     }
 
     return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
 }
 
+const statusIcon = (status) => {
+    if (status === 'finished') {
+        return CheckCircleIcon
+    }
+
+    if (status === 'draft') {
+        return ClockIcon
+    }
+
+    return BoltIcon
+}
+
 const rowStatusClass = (prediction) => {
     if (prediction.hasOfficialResult) {
-        return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
     }
 
     if (prediction.status === 'in_progress') {
@@ -59,18 +73,96 @@ const rowStatusClass = (prediction) => {
 const isPredictedDraw = (prediction) => prediction.predictedHomeScore === prediction.predictedAwayScore
 const isPredictedHomeWinner = (prediction) => prediction.predictedHomeScore > prediction.predictedAwayScore
 const isPredictedAwayWinner = (prediction) => prediction.predictedAwayScore > prediction.predictedHomeScore
+const isOfficialDraw = (prediction) => prediction.actualHomeScore === prediction.actualAwayScore
+const isOfficialHomeWinner = (prediction) => prediction.actualHomeScore > prediction.actualAwayScore
+const isOfficialAwayWinner = (prediction) => prediction.actualAwayScore > prediction.actualHomeScore
 
-const groupStageLabel = (prediction) => {
-    if (prediction.groupName) {
-        const groupLetter = String(prediction.groupName).trim().split(' ').pop()?.toUpperCase() ?? ''
-
-        return `Fase de grupo ${groupLetter}`
+const stageLabelFromKey = (stage) => {
+    const labels = {
+        group: 'Fase de grupos',
+        round_32: 'Ronda de 32',
+        round_16: 'Octavos',
+        quarter: 'Cuartos',
+        semi: 'Semifinal',
+        third_place: 'Tercer lugar',
+        final: 'Final',
     }
 
-    return prediction.stageLabel
+    return labels[stage] ?? String(stage || '')
+}
+
+const stageHeaderLabel = (prediction) => {
+    if (prediction.stage === 'group') {
+        return 'Fase de grupos'
+    }
+
+    if (prediction.stage === 'round_32') {
+        return 'Fase ronda 32'
+    }
+
+    if (prediction.stage === 'round_16') {
+        return 'Fase octavos'
+    }
+
+    if (prediction.stage === 'quarter') {
+        return 'Fase cuartos'
+    }
+
+    if (prediction.stage === 'semi') {
+        return 'Fase semifinal'
+    }
+
+    if (prediction.stage === 'third_place') {
+        return 'Fase tercer lugar'
+    }
+
+    if (prediction.stage === 'final') {
+        return 'Fase final'
+    }
+
+    return `Fase ${stageLabelFromKey(prediction.stage)}`
+}
+
+const stageHeaderSuffix = (prediction) => {
+    if (prediction.stage === 'group') {
+        return String(prediction.groupName || '').trim().split(' ').pop()?.toUpperCase() ?? ''
+    }
+
+    const stageStartMatch = {
+        round_32: 73,
+        round_16: 89,
+        quarter: 97,
+        semi: 101,
+        third_place: 103,
+        final: 104,
+    }
+
+    if (prediction.stage in stageStartMatch) {
+        const startMatch = stageStartMatch[prediction.stage]
+        const stageGameNumber = Math.max(1, Number(prediction.matchNumber ?? startMatch) - (startMatch - 1))
+        return `J-#${stageGameNumber}`
+    }
+
+    return ''
 }
 
 const activeTab = ref('played')
+const sortBy = ref('date_asc')
+const stageFilter = ref('all')
+const sortOptions = [
+    { value: 'date_asc', label: 'Ordenar por: Fecha (asc)' },
+    { value: 'date_desc', label: 'Ordenar por: Fecha (desc)' },
+    { value: 'stage_group', label: 'Ordenar por: Etapa / grupo' },
+]
+const stageOrder = {
+    group: 10,
+    round_32: 20,
+    round_16: 30,
+    quarter: 40,
+    semi: 50,
+    third_place: 60,
+    final: 70,
+}
 const tabItems = computed(() => ([
     {
         key: 'played',
@@ -101,6 +193,62 @@ const visiblePredictions = computed(() => {
     return props.poolEntry?.playedPredictions ?? []
 })
 
+const stageFilterOptions = computed(() => {
+    const sourcePredictions = props.poolEntry?.allPredictions ?? []
+    const uniqueStages = [...new Set(sourcePredictions.map((prediction) => prediction.stage).filter(Boolean))]
+    const sortedStages = uniqueStages.sort((a, b) => (stageOrder[a] ?? 999) - (stageOrder[b] ?? 999))
+
+    return sortedStages.map((stage) => {
+        return {
+            value: stage,
+            label: stageLabelFromKey(stage),
+        }
+    })
+})
+
+const normalizedGroupLetter = (prediction) => String(stageHeaderSuffix(prediction) || '').trim().toUpperCase()
+const predictionDateTimeKey = (prediction) => {
+    const dateKey = prediction.matchDateIso ?? '9999-12-31'
+    const timeKey = prediction.matchTime ?? '23:59'
+
+    return `${dateKey} ${timeKey}`
+}
+
+const sortedVisiblePredictions = computed(() => {
+    let list = [...(visiblePredictions.value ?? [])]
+
+    if (stageFilter.value !== 'all') {
+        list = list.filter((prediction) => prediction.stage === stageFilter.value)
+    }
+
+    if (sortBy.value === 'stage_group') {
+        return list.sort((a, b) => {
+            const stageDelta = (stageOrder[a.stage] ?? 999) - (stageOrder[b.stage] ?? 999)
+            if (stageDelta !== 0) {
+                return stageDelta
+            }
+
+            const groupDelta = normalizedGroupLetter(a).localeCompare(normalizedGroupLetter(b), 'es', { sensitivity: 'base' })
+            if (groupDelta !== 0) {
+                return groupDelta
+            }
+
+            const matchDelta = Number(a.matchNumber ?? 999) - Number(b.matchNumber ?? 999)
+            if (matchDelta !== 0) {
+                return matchDelta
+            }
+
+            return predictionDateTimeKey(a).localeCompare(predictionDateTimeKey(b))
+        })
+    }
+
+    if (sortBy.value === 'date_desc') {
+        return list.sort((a, b) => predictionDateTimeKey(b).localeCompare(predictionDateTimeKey(a)))
+    }
+
+    return list.sort((a, b) => predictionDateTimeKey(a).localeCompare(predictionDateTimeKey(b)))
+})
+
 const emptyTabMessage = computed(() => {
     if (activeTab.value === 'pending') {
         return 'No quedan partidos pendientes en esta quiniela.'
@@ -116,6 +264,19 @@ const emptyTabMessage = computed(() => {
 const revealCycle = ref(0)
 const isTabLoading = ref(false)
 let tabLoadingTimer = null
+const triggerListLoading = () => {
+    revealCycle.value += 1
+
+    if (tabLoadingTimer) {
+        window.clearTimeout(tabLoadingTimer)
+    }
+
+    isTabLoading.value = true
+    tabLoadingTimer = window.setTimeout(() => {
+        isTabLoading.value = false
+        tabLoadingTimer = null
+    }, 260)
+}
 
 const onBeforeEnterCard = (el) => {
     el.style.opacity = '0'
@@ -141,17 +302,12 @@ const onLeaveCard = (el, done) => {
 }
 
 watch(activeTab, () => {
-    revealCycle.value += 1
+    stageFilter.value = 'all'
+    triggerListLoading()
+})
 
-    if (tabLoadingTimer) {
-        window.clearTimeout(tabLoadingTimer)
-    }
-
-    isTabLoading.value = true
-    tabLoadingTimer = window.setTimeout(() => {
-        isTabLoading.value = false
-        tabLoadingTimer = null
-    }, 260)
+watch([sortBy, stageFilter], () => {
+    triggerListLoading()
 })
 
 onBeforeUnmount(() => {
@@ -199,12 +355,12 @@ onBeforeUnmount(() => {
             <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/75">
                 <div class="flex flex-wrap items-center gap-3">
                     <span :class="statusClass(poolEntry.status)" class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-bold">
-                        <BoltIcon class="h-3.5 w-3.5" />
+                        <component :is="statusIcon(poolEntry.status)" class="h-3.5 w-3.5" />
                         {{ poolEntry.statusLabel }}
                     </span>
                     <div class="ml-auto flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
-                        <p>Creada: {{ poolEntry.createdDate || '-' }}</p>
-                        <p>Registro: #{{ poolEntry.registrationNumber }}</p>
+                        <p>Creada: <span class="font-semibold text-slate-600 dark:text-slate-300">{{ poolEntry.createdDate || '-' }}</span></p>
+                        <p>Registro: <span class="font-semibold text-slate-600 dark:text-slate-300">{{ formatRegistrationNumber(poolEntry.registrationNumber) }}</span></p>
                     </div>
                 </div>
 
@@ -237,7 +393,8 @@ onBeforeUnmount(() => {
             </div>
 
             <article class="mt-6">
-                <div class="border-b border-slate-300 px-1 dark:border-slate-700">
+                <div class="border-b border-slate-300 px-1 pb-2 dark:border-slate-700">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                     <ul class="-mb-px flex flex-wrap text-sm font-semibold text-slate-500 dark:text-slate-400">
                         <li v-for="tab in tabItems" :key="tab.key" class="me-2">
                             <button
@@ -263,6 +420,20 @@ onBeforeUnmount(() => {
                             </button>
                         </li>
                     </ul>
+
+                        <div class="flex flex-wrap items-center justify-end gap-2 pb-1 text-xs">
+                            <FilterSelect
+                                v-model="sortBy"
+                                :options="sortOptions"
+                                icon="sort"
+                            />
+
+                            <FilterSelect
+                                v-model="stageFilter"
+                                :options="[{ value: 'all', label: 'Seleccionar etapa: Todas' }, ...stageFilterOptions]"
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 <div v-if="isTabLoading" class="mt-4 space-y-4">
@@ -298,8 +469,8 @@ onBeforeUnmount(() => {
                 </div>
 
                 <TransitionGroup
-                    v-else-if="visiblePredictions.length"
-                    :key="`${activeTab}-${revealCycle}`"
+                    v-else-if="sortedVisiblePredictions.length"
+                    :key="`${activeTab}-${sortBy}-${stageFilter}-${revealCycle}`"
                     tag="div"
                     class="mt-4 space-y-4"
                     :css="false"
@@ -308,7 +479,7 @@ onBeforeUnmount(() => {
                     @leave="onLeaveCard"
                 >
                     <article
-                        v-for="(prediction, index) in visiblePredictions"
+                        v-for="(prediction, index) in sortedVisiblePredictions"
                         :key="`${activeTab}-${prediction.id}`"
                         class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/75"
                         :data-index="index"
@@ -316,18 +487,24 @@ onBeforeUnmount(() => {
                         <div class="grid gap-3">
                             <div class="grid grid-cols-[11.5rem_1fr_8.5rem] items-center gap-3 text-xs">
                                 <div>
-                                    <span class="inline-flex w-max rounded-md bg-primary-700 px-2 py-0.5 font-semibold uppercase tracking-wide text-white dark:bg-primary-500 dark:text-slate-950">
-                                        {{ groupStageLabel(prediction) }}
+                                    <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                                        <template v-if="stageHeaderSuffix(prediction)">
+                                            {{ stageHeaderLabel(prediction) }}:
+                                            <span class="font-bold text-slate-600 dark:text-slate-300">{{ stageHeaderSuffix(prediction) }}</span>
+                                        </template>
+                                        <template v-else>
+                                            {{ stageHeaderLabel(prediction) }}
+                                        </template>
                                     </span>
                                 </div>
 
                                 <div class="flex min-w-0 items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
                                     <span>{{ prediction.matchDate }} - <span class="font-semibold">{{ prediction.matchTime }}</span></span>
-                                    <span class="inline-flex min-w-0 items-center gap-1" :title="prediction.venue || 'Sede por confirmar'">
+                                    <span class="inline-flex items-center gap-1.5 truncate" :title="prediction.venue || 'Sede por confirmar'">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="h-3.5 w-3.5 shrink-0 fill-current text-cyan-500 dark:text-cyan-400" aria-hidden="true">
                                             <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
                                         </svg>
-                                        <span class="truncate transition duration-200 hover:text-cyan-300 hover:[text-shadow:0_0_8px_rgba(34,211,238,0.9)] dark:hover:text-cyan-200 dark:hover:[text-shadow:0_0_10px_rgba(34,211,238,0.95)]">{{ prediction.venue || 'Sede por confirmar' }}</span>
+                                        <span class="truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ prediction.venue || 'Sede por confirmar' }}</span>
                                     </span>
                                 </div>
 
@@ -373,9 +550,21 @@ onBeforeUnmount(() => {
                             </div>
 
                             <div class="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
-                                <p>
+                                <p class="inline-flex items-center gap-2">
                                     <span class="font-semibold">Resultado oficial:</span>
-                                    <span class="ml-1 font-black text-slate-700 dark:text-slate-200">{{ prediction.actualScore ?? '-- - --' }}</span>
+                                    <span
+                                        v-if="prediction.hasOfficialResult"
+                                        class="inline-flex min-w-[62px] items-center justify-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-sm font-black dark:bg-slate-800"
+                                    >
+                                        <span :class="isOfficialHomeWinner(prediction) || isOfficialDraw(prediction) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
+                                            {{ prediction.actualHomeScore }}
+                                        </span>
+                                        <span class="text-slate-400 dark:text-slate-500">-</span>
+                                        <span :class="isOfficialAwayWinner(prediction) || isOfficialDraw(prediction) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
+                                            {{ prediction.actualAwayScore }}
+                                        </span>
+                                    </span>
+                                    <span v-else class="ml-1 font-black text-slate-700 dark:text-slate-200">-- - --</span>
                                 </p>
                                 <span
                                     v-if="prediction.hasOfficialResult && prediction.isExactHit"

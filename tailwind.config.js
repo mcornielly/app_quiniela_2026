@@ -69,10 +69,37 @@ export default {
             },
             colors: {
                 primary: colors.blue,
+                brand: colors.blue[600],
+                heading: colors.slate[900],
+                body: colors.slate[600],
+                fg: {
+                    disabled: colors.slate[400],
+                    brand: colors.blue[700],
+                },
+                neutral: {
+                    primary: {
+                        medium: colors.white,
+                    },
+                    secondary: {
+                        medium: colors.slate[50],
+                    },
+                    tertiary: {
+                        medium: colors.slate[100],
+                    },
+                },
+                default: {
+                    DEFAULT: colors.slate[300],
+                    medium: colors.slate[300],
+                },
+            },
+            borderRadius: {
+                base: '0.5rem',
+            },
+            boxShadow: {
+                xs: '0 1px 2px 0 rgb(15 23 42 / 0.05)',
             },
         },
     },
 
     plugins: [forms, flowbite],
 };
-

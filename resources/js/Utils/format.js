@@ -29,3 +29,13 @@ export function formatDate(date) {
     })
 
 }
+
+export function formatRegistrationNumber(value, digits = 5) {
+    const numericValue = Number.parseInt(value, 10)
+
+    if (!Number.isFinite(numericValue) || numericValue < 0) {
+        return '-'
+    }
+
+    return `# ${String(numericValue).padStart(digits, '0')}`
+}

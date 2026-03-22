@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import {
     CalendarDaysIcon,
+    CheckCircleIcon,
     ClockIcon,
     FireIcon,
 } from '@heroicons/vue/24/outline'
@@ -344,6 +345,28 @@ const isAwayWinner = (match) => {
     const away = toScoreNumber(match.awayScore)
     return home !== null && away !== null && away > home
 }
+const resultRowStatusClass = (match) => {
+    if (match.status === 'FT') {
+        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+    }
+
+    if (match.status === 'LIVE') {
+        return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+    }
+
+    return 'bg-slate-200 text-slate-700 dark:bg-slate-700/70 dark:text-slate-200'
+}
+const resultStatusLabel = (match) => {
+    if (match.status === 'FT') {
+        return 'Finalizado'
+    }
+
+    if (match.status === 'LIVE') {
+        return 'En juego'
+    }
+
+    return 'Programado'
+}
 const upcomingTitleIcon = {
     viewBox: '0 0 512 512',
     path: 'M464 256a208 208 0 1 1 -416 0 208 208 0 1 1 416 0zM0 256a256 256 0 1 0 512 0 256 256 0 1 0 -512 0zM232 120l0 136c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2 280 120c0-13.3-10.7-24-24-24s-24 10.7-24 24z',
@@ -637,8 +660,13 @@ onBeforeUnmount(() => {
                                         <span class="truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ match.venue || 'Sede por confirmar' }}</span>
                                     </span>
                                 </div>
-                                <span class="inline-flex w-fit justify-self-end items-center rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-red-700 dark:bg-red-900/30 dark:text-red-300">
-                                    Finalizado
+                                <span
+                                    :class="resultRowStatusClass(match)"
+                                    class="inline-flex w-fit justify-self-end items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold"
+                                >
+                                    <CheckCircleIcon v-if="match.status === 'FT'" class="h-3.5 w-3.5" />
+                                    <ClockIcon v-else class="h-3.5 w-3.5" />
+                                    {{ resultStatusLabel(match) }}
                                 </span>
                             </div>
 
@@ -810,8 +838,9 @@ onBeforeUnmount(() => {
                                 </span>
                                 <span
                                     v-else-if="row.key === 'group' && row.completed"
-                                    class="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-1 text-xs font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                                    class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-700 dark:bg-red-900/30 dark:text-red-300"
                                 >
+                                    <CheckCircleIcon class="mr-1 h-3 w-3" />
                                     Finalizado {{ overallCoverageProgress }}%
                                 </span>
                                 <span
@@ -825,8 +854,9 @@ onBeforeUnmount(() => {
                                 </span>
                                 <span
                                     v-else-if="row.completed"
-                                    class="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-1 text-xs font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                                    class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-700 dark:bg-red-900/30 dark:text-red-300"
                                 >
+                                    <CheckCircleIcon class="mr-1 h-3 w-3" />
                                     Finalizado
                                 </span>
                             </div>
@@ -949,8 +979,6 @@ onBeforeUnmount(() => {
         </Transition>
     </UserDashboardLayout>
 </template>
-
-
 
 
 

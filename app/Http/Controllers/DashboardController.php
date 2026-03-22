@@ -492,7 +492,7 @@ class DashboardController extends Controller
     {
         return match ($stage) {
             'group' => 'Fase de grupos',
-            'round_32' => 'Round of 32',
+            'round_32' => 'Dieciseisavos',
             'round_16' => 'Octavos',
             'quarter' => 'Cuartos',
             'semi' => 'Semifinal',

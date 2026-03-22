@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import { launchPoolEntrySuccessConfetti, resetConfetti } from '@/Utils/confetti'
+import { formatRegistrationNumber } from '@/Utils/format'
 
 defineProps({
     poolEntry: {
@@ -56,7 +57,7 @@ onBeforeUnmount(() => {
                     Tu quiniela ya quedo lista
                 </h2>
                 <p class="mt-3 text-sm leading-6 text-slate-300 sm:text-base">
-                    Registro <span class="font-bold text-white">#{{ poolEntry.registrationNumber }}</span>
+                    Registro <span class="font-semibold text-slate-300">{{ formatRegistrationNumber(poolEntry.registrationNumber) }}</span>
                     generado con exito para {{ poolEntry.tournamentName }}.
                 </p>
             </div>
@@ -64,7 +65,7 @@ onBeforeUnmount(() => {
             <div class="mt-8 grid gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 sm:grid-cols-3">
                 <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4 text-center">
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Numero unico</p>
-                    <p class="mt-2 text-2xl font-black text-white">#{{ poolEntry.registrationNumber }}</p>
+                    <p class="mt-2 text-2xl font-semibold text-slate-300">{{ formatRegistrationNumber(poolEntry.registrationNumber) }}</p>
                 </div>
                 <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4 text-center">
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Estado</p>

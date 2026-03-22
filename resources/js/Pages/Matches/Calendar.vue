@@ -4,10 +4,10 @@ import { Head, Link, usePage } from '@inertiajs/vue3'
 import {
     CalendarDaysIcon,
     CheckCircleIcon,
-    FunnelIcon,
     MapPinIcon,
 } from '@heroicons/vue/24/outline'
 import FilterCalendarSkeleton from '@/Components/UI/FilterCalendarSkeleton.vue'
+import FilterSelect from '@/Components/UI/FilterSelect.vue'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
 
 const props = defineProps({
@@ -45,6 +45,14 @@ const selectedGroup = ref('all')
 const selectedStage = ref('all')
 const isFiltering = ref(false)
 let filteringTimer = null
+const groupSelectOptions = computed(() => ([
+    { value: 'all', label: 'Grupos' },
+    ...props.groupOptions.map((groupName) => ({ value: groupName, label: groupName })),
+]))
+const stageSelectOptions = computed(() => ([
+    { value: 'all', label: 'Etapas' },
+    ...props.stageOptions.map((stageName) => ({ value: stageName, label: stageName })),
+]))
 
 const filteredMatches = computed(() => props.calendarMatches.filter((match) => {
     const groupOk = selectedGroup.value === 'all' || match.groupName === selectedGroup.value
@@ -155,32 +163,26 @@ onBeforeUnmount(() => {
                     <p class="text-sm leading-tight text-slate-500 dark:text-slate-400">Todos los partidos del Mundial {{ tournament?.year ?? '' }}</p>
 
                     <div class="grid gap-2 sm:grid-cols-[190px_210px]">
-                        <label class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100">
-                            <FunnelIcon class="h-4 w-4 text-slate-400" />
-                            <select v-model="selectedGroup" class="w-full border-0 bg-transparent p-0 text-sm font-medium focus:ring-0">
-                                <option value="all">Grupos</option>
-                                <option v-for="groupName in groupOptions" :key="groupName" :value="groupName">
-                                    {{ groupName }}
-                                </option>
-                            </select>
-                        </label>
+                        <FilterSelect
+                            v-model="selectedGroup"
+                            :options="groupSelectOptions"
+                            container-class="w-full"
+                            select-class="w-full"
+                        />
 
-                        <label class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100">
-                            <FunnelIcon class="h-4 w-4 text-slate-400" />
-                            <select v-model="selectedStage" class="w-full border-0 bg-transparent p-0 text-sm font-medium focus:ring-0">
-                                <option value="all">Etapas</option>
-                                <option v-for="stageName in stageOptions" :key="stageName" :value="stageName">
-                                    {{ stageName }}
-                                </option>
-                            </select>
-                        </label>
+                        <FilterSelect
+                            v-model="selectedStage"
+                            :options="stageSelectOptions"
+                            container-class="w-full"
+                            select-class="w-full"
+                        />
                     </div>
                 </div>
                 <div class="mt-[6px] border-b border-slate-300 dark:border-slate-700" />
                 <div class="mt-2 flex justify-end">
                     <button
                         type="button"
-                        class="text-xs font-semibold uppercase tracking-wide text-rose-600 transition hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
+                        class="text-[10px] font-semibold uppercase tracking-wide text-rose-600 transition hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
                         @click="resetFilters"
                     >
                         Reiniciar Filtro
@@ -249,7 +251,7 @@ onBeforeUnmount(() => {
                                 <span
                                     class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold tracking-wide"
                                     :class="match.status === 'finished'
-                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                                         : (match.status === 'in_progress'
                                             ? 'bg-rose-500/15 text-rose-500 dark:text-rose-400'
                                             : 'bg-slate-500/15 text-slate-500 dark:text-slate-300')"
@@ -269,4 +271,3 @@ onBeforeUnmount(() => {
         </section>
     </UserDashboardLayout>
 </template>
-
