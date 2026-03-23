@@ -2,12 +2,18 @@ import { ElNotification, ElMessageBox, ElMessage } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
 import { markRaw } from 'vue'
 
+const notificationClass = () => {
+    const isDark = document?.documentElement?.classList?.contains('dark')
+    return isDark ? 'app-notify app-notify--dark' : 'app-notify app-notify--light'
+}
+
 export function notifySuccess(message) {
 
     ElNotification({
         title: 'Success',
         message: message,
-        type: 'success'
+        type: 'success',
+        customClass: notificationClass(),
     })
 
 }
@@ -17,7 +23,8 @@ export function notifyError(message) {
     ElNotification({
         title: 'Error',
         message: message,
-        type: 'error'
+        type: 'error',
+        customClass: notificationClass(),
     })
 
 }

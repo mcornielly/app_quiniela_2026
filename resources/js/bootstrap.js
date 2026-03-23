@@ -8,6 +8,7 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 window.Pusher = Pusher;
 
 const reverbKey = import.meta.env.VITE_REVERB_APP_KEY;
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
 if (reverbKey) {
     window.Echo = new Echo({
@@ -18,5 +19,9 @@ if (reverbKey) {
         wssPort: Number(import.meta.env.VITE_REVERB_PORT || 443),
         forceTLS: (import.meta.env.VITE_REVERB_SCHEME || 'http') === 'https',
         enabledTransports: ['ws', 'wss'],
+        withCredentials: true,
+        auth: {
+            headers: csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {},
+        },
     });
 }

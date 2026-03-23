@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
 import ApplicationLogo from '@/Components/ApplicationLogo.vue'
 import Dropdown from '@/Components/Dropdown.vue'
@@ -8,6 +8,7 @@ import FlagRibbonTicker from '@/Components/User/FlagRibbonTicker.vue'
 import UserAvatar from '@/Components/User/UserAvatar.vue'
 import UserFooter from '@/Components/User/UserFooter.vue'
 import NotificationsDropdown from '@/Components/User/NotificationsDropdown.vue'
+import { notifyError, notifySuccess } from '@/Utils/notify'
 import {
     Bars3Icon,    CalendarDaysIcon,
     ChartBarSquareIcon,
@@ -125,6 +126,24 @@ onBeforeUnmount(() => {
         window.Echo.leave(liveChannelName)
     }
 })
+
+watch(
+    () => page.props.flash,
+    (flash) => {
+        if (!flash) {
+            return
+        }
+
+        if (flash.success) {
+            notifySuccess(flash.success)
+        }
+
+        if (flash.error) {
+            notifyError(flash.error)
+        }
+    },
+    { immediate: true, deep: true },
+)
 
 </script>
 
@@ -407,8 +426,6 @@ onBeforeUnmount(() => {
         </main>
     </div>
 </template>
-
-
 
 
 

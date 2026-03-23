@@ -2,15 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\AdminPoolActivityBroadcast;
 use App\Models\Game;
 use App\Models\PoolEntry;
 use App\Models\Tournament;
+use App\Models\User;
+use App\Notifications\AdminPoolActivityNotification;
 use App\Services\Tournament\PoolEntryRuleService;
 use App\Services\Tournament\PredictionBracketResolverService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -402,6 +406,8 @@ class PoolEntryController extends Controller
                 ->with('error', 'No pudimos registrar tu quiniela en este momento. Intentalo nuevamente.');
         }
 
+        $this->notifyAdminPoolActivity($poolEntry, $user, 'created');
+
         return redirect()
             ->route('predictions.worldcup')
             ->with('success', 'La quiniela fue registrada exitosamente.')
@@ -426,6 +432,8 @@ class PoolEntryController extends Controller
         ])->save();
 
         $poolEntry->delete();
+
+        $this->notifyAdminPoolActivity($poolEntry, $request->user(), 'inactivated');
 
         return redirect()
             ->route('pools.index')
@@ -457,10 +465,34 @@ class PoolEntryController extends Controller
             'status' => 'draft',
         ])->save();
         $this->poolEntryRuleService->syncPoolEntryStatus($entry);
+        $this->notifyAdminPoolActivity($entry, $request->user(), 'reactivated');
 
         return redirect()
             ->route('pools.index')
             ->with('success', 'La quiniela fue reactivada correctamente.');
+    }
+
+    private function notifyAdminPoolActivity(PoolEntry $poolEntry, User $actor, string $action): void
+    {
+        try {
+            $admins = User::query()->where('is_admin', true)->get();
+
+            if ($admins->isNotEmpty()) {
+                Notification::send($admins, new AdminPoolActivityNotification($poolEntry, $actor, $action));
+            }
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
+        try {
+            broadcast(AdminPoolActivityBroadcast::fromPoolEntryAction(
+                $poolEntry,
+                $actor,
+                $action
+            ));
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     private function buildCreatedPoolEntryPayload(PoolEntry $poolEntry, $predictedChampion): array
