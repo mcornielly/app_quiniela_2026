@@ -29,6 +29,7 @@ This document describes the real current state of the **Quiniela 2026** system f
   - create
   - inactivate (soft delete)
   - reactivate
+  - inline per-match prediction editing (save/cancel)
 - User profile (`/profile`)
 
 ### Administration
@@ -113,6 +114,20 @@ Stored in `predictions`:
 - `predicted_winner_team_id`
 
 This avoids fully resolving bracket teams only in UI and improves user-level traceability.
+
+### Inline prediction editing flow
+
+- Route:
+  - `PATCH /pools/{poolEntry}/predictions/{prediction}` (`pools.predictions.update`)
+- Controller:
+  - `PoolEntryController@updatePrediction`
+- Behavior:
+  - Validates ownership and that prediction belongs to pool entry
+  - Enforces rule-based editability (`can_edit`)
+  - Validates numeric score range (`0..20`)
+  - Disallows draws in knockout stages
+  - Re-resolves bracket predicted teams after update
+  - Recalculates pool summary (`total_points`, `exact_hits`, `correct_results`)
 
 ## 6) Admin notifications (new feature)
 
