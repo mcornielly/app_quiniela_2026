@@ -1,613 +1,245 @@
-# Admin System Architecture
+# README_SYSTEM
+
+## Current system status (updated)
 
-This administrative system is built using:
+This document describes the real current state of the **Quiniela 2026** system from a functional, technical, and architectural perspective.
 
--   Laravel
--   Inertia.js
--   Vue 3
--   TailwindCSS
--   Flowbite
--   Element Plus (notifications)
+## 1) Main stack
 
+- Backend: Laravel 12 (PHP 8.3)
+- Frontend: Vue 3 + Inertia.js
+- UI: TailwindCSS + Flowbite
+- UI notifications: Element Plus (`notifySuccess`, `notifyError`, `confirmAction`)
+- Realtime: Laravel Reverb + Echo
+- DB: MySQL
 
+## 2) Implemented functional modules
 
+### End user
 
-# ⚽ World Cup Pool System
+- User dashboard with:
+  - points
+  - daily results
+  - upcoming games
+  - tournament coverage
+  - top ranking
+- Match calendar with filters
+- Pool entry detail view (`/pools/{id}`)
+- User pool management:
+  - create
+  - inactivate (soft delete)
+  - reactivate
+- User profile (`/profile`)
 
-Sistema de **quiniela del Mundial** desarrollado en **Laravel** que permite gestionar torneos, registrar partidos, calcular tablas de grupos automáticamente y administrar predicciones de usuarios. Diseñado específicamente para soportar el **formato del Mundial 2026 (48 equipos)**.
+### Administration
 
-## 📋 Tabla de Contenidos
-- [Características Principales](#características-principales)
-- [Arquitectura](#arquitectura)
-- [Estructura del Torneo](#estructura-del-torneo)
-- [Base de Datos](#base-de-datos)
-- [Servicios del Sistema](#servicios-del-sistema)
-- [Flujo de Trabajo](#flujo-de-trabajo)
-- [Instalación](#instalación)
-- [Tecnologías](#tecnologías)
-- [Próximos Desarrollos](#próximos-desarrollos)
-- [Autor](#autor)
+- Admin dashboard (`/admin/dashboard`)
+- Admin CRUD modules using drawer pattern:
+  - tournaments
+  - teams
+  - countries
+  - groups
+  - games
+  - rules
+  - users
+- Tournament participants (`/admin/tournaments/{tournament}/participants`)
+- Admin profile (`/admin/profile`)
+- Realtime user activity notifications for admins
 
----
+## 3) Tournament and pool architecture
 
-## ✨ Características Principales
+### Supported stages
 
-- ✅ Gestión completa de torneos mundialistas
-- ✅ Cálculo automático de tablas de grupos
-- ✅ Resolución dinámica de brackets de eliminación directa
-- ✅ Sistema de predicciones con puntuación automática
-- ✅ Soporte para 48 equipos (formato Mundial 2026)
-- ✅ Importación automática de calendario desde Excel
+- `group` (group stage)
+- `round_32` (round of 32)
+- `round_16` (round of 16)
+- `quarter` (quarterfinals)
+- `semi` (semifinals)
+- `third_place` (third place)
+- `final` (final)
 
----
+### Core services
 
-## 🏗️ Arquitectura
+Located in `app/Services/Tournament/`:
 
-El sistema está dividido en tres módulos principales:
+- `GroupStandingsService`
+- `BracketResolverService`
+- `BracketProgressionService`
+- `PredictionBracketResolverService`
+- `PredictionScoringService`
+- `PoolRankingService`
+- `PoolEntryRuleService`
+- `ThirdPlaceAssignmentService`
+- `BestThirdPlaceRankingService`
+- `StandingsTableService`
 
-1. **Gestión del Torneo** - Administración de equipos, grupos y partidos
-2. **Resolución del Bracket** - Avance automático en fases eliminatorias
-3. **Sistema de Quiniela** - Predicciones y puntuación de usuarios
+## 4) Participation rules status (Rule)
 
----
+### `rules` table
 
-## 🏆 Estructura del Torneo
+Migration: `database/migrations/2026_03_22_000000_create_rules_table.php`
 
-El torneo contempla las siguientes fases:
+Key fields:
 
-| Fase | Stage | Descripción |
-|------|-------|-------------|
-| 🟢 | group | Fase de grupos |
-| 🔵 | round_32 | Dieciseisavos de final |
-| 🔵 | round_16 | Octavos de final |
-| 🟡 | quarter | Cuartos de final |
-| 🟠 | semi | Semifinales |
-| 🥉 | third_place | Tercer lugar |
-| 🏆 | final | Final |
+- `tournament_starts_at`
+- `participation_closes_at`
+- `exact_score_points` (default 5)
+- `correct_result_points` (default 3)
+- `unpaid_after_window_action` (`locked` or `cancelled`)
+- `active`
 
----
+### Implemented logic (`PoolEntryRuleService`)
 
-# Estructura de Base de Datos
+- **Paid** -> `paid_locked` (locked, not editable)
+- **Unpaid + open window** -> `draft` (editable/inactivatable)
+- **Unpaid + closed window** -> `locked` or `cancelled` based on rule
 
-## tournaments
-Contiene los torneos disponibles.
-```sql
-id | name | year | created_at | updated_at
+### Pool entry soft delete
 
----
-## groups
+Migration: `database/migrations/2026_03_22_000100_add_soft_deletes_to_pool_entries_table.php`
 
-Grupos del torneo.
+- Inactivate: soft delete + `status = inactive`
+- Reactivate: restore + status sync from rule
 
-id | tournament_id | name (A-L) | created_at | updated_at
+## 5) Bracket prediction persistence
 
----
+Migration:
+`database/migrations/2026_03_21_220000_add_predicted_team_columns_to_predictions_table.php`
 
-## teams
+Stored in `predictions`:
 
-Equipos participantes.
+- `predicted_home_team_id`
+- `predicted_away_team_id`
+- `predicted_winner_team_id`
 
-id | country_id | group_id | name | group_position | type | created_at | updated_at
+This avoids fully resolving bracket teams only in UI and improves user-level traceability.
 
----
+## 6) Admin notifications (new feature)
 
-## games
+### Events that notify admin users
 
-Partidos del torneo.
+From `PoolEntryController` when a user:
 
-id | tournament_id | match_number | home_team_id | away_team_id | home_slot | away_slot | stage | venue | match_date | match_time | home_score | away_score | winner_team_id | status | created_at | updated_at
+- creates a pool (`created`)
+- inactivates a pool (`inactivated`)
+- reactivates a pool (`reactivated`)
 
----
+### Channels and components
 
-### Ejemplo de slots
+- Realtime event: `App\Events\AdminPoolActivityBroadcast` (`ShouldBroadcastNow`)
+- DB notification: `App\Notifications\AdminPoolActivityNotification`
+- Private channel: `admin.activity` (defined in `routes/channels.php`)
+- Admin API:
+  - `GET /admin/notifications`
+  - `POST /admin/notifications/read-all`
+  - `POST /admin/notifications/{id}/read`
+  - `DELETE /admin/notifications`
+- Frontend composable:
+  - `resources/js/Composables/useAdminNotifications.js`
+- Admin dropdown:
+  - `resources/js/Components/Admin/Notifications/AdminNotificationsDropdown.vue`
 
-| Slot | Significado |
-|------|-------------|
-| 1A | Primer lugar del grupo A |
-| 2B | Segundo lugar del grupo B |
-| W74 | Ganador del partido 74 |
-| RU101 | Perdedor del partido 101 |
-| 3-ABCDF | Mejor tercer lugar entre grupos A, B, C, D, F |
+### Current dropdown behavior
 
----
+- Shows up to 10 unread notifications
+- Item-level `X` marks as read and removes from dropdown view
+- Trash button clears current view (mark all as read)
+- Centered `View all` footer + unread count badge
 
-## group_standings
+### Backing table
 
-Tabla de posiciones de cada grupo.
+Migration:
+`database/migrations/2026_03_22_220000_create_notifications_table.php`
 
-id | tournament_id | group_id | team_id | played | wins | draws | losses | gf | ga | gd | points | position | created_at | updated_at
+The same Laravel `notifications` table is used for admin notifications.
 
----
+## 7) Session and redirects
 
-## pool_entries
+- `SESSION_LIFETIME` default: 120 minutes (`config/session.php`)
+- After login:
+  - Admin -> `admin.dashboard`
+  - User -> `dashboard`
+- Configured in:
+  - `AuthenticatedSessionController@store`
+  - `bootstrap/app.php` (`redirectUsersTo`)
 
-Participaciones de usuarios en la quiniela.
+## 8) Layouts and profile
 
-id | user_id | tournament_id | created_at | updated_at
+- Main admin layout: `resources/js/Layouts/AdminLayout.vue`
+- Admin navbar with notifications and theme:
+  - `resources/js/Layouts/Partials/Navbar.vue`
+- Unified profile page by role:
+  - `resources/js/Pages/Profile/Edit.vue`
+  - Admin uses `AdminLayout`
+  - User uses `AuthenticatedLayout`
 
----
+## 9) Frontend utilities
 
-## predictions
+### Notifications/toasts
 
-Predicciones de los usuarios.
+File: `resources/js/Utils/notify.js`
 
-id | pool_entry_id | game_id | home_score | away_score | points | created_at | updated_at
+Used helpers:
 
----
+- `notifySuccess(message)`
+- `notifyError(message)`
+- `confirmAction({...})`
 
-# Servicios del Sistema
+### Formatting
 
-La lógica principal del sistema se maneja mediante **services**.
+File: `resources/js/Utils/format.js`
 
-## GroupStandingsService
+Key helpers:
 
-Calcula automáticamente la tabla de grupos cuando se registra un resultado.
+- `formatDateTime()`
+- `formatRegistrationNumber(value, digits = 5)`
 
-Criterios de orden:
+## 10) Notification devtools
 
-1. Points
-2. Goal Difference
-3. Goals For
+Folder:
+`storage/devtools/notifications/`
 
----
+Includes:
 
-## BracketResolverService
+- `check_notifications.php`
+- `test_admin_notify.php`
+- `test_admin_broadcast.php`
+- `README.md`
 
-Resuelve dinámicamente los slots del bracket.
+Usage:
 
-Ejemplos:
-
-1A → primer lugar del grupo A
-2B → segundo lugar del grupo B
-W74 → ganador del partido 74
-RU101 → perdedor del partido 101
-3-ABCDF → mejor tercer lugar entre grupos A,B,C,D,F
-
-
-
----
-
-## BracketProgressionService
-
-Avanza automáticamente los equipos en el bracket.
-
-Cuando termina un partido:
-
-
----
-
-## BracketProgressionService
-
-Avanza automáticamente los equipos en el bracket.
-
-Cuando termina un partido:
-
-
-Esto permite que el bracket se actualice automáticamente.
-
----
-
-## PredictionScoringService
-
-Calcula los puntos de cada predicción.
-
-### Sistema de puntuación
-
-| Resultado | Puntos |
-|-----------|-------|
-Marcador exacto | 5 |
-Ganador correcto | 3 |
-Empate correcto | 1 |
-Incorrecto | 0 |
-
----
-
-# Flujo del Sistema
-
-Cuando un administrador registra un resultado:
-
-Update Game Score
-↓
-GroupStandingsService
-↓
-BracketProgressionService
-↓
-PredictionScoringService
-
-
-Esto permite que el sistema actualice:
-
-- tabla de grupos
-- bracket
-- puntos de usuarios
-
----
-
-# Seeder del Mundial
-
-El sistema incluye un **seeder que importa el calendario del Mundial desde Excel**.
-
-Seeder:
-
-
-Esto permite que el sistema actualice:
-
-- tabla de grupos
-- bracket
-- puntos de usuarios
-
----
-
-# Seeder del Mundial
-
-El sistema incluye un **seeder que importa el calendario del Mundial desde Excel**.
-
-Seeder: WorldCupSeeder
-
-
-
-Fuente de datos: storage/app/WCup_2026_4.0_en2.xlsx
-
-
-Este seeder crea automáticamente:
-
-- grupos
-- equipos
-- partidos
-- estructura del bracket
-
----
-
-# Tecnologías
-
-- Laravel
-- MySQL
-- Eloquent ORM
-- PhpSpreadsheet
-
----
-
-# Próximos desarrollos
-
-- Panel administrativo
-- Interfaz de predicciones de usuario
-- Ranking de quiniela
-- Estadísticas del torneo
-
----
-
-The goal of the architecture is to enable **fast CRUD development**
-while maintaining consistent UX, reusable logic, and a scalable
-structure.
-
-
-------------------------------------------------------------------------
-
-# CRUD Architecture Pattern
-
-All admin modules follow the same structure.
-
-    Admin
-     ├── Module
-     │    └── Index.vue
-     │
-    Components
-     └── Admin
-          ├── Drawer
-          │    ├── FormDrawer.vue
-          │    └── DeleteDrawer.vue
-          │
-          └── FormDrawer
-               └── ModuleForm.vue
-
-Example implemented module:
-
-    Teams
-     ├── Index.vue
-     └── TeamForm.vue
-
-------------------------------------------------------------------------
-
-# Drawer Based CRUD
-
-The system uses **Drawers instead of separate pages** for CRUD actions.
-
-### Advantages
-
--   Better UX
--   Faster workflows
--   Less navigation
--   Consistent UI across modules
-
-------------------------------------------------------------------------
-
-## Create
-
-    Add new Team
-     ↓
-    FormDrawer
-     ↓
-    TeamForm
-     ↓
-    POST admin.teams.store
-
-------------------------------------------------------------------------
-
-## Update
-
-    Update Team
-     ↓
-    FormDrawer
-     ↓
-    TeamForm (props.team)
-     ↓
-    PUT admin.teams.update
-
-------------------------------------------------------------------------
-
-## Delete
-
-    Delete Team
-     ↓
-    DeleteDrawer
-     ↓
-    DELETE admin.teams.destroy
-
-------------------------------------------------------------------------
-
-# Reusable Form Components
-
-Forms are designed to work for both **create and update**.
-
-Example:
-
-``` javascript
-const isEdit = !!props.team
+```bash
+php storage/devtools/notifications/check_notifications.php
+php storage/devtools/notifications/test_admin_notify.php
+php storage/devtools/notifications/test_admin_broadcast.php
 ```
 
-This allows one component to handle both cases.
+## 11) CRUD generation command
 
-------------------------------------------------------------------------
+Internal command available:
 
-# Global Notifications
+- `app/Console/Commands/MakeAdminCrud.php`
 
-Notifications are centralized in:
+Goal: accelerate admin module creation under the table + drawer pattern.
 
-    /resources/js/Utils/notify.js
+## 12) Current project checkpoint
 
-Available helpers:
+The system currently has:
 
-    notifySuccess()
-    notifyError()
-    notifyWarning()
+- complete user pool flow (create, detail, inactivate/reactivate)
+- scoring and stage progression support
+- tournament-based participation rules
+- stable role-based redirects
+- persistent + realtime admin notifications
+- responsive UI improvements on key views (dashboard, calendar, pool detail, ranking)
 
-Example:
+Recommended next phase:
 
-``` javascript
-notifySuccess('Team created successfully')
-notifyError('Error creating team')
-```
+- consolidate stage label i18n (ES/EN)
+- harden `Rule` CRUD validations (currently `store/update` validates only `name`)
+- define final notification retention policy (read-only vs hard delete)
+- optional: full admin notifications history page
 
-------------------------------------------------------------------------
+## Author
 
-# Server Flash Messages
-
-Laravel shares flash messages through Inertia.
-
-Middleware:
-
-    HandleInertiaRequests.php
-
-Example:
-
-``` php
-'flash' => [
-    'success' => session('success'),
-    'error' => session('error')
-]
-```
-
-------------------------------------------------------------------------
-
-# Search System
-
-Search uses **debounce** to avoid excessive requests.
-
-``` javascript
-debounce(handleSearch, 400)
-```
-
-------------------------------------------------------------------------
-
-# Data Tables
-
-Reusable table components:
-
-    DataTable.vue
-    Pagination.vue
-    ActionTable.vue
-
-Available row actions:
-
-    view
-    edit
-    delete
-
-Actions emit events to the parent component.
-
-------------------------------------------------------------------------
-
-# Bulk Actions
-
-Bulk delete flow:
-
-    Select rows
-     ↓
-    Bulk Delete
-     ↓
-    Controller
-     ↓
-    router.reload()
-
-Example:
-
-``` javascript
-router.reload({ only: ['teams'] })
-```
-
-------------------------------------------------------------------------
-
-# Dynamic Form Data
-
-Forms receive dynamic data from backend.
-
-Controller:
-
-``` php
-'groups' => Group::orderBy('name')->get(),
-'types' => Team::types()
-```
-
-------------------------------------------------------------------------
-
-# Enum Handling
-
-Enum values come from the model instead of hardcoding in Vue.
-
-Example:
-
-``` php
-Team::types()
-```
-
-------------------------------------------------------------------------
-
-# Dark Mode System
-
-Dark mode features:
-
--   stored in localStorage
--   detects OS preference
--   persistent between sessions
--   Tailwind compatible
-
-Flow:
-
-    First visit
-     ↓
-    detect prefers-color-scheme
-     ↓
-    user changes theme
-     ↓
-    saved to localStorage
-     ↓
-    persists between sessions
-
-------------------------------------------------------------------------
-
-# Theme Toggle UX
-
-The icon always represents **the available action**.
-
-  Current Theme   Icon
-  --------------- ------
-  Light           🌙
-  Dark            ☀️
-
-------------------------------------------------------------------------
-
-# Performance Improvements
-
-### Debounced Search
-
-Reduces unnecessary API requests.
-
-### Lazy Reload
-
-``` javascript
-router.reload({ only: ['teams'] })
-```
-
-### Drawer UI
-
-Faster interactions with fewer page transitions.
-
-------------------------------------------------------------------------
-
-# Future Improvements
-
-Planned enhancements:
-
--   Form validation UI
--   Optimistic UI updates
--   CRUD generator
--   Permissions and roles
--   Reusable form inputs
--   Global modal manager
-
-------------------------------------------------------------------------
-
-# Goal of the Architecture
-
-Enable developers to create new admin modules quickly.
-
-Typical CRUD creation:
-
-    1 create model
-    1 create controller
-    1 create form
-    1 create index
-
-Estimated time: **\~5 minutes per CRUD**.
-
-------------------------------------------------------------------------
-
-# Current Modules
-
-    Teams
-
-------------------------------------------------------------------------
-
-# Planned Modules
-
-    Players
-    Countries
-    Leagues
-    Matches
-    Stadiums
-    Groups
-
-------------------------------------------------------------------------
-
-# System Philosophy
-
-The system follows these principles:
-
--   Reusability
--   Consistency
--   Fast UX
--   Decoupled components
--   Reactive frontend
--   Clean backend
-
-# String Utilities
-
-Common text helpers are located in:
-
-resources/js/Utils/format.js
-
-Example functions:
-
-capitalize()
-singular()
-
-Example usage:
-
-import { singular } from '@/Utils/format'
-
-Add New {{ singular(title) }}
-
-# Autor
-
-Miguel Angel Cornielly
-
+Miguel Angel Cornielly H
