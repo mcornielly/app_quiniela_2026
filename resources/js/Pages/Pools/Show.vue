@@ -1,6 +1,6 @@
 ﻿<script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { Head, Link, usePage } from '@inertiajs/vue3'
+import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import {
     BoltIcon,
     CheckCircleIcon,
@@ -10,6 +10,8 @@ import AppTooltip from '@/Components/UI/AppTooltip.vue'
 import FilterSelect from '@/Components/UI/FilterSelect.vue'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
 import { formatRegistrationNumber } from '@/Utils/format'
+import { notifyError } from '@/Utils/notify'
+import { route } from 'ziggy-js'
 
 const props = defineProps({
     poolEntry: {
@@ -147,6 +149,95 @@ const stageHeaderSuffix = (prediction) => {
     return ''
 }
 
+const canEditPredictions = computed(() => Boolean(props.poolEntry?.canEdit))
+const editingPredictionId = ref(null)
+const editingScores = ref({
+    home: '',
+    away: '',
+})
+const savingPredictionId = ref(null)
+
+const isEditingPrediction = (prediction) => editingPredictionId.value === prediction.id
+
+const startEditingPrediction = (prediction) => {
+    if (!canEditPredictions.value || savingPredictionId.value) {
+        return
+    }
+
+    editingPredictionId.value = prediction.id
+    editingScores.value = {
+        home: String(prediction.predictedHomeScore ?? 0),
+        away: String(prediction.predictedAwayScore ?? 0),
+    }
+}
+
+const cancelEditingPrediction = () => {
+    if (savingPredictionId.value) {
+        return
+    }
+
+    editingPredictionId.value = null
+    editingScores.value = {
+        home: '',
+        away: '',
+    }
+}
+
+const normalizeScoreInput = (key) => {
+    const rawValue = String(editingScores.value[key] ?? '')
+    const digitsOnly = rawValue.replace(/\D/g, '').slice(0, 2)
+
+    if (digitsOnly === '') {
+        editingScores.value[key] = ''
+        return
+    }
+
+    const numericValue = Number.parseInt(digitsOnly, 10)
+    editingScores.value[key] = String(Math.max(0, Math.min(20, numericValue)))
+}
+
+const savePredictionEdition = (prediction) => {
+    if (!isEditingPrediction(prediction) || savingPredictionId.value) {
+        return
+    }
+
+    const homeScore = Number.parseInt(editingScores.value.home, 10)
+    const awayScore = Number.parseInt(editingScores.value.away, 10)
+
+    if (!Number.isInteger(homeScore) || !Number.isInteger(awayScore)) {
+        notifyError('Debes indicar ambos marcadores con valores numericos.')
+        return
+    }
+
+    if (homeScore < 0 || homeScore > 20 || awayScore < 0 || awayScore > 20) {
+        notifyError('Los marcadores permitidos son valores entre 0 y 20.')
+        return
+    }
+
+    if (prediction.stage !== 'group' && homeScore === awayScore) {
+        notifyError('En fases eliminatorias debes definir un ganador (sin empate).')
+        return
+    }
+
+    savingPredictionId.value = prediction.id
+
+    router.patch(route('pools.predictions.update', [props.poolEntry.id, prediction.id]), {
+        home_score: homeScore,
+        away_score: awayScore,
+    }, {
+        preserveScroll: true,
+        preserveState: false,
+        replace: true,
+        only: ['poolEntry', 'flash'],
+        onFinish: () => {
+            savingPredictionId.value = null
+        },
+        onSuccess: () => {
+            cancelEditingPrediction()
+        },
+    })
+}
+
 const activeTab = ref('played')
 const sortBy = ref('date_asc')
 const stageFilter = ref('all')
@@ -266,6 +357,7 @@ const revealCycle = ref(0)
 const isTabLoading = ref(false)
 let tabLoadingTimer = null
 const triggerListLoading = () => {
+    cancelEditingPrediction()
     revealCycle.value += 1
 
     if (tabLoadingTimer) {
@@ -527,14 +619,35 @@ onBeforeUnmount(() => {
                                         </AppTooltip>
                                     </div>
 
-                                    <div class="inline-flex min-w-[96px] items-center justify-center gap-3 rounded-xl bg-slate-100 px-3 py-2 text-2xl font-black dark:bg-slate-800">
-                                        <span :class="isPredictedHomeWinner(prediction) || isPredictedDraw(prediction) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
-                                            {{ prediction.predictedHomeScore }}
-                                        </span>
-                                        <span class="text-slate-400 dark:text-slate-500">-</span>
-                                        <span :class="isPredictedAwayWinner(prediction) || isPredictedDraw(prediction) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
-                                            {{ prediction.predictedAwayScore }}
-                                        </span>
+                                    <div class="inline-flex min-w-[96px] items-center justify-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-2xl font-black dark:bg-slate-800">
+                                        <template v-if="isEditingPrediction(prediction)">
+                                            <input
+                                                v-model="editingScores.home"
+                                                type="text"
+                                                inputmode="numeric"
+                                                pattern="[0-9]*"
+                                                class="h-9 w-9 rounded-md border border-slate-300 bg-white text-center text-lg font-black text-slate-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-200 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-primary-800"
+                                                @input="normalizeScoreInput('home')"
+                                            >
+                                            <span class="text-slate-400 dark:text-slate-500">-</span>
+                                            <input
+                                                v-model="editingScores.away"
+                                                type="text"
+                                                inputmode="numeric"
+                                                pattern="[0-9]*"
+                                                class="h-9 w-9 rounded-md border border-slate-300 bg-white text-center text-lg font-black text-slate-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-200 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:ring-primary-800"
+                                                @input="normalizeScoreInput('away')"
+                                            >
+                                        </template>
+                                        <template v-else>
+                                            <span :class="isPredictedHomeWinner(prediction) || isPredictedDraw(prediction) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
+                                                {{ prediction.predictedHomeScore }}
+                                            </span>
+                                            <span class="text-slate-400 dark:text-slate-500">-</span>
+                                            <span :class="isPredictedAwayWinner(prediction) || isPredictedDraw(prediction) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
+                                                {{ prediction.predictedAwayScore }}
+                                            </span>
+                                        </template>
                                     </div>
 
                                     <div class="flex items-center justify-start gap-2">
@@ -571,6 +684,34 @@ onBeforeUnmount(() => {
                                     </span>
                                 </p>
                                 <div class="ml-auto flex items-center gap-2">
+                                    <template v-if="canEditPredictions">
+                                        <template v-if="isEditingPrediction(prediction)">
+                                            <button
+                                                type="button"
+                                                class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50 dark:bg-emerald-900/30 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
+                                                :disabled="savingPredictionId === prediction.id"
+                                                @click="savePredictionEdition(prediction)"
+                                            >
+                                                {{ savingPredictionId === prediction.id ? 'Guardando...' : 'Guardar' }}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-1 text-[11px] font-bold text-slate-700 transition hover:bg-slate-300 disabled:opacity-50 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+                                                :disabled="savingPredictionId === prediction.id"
+                                                @click="cancelEditingPrediction"
+                                            >
+                                                Cancelar
+                                            </button>
+                                        </template>
+                                        <button
+                                            v-else
+                                            type="button"
+                                            class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2 py-1 text-[11px] font-bold text-primary-700 transition hover:bg-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50"
+                                            @click="startEditingPrediction(prediction)"
+                                        >
+                                            Editar
+                                        </button>
+                                    </template>
                                     <span
                                         v-if="prediction.hasOfficialResult && prediction.isExactHit"
                                         class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Events\AdminPoolActivityBroadcast;
 use App\Models\Game;
 use App\Models\PoolEntry;
+use App\Models\Prediction;
+use App\Models\Rule;
 use App\Models\Tournament;
 use App\Models\User;
 use App\Notifications\AdminPoolActivityNotification;
@@ -414,6 +416,93 @@ class PoolEntryController extends Controller
             ->with('created_pool_entry', $this->buildCreatedPoolEntryPayload($poolEntry, $resolvedBracket['predictedChampion'] ?? null));
     }
 
+    public function updatePrediction(Request $request, PoolEntry $poolEntry, Prediction $prediction): RedirectResponse
+    {
+        abort_unless((int) $poolEntry->user_id === (int) $request->user()->id, 403);
+
+        if ((int) $prediction->pool_entry_id !== (int) $poolEntry->id) {
+            abort(404);
+        }
+
+        $poolEntry->loadMissing('tournament');
+        $this->poolEntryRuleService->syncPoolEntryStatus($poolEntry);
+        $state = $this->poolEntryRuleService->evaluatePoolEntry($poolEntry);
+
+        if (! $state['can_edit']) {
+            return redirect()
+                ->route('pools.show', $poolEntry->id)
+                ->with('error', 'Esta quiniela no se puede editar por su estado actual (pago o ventana cerrada).');
+        }
+
+        $validated = $request->validate([
+            'home_score' => ['required', 'integer', 'min:0', 'max:20'],
+            'away_score' => ['required', 'integer', 'min:0', 'max:20'],
+        ]);
+
+        $prediction->loadMissing('game:id,stage');
+        $homeScore = (int) $validated['home_score'];
+        $awayScore = (int) $validated['away_score'];
+
+        if ($prediction->game && $prediction->game->stage !== 'group' && $homeScore === $awayScore) {
+            return redirect()
+                ->route('pools.show', $poolEntry->id)
+                ->with('error', 'En fases eliminatorias debes definir un ganador. No se permite empate.');
+        }
+
+        try {
+            DB::transaction(function () use ($poolEntry, $prediction, $homeScore, $awayScore) {
+                $prediction->forceFill([
+                    'home_score' => $homeScore,
+                    'away_score' => $awayScore,
+                ])->save();
+
+                $predictions = $poolEntry->predictions()
+                    ->with('game:id,stage')
+                    ->get();
+
+                $predictionPayloads = $predictions
+                    ->map(fn (Prediction $item) => [
+                        'game_id' => (int) $item->game_id,
+                        'home_score' => (int) $item->home_score,
+                        'away_score' => (int) $item->away_score,
+                    ]);
+
+                $resolvedBracket = $this->predictionBracketResolverService->resolve(
+                    $poolEntry->tournament,
+                    $predictionPayloads
+                );
+                $resolvedTeamsByGameId = $this->resolvedBracketTeamsByGameId($resolvedBracket);
+
+                foreach ($predictions as $item) {
+                    $resolvedTeams = $resolvedTeamsByGameId[$item->game_id] ?? [];
+
+                    $predictedWinnerTeamId = $resolvedTeams['predicted_winner_team_id'] ?? null;
+                    if ($item->game && $item->game->stage !== 'group' && (int) $item->home_score === (int) $item->away_score) {
+                        $predictedWinnerTeamId = null;
+                    }
+
+                    $item->forceFill([
+                        'predicted_home_team_id' => $resolvedTeams['predicted_home_team_id'] ?? null,
+                        'predicted_away_team_id' => $resolvedTeams['predicted_away_team_id'] ?? null,
+                        'predicted_winner_team_id' => $predictedWinnerTeamId,
+                    ])->save();
+                }
+
+                $this->recalculatePoolEntryScoreSummary($poolEntry);
+            });
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return redirect()
+                ->route('pools.show', $poolEntry->id)
+                ->with('error', 'No pudimos actualizar este pronostico en este momento. Intentalo nuevamente.');
+        }
+
+        return redirect()
+            ->route('pools.show', $poolEntry->id)
+            ->with('success', 'Pronostico actualizado correctamente.');
+    }
+
     public function destroy(Request $request, PoolEntry $poolEntry): RedirectResponse
     {
         abort_unless((int) $poolEntry->user_id === (int) $request->user()->id, 403);
@@ -529,6 +618,64 @@ class PoolEntryController extends Controller
         }
 
         return $resolvedByGameId;
+    }
+
+    private function recalculatePoolEntryScoreSummary(PoolEntry $poolEntry): void
+    {
+        $poolEntry->loadMissing('tournament');
+
+        $rule = Rule::query()
+            ->where('active', true)
+            ->where('tournament_id', $poolEntry->tournament_id)
+            ->first();
+
+        $exactScorePoints = (int) ($rule?->exact_score_points ?? 5);
+        $correctResultPoints = (int) ($rule?->correct_result_points ?? 3);
+
+        $predictions = $poolEntry->predictions()
+            ->with('game:id,home_score,away_score')
+            ->get();
+
+        $totalPoints = 0;
+        $exactHits = 0;
+        $correctResults = 0;
+
+        foreach ($predictions as $prediction) {
+            $game = $prediction->game;
+            $points = 0;
+
+            if ($game && is_numeric($game->home_score) && is_numeric($game->away_score)) {
+                $realHome = (int) $game->home_score;
+                $realAway = (int) $game->away_score;
+                $predHome = (int) $prediction->home_score;
+                $predAway = (int) $prediction->away_score;
+
+                if ($predHome === $realHome && $predAway === $realAway) {
+                    $points = $exactScorePoints;
+                    $exactHits++;
+                } else {
+                    $predictedResult = $this->outcomeForScores($predHome, $predAway);
+                    $officialResult = $this->outcomeForScores($realHome, $realAway);
+
+                    if ($predictedResult === $officialResult) {
+                        $points = $correctResultPoints;
+                        $correctResults++;
+                    }
+                }
+            }
+
+            if ((int) $prediction->points !== $points) {
+                $prediction->forceFill(['points' => $points])->save();
+            }
+
+            $totalPoints += $points;
+        }
+
+        $poolEntry->forceFill([
+            'total_points' => $totalPoints,
+            'exact_hits' => $exactHits,
+            'correct_results' => $correctResults,
+        ])->save();
     }
 
     private function flagUrl(?string $flagPath): ?string

@@ -165,6 +165,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/quiniela/world-cup-template', QuinielaWorldCupController::class)->name('predictions.worldcup');
     Route::get('/pools', [PoolEntryController::class, 'index'])->name('pools.index');
     Route::post('/pools', [PoolEntryController::class, 'store'])->name('pools.store');
+    Route::patch('/pools/{poolEntry}/predictions/{prediction}', [PoolEntryController::class, 'updatePrediction'])
+        ->whereNumber('poolEntry')
+        ->whereNumber('prediction')
+        ->name('pools.predictions.update');
     Route::delete('/pools/{poolEntry}', [PoolEntryController::class, 'destroy'])->whereNumber('poolEntry')->name('pools.destroy');
     Route::post('/pools/{poolEntry}/restore', [PoolEntryController::class, 'restore'])->whereNumber('poolEntry')->name('pools.restore');
     Route::get('/pools/create', [PoolEntryController::class, 'create'])->name('pools.create');
