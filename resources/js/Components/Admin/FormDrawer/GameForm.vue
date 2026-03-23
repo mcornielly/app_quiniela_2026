@@ -40,21 +40,30 @@ const form = ref({
 })
 
 const submit = () => {
+    const isScoreUpdate = isEdit && form.value.home_score !== '' && form.value.away_score !== ''
 
     const options = {
-        onSuccess: () => {
+        onSuccess: (page) => {
             const flash = page.props.flash
 
-            // if (flash?.success) notifySuccess(flash.success)
+            if (flash?.success) {
+                notifySuccess(flash.success)
+            } else if (isScoreUpdate) {
+                notifySuccess('Score actualizado correctamente.')
+            } else {
+                notifySuccess(isEdit ? 'Juego actualizado correctamente.' : 'Juego creado correctamente.')
+            }
+
             if (flash?.error) notifyError(flash.error)
 
             emit('close')
         },
-        onError: () => notifyError('Validation error')
+        onError: () => notifyError('No se pudo guardar. Verifica los datos e intenta nuevamente.'),
+        onException: () => notifyError('Error de comunicacion al guardar. Verifica la conexion e intenta nuevamente.'),
     }
 
     // si se están editando resultados
-    if (isEdit && form.value.home_score !== '' && form.value.away_score !== '') {
+    if (isScoreUpdate) {
 
         router.post(
             route('admin.games.result.update', props.game.id),

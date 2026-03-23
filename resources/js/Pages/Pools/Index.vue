@@ -78,13 +78,18 @@ const inactivatePoolEntry = async (poolEntry) => {
         return false
     }
 
-    const confirmed = await confirmAction({
-        title: 'Inactivar quiniela',
-        message: `Desea inactivar la quiniela "${poolEntry.name}"?`,
-        confirmButtonText: 'Inactivar',
-        cancelButtonText: 'Cancelar',
-        type: 'warning',
-    })
+    let confirmed = false
+    try {
+        confirmed = await confirmAction({
+            title: 'Inactivar quiniela',
+            message: `Desea inactivar la quiniela "${poolEntry.name}"?`,
+            confirmButtonText: 'Inactivar',
+            cancelButtonText: 'Cancelar',
+            type: 'warning',
+        })
+    } catch (error) {
+        return false
+    }
 
     if (!confirmed) {
         return false
@@ -92,6 +97,9 @@ const inactivatePoolEntry = async (poolEntry) => {
 
     router.delete(route('pools.destroy', poolEntry.id), {
         preserveScroll: true,
+        preserveState: true,
+        replace: true,
+        only: ['poolEntries', 'flash'],
     })
 
     return true
@@ -102,13 +110,18 @@ const restorePoolEntry = async (poolEntry) => {
         return false
     }
 
-    const confirmed = await confirmAction({
-        title: 'Reactivar quiniela',
-        message: `Desea reactivar la quiniela "${poolEntry.name}"?`,
-        confirmButtonText: 'Reactivar',
-        cancelButtonText: 'Cancelar',
-        type: 'info',
-    })
+    let confirmed = false
+    try {
+        confirmed = await confirmAction({
+            title: 'Reactivar quiniela',
+            message: `Desea reactivar la quiniela "${poolEntry.name}"?`,
+            confirmButtonText: 'Reactivar',
+            cancelButtonText: 'Cancelar',
+            type: 'info',
+        })
+    } catch (error) {
+        return false
+    }
 
     if (!confirmed) {
         return false
@@ -116,6 +129,9 @@ const restorePoolEntry = async (poolEntry) => {
 
     router.post(route('pools.restore', poolEntry.id), {}, {
         preserveScroll: true,
+        preserveState: true,
+        replace: true,
+        only: ['poolEntries', 'flash'],
     })
 
     return true

@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\PoolEntriesController;
 use App\Http\Controllers\Admin\PoolEntryController as AdminPoolEntryController;
 use App\Http\Controllers\Admin\RuleController;
 use App\Http\Controllers\Admin\TournamentParticipantController;
+use App\Http\Controllers\Admin\AdminNotificationController;
 use App\Http\Controllers\PoolEntryController;
 use App\Http\Controllers\QuinielaWorldCupController;
 use App\Http\Controllers\MatchesController;
@@ -135,6 +136,15 @@ Route::middleware(['auth', 'verified', 'admin'])
 
     Route::resource('users', UserController::class)
         ->names('users');
+
+    Route::get('/notifications', [AdminNotificationController::class, 'index'])
+        ->name('notifications.index');
+    Route::post('/notifications/read-all', [AdminNotificationController::class, 'markAllRead'])
+        ->name('notifications.read-all');
+    Route::post('/notifications/{notificationId}/read', [AdminNotificationController::class, 'markRead'])
+        ->name('notifications.read');
+    Route::delete('/notifications', [AdminNotificationController::class, 'clearAll'])
+        ->name('notifications.clear');
 
 });
 
