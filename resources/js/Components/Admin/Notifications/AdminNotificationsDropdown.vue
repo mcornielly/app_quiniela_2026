@@ -117,7 +117,7 @@ const clearAll = () => {
                         {{ actionSymbol(item.action) }}
                     </div>
                 </div>
-                <div class="w-full pl-3">
+                <div class="w-full min-w-0 pl-3 pr-10">
                     <div class="mb-1.5 text-sm font-normal text-gray-500 dark:text-gray-400">
                         <span class="font-semibold text-gray-900 dark:text-white">{{ item.userName }}</span>
                         {{ item.messageSuffix }}
@@ -162,4 +162,3 @@ const clearAll = () => {
         </div>
     </div>
 </template>
-
