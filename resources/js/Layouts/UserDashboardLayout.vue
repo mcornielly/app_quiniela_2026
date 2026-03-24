@@ -40,6 +40,8 @@ const mobileNavOpen = ref(false)
 const mobileWorldCupOpen = ref(false)
 const currentTheme = ref('dark')
 const notificationItems = ref([])
+const deferFlashNotifications = ref(false)
+const pendingFlash = ref(null)
 const liveChannelName = 'matches.live'
 
 const worldCupNavigation = computed(() => [
@@ -97,6 +99,31 @@ const markNotificationsRead = () => {
     notificationItems.value = notificationItems.value.map((item) => ({ ...item, read: true }))
 }
 
+const showFlashNotification = (flash) => {
+    if (!flash) {
+        return
+    }
+
+    if (flash.success) {
+        notifySuccess(flash.success)
+    }
+
+    if (flash.error) {
+        notifyError(flash.error)
+    }
+}
+
+const onFavoriteTeamApplyingChange = (event) => {
+    const applying = Boolean(event?.detail?.applying)
+    deferFlashNotifications.value = applying
+
+    if (!applying && pendingFlash.value) {
+        const queuedFlash = pendingFlash.value
+        pendingFlash.value = null
+        showFlashNotification(queuedFlash)
+    }
+}
+
 const worldCupIconPaths = {
     calendar: 'M152 64H128V16a16 16 0 1 0-32 0V64H64C28.7 64 0 92.7 0 128v320c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H416V16a16 16 0 1 0-32 0V64H152zm296 96v96H64V160H448z',
     ball: 'M222.7 32.1c-18.3-4.5-37.1-4.5-55.4 0L131 96H259L222.7 32.1zM94.1 118.6 62.6 173.1 94.9 228l73.2-3.4 31.3-54.6L167.1 115H104.5c-3.6 1.1-7.1 2.3-10.4 3.6zm323 54.5-31.2-54.1c-3.4-1.3-6.9-2.5-10.5-3.6H312.8l-32.3 55 31.3 54.6 73.2 3.4 32.1-54.9zm-193.4 79.8H184.3L153 307.4l36.3 63.9c18.3 4.5 37.1 4.5 55.4 0L281 307.4l-31.3-54.5zm-136 17.5-57.4-2.7L7.5 322.6c8.6 28.1 24.6 53 45.8 72.5l58.9-10.3L144 330.3 87.7 270.4zm336.6-2.7-57.4 2.7L368 330.3l31.8 54.5 58.9 10.3c21.2-19.6 37.2-44.4 45.8-72.5l-22.8-54.9zM127.8 412.2 83.1 420c24.3 16.7 53.7 27.1 85.2 28.8l-40.5-36.6zm216.4 0-40.5 36.6c31.5-1.7 60.9-12.1 85.2-28.8l-44.7-7.8z',
@@ -106,6 +133,8 @@ const worldCupIconPaths = {
 }
 
 onMounted(() => {
+    window.addEventListener('favorite-team:applying', onFavoriteTeamApplyingChange)
+
     const storedTheme = localStorage.getItem('user-theme')
     const initialTheme = storedTheme === 'light' || storedTheme === 'dark'
         ? storedTheme
@@ -122,6 +151,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+    window.removeEventListener('favorite-team:applying', onFavoriteTeamApplyingChange)
+
     if (window.Echo) {
         window.Echo.leave(liveChannelName)
     }
@@ -134,13 +165,12 @@ watch(
             return
         }
 
-        if (flash.success) {
-            notifySuccess(flash.success)
+        if (deferFlashNotifications.value) {
+            pendingFlash.value = flash
+            return
         }
 
-        if (flash.error) {
-            notifyError(flash.error)
-        }
+        showFlashNotification(flash)
     },
     { immediate: true, deep: true },
 )
@@ -426,7 +456,6 @@ watch(
         </main>
     </div>
 </template>
-
 
 
 

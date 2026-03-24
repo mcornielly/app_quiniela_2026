@@ -104,6 +104,8 @@ const identityTitle = computed(() => currentFavoriteTeam.value?.name ?? tourname
 const identityShield = computed(() => favoriteTeamShield.value || favoriteTeamFlag.value || tournamentLogo.value || defaultIdentityShield)
 const favoriteTeamModalOpen = ref(false)
 const isApplyingFavoriteTeam = ref(false)
+const isDarkTheme = ref(false)
+const APPLYING_THEME_MIN_VISIBLE_MS = 1500
 
 const worldCupKickoff = new Date('2026-06-11T19:00:00-04:00')
 const countdown = ref({
@@ -116,7 +118,38 @@ const countdown = ref({
 let timerId = null
 let realtimeRefreshTimer = null
 let liveUpdatesChannel = null
+let themeClassObserver = null
 const selectedDate = ref('')
+
+const syncThemeMode = () => {
+    isDarkTheme.value = document?.documentElement?.classList?.contains('dark') ?? false
+}
+
+const applyingThemeOverlayBackdropClass = computed(() => (
+    isDarkTheme.value
+        ? 'bg-slate-950/70'
+        : 'bg-white/62'
+))
+const applyingThemeOverlayCardClass = computed(() => (
+    isDarkTheme.value
+        ? 'border-slate-700/80 bg-slate-900/95 shadow-none'
+        : 'border-white/80 bg-white/95 shadow-2xl shadow-slate-300/40'
+))
+const applyingThemeOverlaySpinnerClass = computed(() => (
+    isDarkTheme.value
+        ? 'border-primary-500/25 border-t-primary-300'
+        : 'border-primary-200 border-t-primary-600'
+))
+const applyingThemeOverlayTitleClass = computed(() => (
+    isDarkTheme.value
+        ? 'text-white'
+        : 'text-slate-950'
+))
+const applyingThemeOverlayBodyClass = computed(() => (
+    isDarkTheme.value
+        ? 'text-slate-300'
+        : 'text-slate-600'
+))
 
 const tickerThemes = {
     neutral: {
@@ -178,6 +211,16 @@ const favoriteTeamStats = computed(() => {
     ]
 })
 
+const emitFavoriteThemeApplyingState = (applying) => {
+    if (typeof window === 'undefined') {
+        return
+    }
+
+    window.dispatchEvent(new CustomEvent('favorite-team:applying', {
+        detail: { applying: Boolean(applying) },
+    }))
+}
+
 const submitFavoriteTeam = (teamId) => {
     if (isApplyingFavoriteTeam.value) {
         return
@@ -189,6 +232,8 @@ const submitFavoriteTeam = (teamId) => {
     }
 
     isApplyingFavoriteTeam.value = true
+    emitFavoriteThemeApplyingState(true)
+    const applyingStartedAt = Date.now()
 
     router.patch(route('dashboard.favorite-team.update'), {
         favorite_team_id: teamId,
@@ -201,9 +246,13 @@ const submitFavoriteTeam = (teamId) => {
             }, 520)
         },
         onFinish: () => {
+            const elapsed = Date.now() - applyingStartedAt
+            const remaining = Math.max(APPLYING_THEME_MIN_VISIBLE_MS - elapsed, 0)
+
             window.setTimeout(() => {
                 isApplyingFavoriteTeam.value = false
-            }, 550)
+                emitFavoriteThemeApplyingState(false)
+            }, remaining)
         },
     })
 }
@@ -421,6 +470,10 @@ const scheduleRealtimeDashboardRefresh = () => {
     }, 500)
 }
 onMounted(() => {
+    syncThemeMode()
+    themeClassObserver = new MutationObserver(syncThemeMode)
+    themeClassObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+
     updateCountdown()
     timerId = window.setInterval(updateCountdown, 1000)
 
@@ -433,6 +486,11 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+    if (themeClassObserver) {
+        themeClassObserver.disconnect()
+        themeClassObserver = null
+    }
+
     if (timerId) {
         window.clearInterval(timerId)
     }
@@ -1070,14 +1128,21 @@ onBeforeUnmount(() => {
         >
             <div
                 v-if="isApplyingFavoriteTeam"
-                class="fixed inset-0 z-[80] flex items-center justify-center bg-white/55 backdrop-blur-sm dark:bg-slate-950/55"
+                class="fixed inset-0 z-[80] flex items-center justify-center backdrop-blur-sm transition-colors duration-200"
+                :class="applyingThemeOverlayBackdropClass"
             >
-                <div class="rounded-[1.75rem] border border-white/70 bg-white/90 px-8 py-7 text-center shadow-2xl shadow-slate-300/40 dark:border-slate-700 dark:bg-slate-900/92 dark:shadow-none">
-                    <div class="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600 dark:border-primary-500/20 dark:border-t-primary-300" />
-                    <p class="mt-4 text-base font-semibold text-slate-950 dark:text-white">
+                <div
+                    class="rounded-[1.75rem] border px-8 py-7 text-center transition-colors duration-200"
+                    :class="applyingThemeOverlayCardClass"
+                >
+                    <div
+                        class="mx-auto h-12 w-12 animate-spin rounded-full border-4 transition-colors duration-200"
+                        :class="applyingThemeOverlaySpinnerClass"
+                    />
+                    <p class="mt-4 text-base font-semibold transition-colors duration-200" :class="applyingThemeOverlayTitleClass">
                         Aplicando tu identidad visual
                     </p>
-                    <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                    <p class="mt-2 text-sm transition-colors duration-200" :class="applyingThemeOverlayBodyClass">
                         Ajustando el banner para reflejar tu seleccion favorita.
                     </p>
                 </div>
