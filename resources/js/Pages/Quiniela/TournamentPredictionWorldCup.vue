@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
-import { Head, useForm, usePage } from '@inertiajs/vue3'
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3'
 import StandingWidget from '@/Components/Quiniela/StandingsWidget.vue'
 import WorldCupMatchCard from '@/Components/Quiniela/WorldCupMatchCard.vue'
 import PredictionSuccessCard from '@/Components/Quiniela/PredictionSuccessCard.vue'
@@ -695,42 +695,79 @@ watch(
     <UserDashboardLayout>
         <Head :title="`Quiniela Mundial ${tournament.year ?? ''}`" />
 
+        <template #ticker>
+            <div class="h-12 w-full" aria-hidden="true" />
+        </template>
+
+        <template #headerContent>
+            <div class="hidden" />
+        </template>
+
         <div class="space-y-8 pb-16">
             <PredictionSuccessCard
                 v-if="createdPoolEntry"
                 :pool-entry="createdPoolEntry"
             />
 
-            <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/75 md:p-6">
-                <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                    <div class="max-w-2xl">
-                        <p class="inline-flex rounded-full border border-cyan-300/40 bg-cyan-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-700 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200">
-                            Crear quiniela
-                        </p>
-                        <h1 class="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-4xl dark:text-white">
-                            {{ tournament.name }}
-                        </h1>
-                        <p class="mt-2 max-w-xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-                            Flujo guiado por etapas con progreso en vivo y estadisticas por grupo.
-                        </p>
+            <section>
+                <div class="-mt-8 flex items-center justify-between gap-4 text-left">
+                    <div class="inline-flex items-center gap-2 text-3xl font-bold text-slate-900 dark:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="h-8 w-8 fill-current text-cyan-500" aria-hidden="true">
+                            <path d="M96 96c0-35.3 28.7-64 64-64H416c35.3 0 64 28.7 64 64V352c0 35.3-28.7 64-64 64H160c-35.3 0-64-28.7-64-64V96zM0 128c0-17.7 14.3-32 32-32s32 14.3 32 32V384c0 53 43 96 96 96H384c17.7 0 32 14.3 32 32s-14.3 32-32 32H160C71.6 544 0 472.4 0 384V128z"/>
+                        </svg>
+                        <h1>Crear quiniela</h1>
                     </div>
+                    <Link
+                        :href="route('pools.index')"
+                        class="inline-flex items-center whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-bold uppercase tracking-wide text-primary-700 transition hover:bg-gray-200 dark:text-primary-500 dark:hover:bg-gray-600"
+                    >
+                        <svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Volver a mis quinielas
+                    </Link>
+                </div>
 
-                    <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/60">
-                        <div class="flex items-center justify-between gap-4">
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Progreso global</p>
-                                <p class="mt-1 text-3xl font-black text-slate-900 dark:text-white">
-                                    {{ progress.filled }}
-                                    <span class="text-slate-400 dark:text-slate-500">/ {{ progress.total }}</span>
-                                </p>
+                <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/75">
+                    <div class="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
+                        <div class="grid gap-2 text-xs sm:grid-cols-2">
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950/50">
+                                <p class="uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Usuario</p>
+                                <p class="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-white">{{ currentUserName }}</p>
                             </div>
-                            <div class="rounded-xl border border-emerald-300/30 bg-emerald-50 px-3 py-2 text-right dark:border-emerald-400/20 dark:bg-emerald-400/10">
-                                <p class="text-xs uppercase tracking-[0.2em] text-emerald-700/80 dark:text-emerald-200/80">Completado</p>
-                                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-300">{{ progress.percentage }}%</p>
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950/50">
+                                <div class="flex items-center justify-between gap-2">
+                                    <p class="uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nombre de quiniela</p>
+                                    <button
+                                        type="button"
+                                        @click="openNameStepModal"
+                                        class="inline-flex items-center rounded-full border border-cyan-300/40 bg-cyan-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200 dark:hover:bg-cyan-400/20"
+                                    >
+                                        Editar
+                                    </button>
+                                </div>
+                                <p class="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-white">
+                                    {{ poolEntryForm.name || 'Pendiente por definir' }}
+                                </p>
                             </div>
                         </div>
 
-                        <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+                        <button
+                            type="button"
+                            @click="submitPoolEntry"
+                            :disabled="!canSubmitPoolEntry || poolEntryForm.processing || !hasConfirmedPoolName"
+                            class="inline-flex min-w-[220px] items-center justify-center rounded-xl border border-emerald-300/50 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-300/20 dark:bg-emerald-400/10 dark:text-emerald-100 dark:hover:bg-emerald-400/20"
+                        >
+                            {{ poolEntryForm.processing ? 'Registrando quiniela...' : 'Registrar quiniela' }}
+                        </button>
+                    </div>
+
+                    <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/60">
+                        <div class="flex items-center justify-between gap-4">
+                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Progreso global</p>
+                            <p class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ progress.filled }} / {{ progress.total }} · {{ progress.percentage }}%</p>
+                        </div>
+                        <div class="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
                             <div
                                 class="h-full rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-emerald-400 transition-all duration-500"
                                 :style="{ width: `${progress.percentage}%` }"
@@ -749,42 +786,6 @@ watch(
 
                 <div v-if="hasInvalidKnockoutDraws" class="mt-4 rounded-xl border border-amber-300/40 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100">
                     En fases eliminatorias no se permiten empates en la quiniela. Define un ganador para que el bracket pueda avanzar correctamente.
-                </div>
-
-                <div class="mt-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:flex-row lg:items-center lg:justify-between dark:border-slate-800 dark:bg-slate-950/60">
-                    <div class="space-y-2">
-                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Registro final</p>
-                        <div class="grid gap-2 text-xs sm:grid-cols-2">
-                            <div class="rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
-                                <p class="uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Usuario</p>
-                                <p class="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-white">{{ currentUserName }}</p>
-                            </div>
-                            <div class="rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
-                                <div class="flex items-center justify-between gap-2">
-                                    <p class="uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nombre de quiniela</p>
-                                    <button
-                                        type="button"
-                                        @click="openNameStepModal"
-                                        class="inline-flex items-center rounded-full border border-cyan-300/40 bg-cyan-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200 dark:hover:bg-cyan-400/20"
-                                    >
-                                        Editar
-                                    </button>
-                                </div>
-                                <p class="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-white">
-                                    {{ poolEntryForm.name || 'Pendiente por definir' }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button
-                        type="button"
-                        @click="submitPoolEntry"
-                        :disabled="!canSubmitPoolEntry || poolEntryForm.processing || !hasConfirmedPoolName"
-                        class="inline-flex min-w-[220px] items-center justify-center rounded-xl border border-emerald-300/50 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-300/20 dark:bg-emerald-400/10 dark:text-emerald-100 dark:hover:bg-emerald-400/20"
-                    >
-                        {{ poolEntryForm.processing ? 'Registrando quiniela...' : 'Registrar quiniela' }}
-                    </button>
                 </div>
             </section>
 
