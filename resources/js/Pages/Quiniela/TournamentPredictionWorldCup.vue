@@ -1,10 +1,11 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
 import { Head, useForm, usePage } from '@inertiajs/vue3'
-import AppLayout from '@/Layouts/AppLayout.vue'
 import StandingWidget from '@/Components/Quiniela/StandingsWidget.vue'
 import WorldCupMatchCard from '@/Components/Quiniela/WorldCupMatchCard.vue'
 import PredictionSuccessCard from '@/Components/Quiniela/PredictionSuccessCard.vue'
+import FlowbiteModal from '@/Components/UI/FlowbiteModal.vue'
+import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
 
 const props = defineProps({
     tournament: {
@@ -32,8 +33,11 @@ const props = defineProps({
 const page = usePage()
 const poolEntryForm = useForm({
     tournament_id: props.tournament.id,
+    name: '',
     predictions: [],
 })
+const showNameStepModal = ref(false)
+const hasConfirmedPoolName = ref(false)
 
 const stageDefinitions = [
     { key: 'group', label: 'Grupos' },
@@ -169,6 +173,7 @@ const canSubmitPoolEntry = computed(() => {
 
 const createdPoolEntry = computed(() => page.props.flash?.created_pool_entry ?? null)
 const flashError = computed(() => page.props.flash?.error ?? null)
+const currentUserName = computed(() => String(page.props.auth?.user?.name ?? 'Usuario').trim() || 'Usuario')
 
 const stageProgress = computed(() => {
     return stageDefinitions.map((stage, index) => {
@@ -541,6 +546,15 @@ const displayGroupedStageMatches = computed(() => {
 })
 
 const currentGroup = computed(() => displayGroupedStageMatches.value[currentGroupIndex.value] ?? null)
+const currentGroupMatches = computed(() => {
+    if (!currentGroup.value) {
+        return []
+    }
+
+    return (displayGamesByStage.value.group || []).filter(
+        (game) => game.group_name === currentGroup.value.name,
+    )
+})
 
 const currentGroupStatus = computed(() => groupProgress.value[currentGroupIndex.value] ?? null)
 
@@ -593,17 +607,73 @@ const goToNextStage = () => {
 }
 
 const submitPoolEntry = () => {
+    if (!hasConfirmedPoolName.value || !poolEntryForm.name.trim()) {
+        showNameStepModal.value = true
+        return
+    }
+
     if (!canSubmitPoolEntry.value || poolEntryForm.processing) {
         return
     }
 
     poolEntryForm.transform(() => ({
         tournament_id: props.tournament.id,
+        name: poolEntryForm.name.trim(),
         predictions: predictionPayloads.value,
     })).post(route('pools.store'), {
         preserveScroll: true,
     })
 }
+
+const openNameStepModal = () => {
+    if (!createdPoolEntry.value) {
+        showNameStepModal.value = true
+    }
+}
+
+const closeNameStepModal = () => {
+    if (!hasConfirmedPoolName.value) {
+        return
+    }
+
+    showNameStepModal.value = false
+}
+
+const confirmPoolName = () => {
+    const normalizedName = poolEntryForm.name.trim().replace(/\s+/g, ' ')
+
+    if (normalizedName.length < 3) {
+        return
+    }
+
+    poolEntryForm.name = normalizedName
+    hasConfirmedPoolName.value = true
+    showNameStepModal.value = false
+}
+
+watch(
+    createdPoolEntry,
+    (value) => {
+        if (value) {
+            showNameStepModal.value = false
+        }
+    },
+)
+
+watch(
+    () => props.participationRules?.isOpen,
+    (isOpen) => {
+        if (isOpen === false) {
+            showNameStepModal.value = false
+            return
+        }
+
+        if (!hasConfirmedPoolName.value && !createdPoolEntry.value) {
+            showNameStepModal.value = true
+        }
+    },
+    { immediate: true },
+)
 
 watch(
     currentStage,
@@ -631,37 +701,36 @@ watch(
                 :pool-entry="createdPoolEntry"
             />
 
-            <section class="overflow-hidden rounded-3xl border border-cyan-400/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_transparent_32%),linear-gradient(135deg,_rgba(2,6,23,0.98),_rgba(15,23,42,0.96))] p-6 shadow-xl shadow-cyan-950/20 md:p-8">
-                <div class="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-                    <div class="max-w-3xl">
-                        <p class="inline-flex rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
-                            Template mundial - modo demo
+            <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/75 md:p-6">
+                <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                    <div class="max-w-2xl">
+                        <p class="inline-flex rounded-full border border-cyan-300/40 bg-cyan-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-700 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200">
+                            Crear quiniela
                         </p>
-                        <h1 class="mt-4 text-4xl font-black tracking-tight text-white md:text-5xl">
+                        <h1 class="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-4xl dark:text-white">
                             {{ tournament.name }}
                         </h1>
-                        <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300 md:text-base">
-                            Vista guiada para capturar la quiniela con datos reales del torneo, grupos, juegos, equipos y banderas.
-                            La tabla por grupo se recalcula al vuelo mientras el usuario escribe sus marcadores.
+                        <p class="mt-2 max-w-xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+                            Flujo guiado por etapas con progreso en vivo y estadisticas por grupo.
                         </p>
                     </div>
 
-                    <div class="w-full max-w-xl rounded-3xl border border-white/10 bg-black/25 p-5 backdrop-blur-sm">
+                    <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/60">
                         <div class="flex items-center justify-between gap-4">
                             <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Progreso global</p>
-                                <p class="mt-1 text-3xl font-black text-white">
+                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Progreso global</p>
+                                <p class="mt-1 text-3xl font-black text-slate-900 dark:text-white">
                                     {{ progress.filled }}
-                                    <span class="text-slate-500">/ {{ progress.total }}</span>
+                                    <span class="text-slate-400 dark:text-slate-500">/ {{ progress.total }}</span>
                                 </p>
                             </div>
-                            <div class="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-right">
-                                <p class="text-xs uppercase tracking-[0.2em] text-emerald-200/80">Completado</p>
-                                <p class="text-2xl font-black text-emerald-300">{{ progress.percentage }}%</p>
+                            <div class="rounded-xl border border-emerald-300/30 bg-emerald-50 px-3 py-2 text-right dark:border-emerald-400/20 dark:bg-emerald-400/10">
+                                <p class="text-xs uppercase tracking-[0.2em] text-emerald-700/80 dark:text-emerald-200/80">Completado</p>
+                                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-300">{{ progress.percentage }}%</p>
                             </div>
                         </div>
 
-                        <div class="mt-4 h-3 overflow-hidden rounded-full bg-white/10">
+                        <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
                             <div
                                 class="h-full rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-emerald-400 transition-all duration-500"
                                 :style="{ width: `${progress.percentage}%` }"
@@ -670,38 +739,56 @@ watch(
                     </div>
                 </div>
 
-                <div v-if="flashError" class="mt-6 rounded-2xl border border-rose-300/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+                <div v-if="flashError" class="mt-4 rounded-xl border border-rose-300/40 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-300/20 dark:bg-rose-400/10 dark:text-rose-100">
                     {{ flashError }}
                 </div>
 
-                <div v-if="props.participationRules?.isOpen === false" class="mt-4 rounded-2xl border border-rose-300/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+                <div v-if="props.participationRules?.isOpen === false" class="mt-4 rounded-xl border border-rose-300/40 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-300/20 dark:bg-rose-400/10 dark:text-rose-100">
                     La participacion de quinielas esta cerrada desde el {{ props.participationRules?.closeAtLabel ?? 'limite configurado' }}.
                 </div>
 
-                <div v-if="hasInvalidKnockoutDraws" class="mt-4 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+                <div v-if="hasInvalidKnockoutDraws" class="mt-4 rounded-xl border border-amber-300/40 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100">
                     En fases eliminatorias no se permiten empates en la quiniela. Define un ganador para que el bracket pueda avanzar correctamente.
                 </div>
 
-                <div class="mt-6 flex flex-col gap-4 rounded-3xl border border-white/10 bg-black/20 p-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Registro final</p>
-                        <p class="mt-2 text-sm leading-6 text-slate-300">
-                            Cuando completes los {{ progress.total }} partidos, guardaremos la quiniela en tu cuenta y el numero de registro sera el ID unico de esa inscripcion.
-                        </p>
+                <div class="mt-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:flex-row lg:items-center lg:justify-between dark:border-slate-800 dark:bg-slate-950/60">
+                    <div class="space-y-2">
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Registro final</p>
+                        <div class="grid gap-2 text-xs sm:grid-cols-2">
+                            <div class="rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+                                <p class="uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Usuario</p>
+                                <p class="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-white">{{ currentUserName }}</p>
+                            </div>
+                            <div class="rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+                                <div class="flex items-center justify-between gap-2">
+                                    <p class="uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nombre de quiniela</p>
+                                    <button
+                                        type="button"
+                                        @click="openNameStepModal"
+                                        class="inline-flex items-center rounded-full border border-cyan-300/40 bg-cyan-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200 dark:hover:bg-cyan-400/20"
+                                    >
+                                        Editar
+                                    </button>
+                                </div>
+                                <p class="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-white">
+                                    {{ poolEntryForm.name || 'Pendiente por definir' }}
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     <button
                         type="button"
                         @click="submitPoolEntry"
-                        :disabled="!canSubmitPoolEntry || poolEntryForm.processing"
-                        class="inline-flex min-w-[220px] items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-400/10 px-5 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        :disabled="!canSubmitPoolEntry || poolEntryForm.processing || !hasConfirmedPoolName"
+                        class="inline-flex min-w-[220px] items-center justify-center rounded-xl border border-emerald-300/50 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-300/20 dark:bg-emerald-400/10 dark:text-emerald-100 dark:hover:bg-emerald-400/20"
                     >
                         {{ poolEntryForm.processing ? 'Registrando quiniela...' : 'Registrar quiniela' }}
                     </button>
                 </div>
             </section>
 
-            <section class="rounded-3xl border border-white/10 bg-slate-950/70 p-4 backdrop-blur-xl">
+            <section class="rounded-2xl border border-slate-200 bg-slate-100 p-4 dark:border-slate-800 dark:bg-slate-900/70">
                 <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
                     <button
                         v-for="stage in stageProgress"
@@ -711,11 +798,11 @@ watch(
                         :disabled="!stage.unlocked"
                         :class="[
                             currentStage === stage.key
-                                ? 'border-cyan-300 bg-cyan-300/15 text-white shadow-lg shadow-cyan-950/20'
-                                : 'border-white/10 bg-slate-900/80 text-slate-400',
+                                ? 'border-cyan-300 bg-cyan-50 text-cyan-800 dark:bg-cyan-300/15 dark:text-white'
+                                : 'border-slate-300 bg-white text-slate-500 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-400',
                             !stage.unlocked && 'cursor-not-allowed opacity-50',
                         ]"
-                        class="rounded-2xl border px-4 py-3 text-left transition hover:border-cyan-300/40 hover:text-white"
+                        class="rounded-2xl border px-4 py-3 text-left transition hover:border-cyan-300/40"
                     >
                         <p class="text-xs font-semibold uppercase tracking-[0.2em]">
                             {{ stage.label }}
@@ -729,18 +816,18 @@ watch(
 
             <section v-if="currentStage === 'group' && currentGroup" class="space-y-6">
                 <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-                    <div class="rounded-3xl border border-white/10 bg-slate-950/70 p-5 backdrop-blur-xl">
+                    <div class="rounded-2xl border border-slate-200 bg-slate-100 p-5 dark:border-slate-800 dark:bg-slate-900/70">
                         <div class="flex items-center justify-between gap-4">
                             <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300/80">Progreso por grupos</p>
-                                <h2 class="mt-2 text-2xl font-bold text-white">Fase de grupos guiada</h2>
-                                <p class="mt-1 text-sm text-slate-400">
-                                    Completa un grupo a la vez. Cuando termines, avanzas al siguiente sin bajar por toda la pagina.
+                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-300/80">Progreso por grupos</p>
+                                <h2 class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">Fase de grupos guiada</h2>
+                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                    Completa un grupo a la vez.
                                 </p>
                             </div>
-                            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-right">
-                                <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Actual</p>
-                                <p class="text-3xl font-black text-white">{{ currentGroup.name }}</p>
+                            <div class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-right dark:border-white/10 dark:bg-white/5">
+                                <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Actual</p>
+                                <p class="text-3xl font-black text-slate-900 dark:text-white">{{ currentGroup.name }}</p>
                             </div>
                         </div>
 
@@ -752,10 +839,10 @@ watch(
                                 @click="selectGroup(group.index)"
                                 :class="[
                                     currentGroupIndex === group.index
-                                        ? 'border-cyan-300 bg-cyan-300/15 text-white'
+                                        ? 'border-cyan-300 bg-cyan-50 text-cyan-800 dark:bg-cyan-300/15 dark:text-white'
                                         : group.isComplete
-                                            ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200'
-                                            : 'border-white/10 bg-slate-900/80 text-slate-300',
+                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-200'
+                                            : 'border-slate-300 bg-white text-slate-700 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-300',
                                 ]"
                                 class="rounded-2xl border px-4 py-3 text-left transition"
                             >
@@ -772,25 +859,25 @@ watch(
                     <StandingWidget :group-name="currentGroup.name" :standings="standingsByGroup[currentGroup.name] || []" />
                 </div>
 
-                <div class="rounded-3xl border border-white/10 bg-slate-950/70 p-4 shadow-xl shadow-black/20 backdrop-blur-xl md:p-6">
-                    <div class="mb-6 flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                        <div class="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-6 xl:w-[360px]">
-                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300/80">Grupo</p>
+                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/75 md:p-5">
+                    <div class="mb-5 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5 xl:w-[360px] dark:border-white/10 dark:bg-slate-950/60">
+                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-300/80">Grupo</p>
                             <div class="mt-3 flex items-end gap-4">
-                                <span class="text-6xl font-black leading-none text-white md:text-7xl">{{ currentGroup.name }}</span>
-                                <div class="pb-2 text-sm text-slate-400">
+                                <span class="text-5xl font-black leading-none text-slate-900 md:text-6xl dark:text-white">{{ currentGroup.name }}</span>
+                                <div class="pb-2 text-sm text-slate-500 dark:text-slate-400">
                                     {{ currentGroupStatus?.completed || 0 }} / {{ currentGroupStatus?.total || 0 }} partidos
                                 </div>
                             </div>
-                            <p class="mt-4 text-sm leading-6 text-slate-300">
-                                Estadistica en vivo a la derecha. Debajo tienes los partidos con banderas, iniciales, sede y probabilidad estimada.
+                            <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                Encuentros del grupo seleccionado.
                             </p>
                         </div>
 
-                        <div class="flex flex-1 flex-col justify-between gap-4 rounded-3xl border border-white/10 bg-white/5 p-5">
+                        <div class="flex flex-1 flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-slate-950/60">
                             <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Guia del usuario</p>
-                                <p class="mt-2 text-sm leading-6 text-slate-300">
+                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Guia del usuario</p>
+                                <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                                     Llena todos los marcadores del grupo {{ currentGroup.name }} para habilitar el siguiente paso.
                                 </p>
                             </div>
@@ -800,7 +887,7 @@ watch(
                                     type="button"
                                     @click="goToPreviousGroup"
                                     :disabled="currentGroupIndex === 0"
-                                    class="inline-flex items-center justify-center rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-white/20 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                                    class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-slate-800"
                                 >
                                     Anterior
                                 </button>
@@ -808,7 +895,7 @@ watch(
                                     type="button"
                                     @click="goToNextGroup"
                                     :disabled="!currentGroupStatus?.isComplete"
-                                    class="inline-flex items-center justify-center rounded-xl border border-cyan-300/20 bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-40"
+                                    class="inline-flex items-center justify-center rounded-xl border border-cyan-300/50 bg-cyan-50 px-4 py-3 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200 dark:hover:bg-cyan-400/20"
                                 >
                                     {{ currentGroupIndex === groupedStageMatches.length - 1 ? 'Continuar a Round 32' : 'Siguiente grupo' }}
                                 </button>
@@ -816,9 +903,9 @@ watch(
                         </div>
                     </div>
 
-                    <div class="grid gap-4 2xl:grid-cols-2">
+                    <div class="space-y-3">
                         <WorldCupMatchCard
-                            v-for="match in currentGroup.games"
+                            v-for="match in currentGroupMatches"
                             :key="match.id"
                             v-model="predictions[match.id]"
                             :match="match"
@@ -829,20 +916,20 @@ watch(
 
             <section v-else class="space-y-6">
                 <div class="grid gap-6 xl:grid-cols-[1fr_auto]">
-                    <div class="rounded-3xl border border-amber-300/15 bg-amber-300/5 p-5 text-sm text-amber-100">
+                    <div class="rounded-2xl border border-amber-300/40 bg-amber-50 p-5 text-sm text-amber-700 dark:border-amber-300/15 dark:bg-amber-300/5 dark:text-amber-100">
                         La navegacion entre fases avanza a medida que completas la etapa previa. Los cruces muestran equipos resueltos cuando existen y, mientras tanto, mantienen un placeholder visual.
                     </div>
                     <button
                         v-if="currentStageStatus?.isComplete && nextUnlockedStage"
                         type="button"
                         @click="goToNextStage"
-                        class="inline-flex items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-400/10 px-5 py-4 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-400/20"
+                        class="inline-flex items-center justify-center rounded-xl border border-cyan-300/50 bg-cyan-50 px-5 py-4 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200 dark:hover:bg-cyan-400/20"
                     >
                         Continuar a {{ nextUnlockedStage.label }}
                     </button>
                 </div>
 
-                <div class="grid gap-4 2xl:grid-cols-2">
+                <div class="space-y-3">
                     <WorldCupMatchCard
                         v-for="match in visibleStageMatches"
                         :key="match.id"
@@ -852,5 +939,67 @@ watch(
                 </div>
             </section>
         </div>
+
+        <FlowbiteModal
+            :show="showNameStepModal"
+            max-width="xl"
+            :closeable="hasConfirmedPoolName"
+            @close="closeNameStepModal"
+        >
+            <div class="space-y-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.22em] text-primary-600 dark:text-primary-400">
+                        Paso 1 de 2
+                    </p>
+                    <h2 class="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                        Nombra tu quiniela
+                    </h2>
+                    <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                        Este nombre se guarda en la pool junto al usuario actual.
+                    </p>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-950/40">
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Usuario</p>
+                    <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{{ currentUserName }}</p>
+                </div>
+
+                <div>
+                    <label for="pool-entry-name" class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        Nombre de la quiniela
+                    </label>
+                    <input
+                        id="pool-entry-name"
+                        v-model="poolEntryForm.name"
+                        type="text"
+                        maxlength="80"
+                        placeholder="Ej: Jrmcorneilly #3"
+                        class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-primary-400 focus:ring-4 focus:ring-primary-200/50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-primary-500 dark:focus:ring-primary-500/20"
+                    >
+                    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        Minimo 3 caracteres. Maximo 80.
+                    </p>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-1">
+                    <button
+                        v-if="hasConfirmedPoolName"
+                        type="button"
+                        class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                        @click="closeNameStepModal"
+                    >
+                        Cerrar
+                    </button>
+                    <button
+                        type="button"
+                        class="inline-flex items-center justify-center rounded-xl border border-primary-300/30 bg-primary-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-40"
+                        :disabled="poolEntryForm.name.trim().length < 3"
+                        @click="confirmPoolName"
+                    >
+                        Continuar a creacion
+                    </button>
+                </div>
+            </div>
+        </FlowbiteModal>
     </UserDashboardLayout>
 </template>

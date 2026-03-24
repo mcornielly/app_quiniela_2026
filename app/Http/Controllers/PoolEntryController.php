@@ -289,11 +289,23 @@ class PoolEntryController extends Controller
     {
         $validated = $request->validate([
             'tournament_id' => ['required', 'integer', 'exists:tournaments,id'],
+            'name' => ['required', 'string', 'min:3', 'max:80'],
             'predictions' => ['required', 'array', 'min:1'],
             'predictions.*.game_id' => ['required', 'integer', 'exists:games,id'],
             'predictions.*.home_score' => ['required', 'integer', 'min:0', 'max:20'],
             'predictions.*.away_score' => ['required', 'integer', 'min:0', 'max:20'],
         ]);
+
+        $poolEntryName = Str::of((string) ($validated['name'] ?? ''))
+            ->squish()
+            ->substr(0, 80)
+            ->toString();
+
+        if ($poolEntryName === '') {
+            return redirect()
+                ->route('predictions.worldcup')
+                ->with('error', 'Debes indicar un nombre valido para la quiniela.');
+        }
 
         $user = $request->user();
         $tournament = Tournament::query()->findOrFail($validated['tournament_id']);
@@ -362,11 +374,11 @@ class PoolEntryController extends Controller
         $resolvedBracketTeamsByGameId = $this->resolvedBracketTeamsByGameId($resolvedBracket);
 
         try {
-            $poolEntry = DB::transaction(function () use ($user, $tournament, $predictionPayloads, $games, $resolvedBracketTeamsByGameId) {
+            $poolEntry = DB::transaction(function () use ($user, $tournament, $predictionPayloads, $games, $resolvedBracketTeamsByGameId, $poolEntryName) {
                 $poolEntry = PoolEntry::query()->create([
                     'tournament_id' => $tournament->id,
                     'user_id' => $user->id,
-                    'name' => 'Quiniela en registro',
+                    'name' => $poolEntryName,
                     'status' => 'draft',
                     'completion_percent' => 100,
                 ]);
@@ -391,10 +403,6 @@ class PoolEntryController extends Controller
                         ->values()
                         ->all()
                 );
-
-                $poolEntry->forceFill([
-                    'name' => "Quiniela #{$poolEntry->id}",
-                ])->save();
 
                 $this->poolEntryRuleService->syncPoolEntryStatus($poolEntry);
 
