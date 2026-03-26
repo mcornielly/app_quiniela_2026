@@ -1,5 +1,5 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3'
 import StandingWidget from '@/Components/Quiniela/StandingsWidget.vue'
 import WorldCupMatchCard from '@/Components/Quiniela/WorldCupMatchCard.vue'
@@ -31,6 +31,18 @@ const props = defineProps({
 })
 
 const page = usePage()
+const favoriteTeamTheme = computed(() => page.props.auth?.user?.favorite_team_theme ?? null)
+const tickerThemes = {
+    neutral: {
+        tickerClass: 'border-t border-slate-300/70 bg-[linear-gradient(to_right,_#cfd6df_0%,_#e4e8ee_45%,_#f4f6f9_100%)] text-slate-900',
+    },
+}
+const activeTickerTheme = computed(() => ({
+    ...tickerThemes.neutral,
+    ...(favoriteTeamTheme.value ?? {}),
+}))
+const themedPrimaryButtonClass = computed(() => activeTickerTheme.value?.buttonPrimaryClass
+    ?? 'bg-cyan-400 text-slate-950 hover:bg-cyan-300 hover:text-white focus:ring-cyan-200 dark:bg-cyan-400 dark:hover:bg-cyan-300 dark:focus:ring-cyan-900')
 const poolEntryForm = useForm({
     tournament_id: props.tournament.id,
     name: '',
@@ -38,6 +50,7 @@ const poolEntryForm = useForm({
 })
 const showNameStepModal = ref(false)
 const hasConfirmedPoolName = ref(false)
+const groupMatchesTopRef = ref(null)
 
 const stageDefinitions = [
     { key: 'group', label: 'Grupos' },
@@ -556,8 +569,6 @@ const currentGroupMatches = computed(() => {
     )
 })
 
-const currentGroupStatus = computed(() => groupProgress.value[currentGroupIndex.value] ?? null)
-
 const currentStageStatus = computed(() => {
     return stageProgress.value.find((stage) => stage.key === currentStage.value) ?? null
 })
@@ -582,21 +593,21 @@ const selectGroup = (index) => {
     currentGroupIndex.value = index
 }
 
+const scrollToCurrentGroupMatches = async () => {
+    await nextTick()
+    groupMatchesTopRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
 const goToPreviousGroup = () => {
     if (currentGroupIndex.value > 0) {
         currentGroupIndex.value -= 1
     }
 }
 
-const goToNextGroup = () => {
-    if (currentGroupIndex.value < groupedStageMatches.value.length - 1) {
+const goToNextGroup = async () => {
+    if (currentGroupIndex.value < groupProgress.value.length - 1) {
         currentGroupIndex.value += 1
-        return
-    }
-
-    const nextStage = stageProgress.value.find((stage) => stage.key === 'round_32' && stage.unlocked)
-    if (nextStage) {
-        currentStage.value = nextStage.key
+        await scrollToCurrentGroupMatches()
     }
 }
 
@@ -623,12 +634,6 @@ const submitPoolEntry = () => {
     })).post(route('pools.store'), {
         preserveScroll: true,
     })
-}
-
-const openNameStepModal = () => {
-    if (!createdPoolEntry.value) {
-        showNameStepModal.value = true
-    }
 }
 
 const closeNameStepModal = () => {
@@ -665,11 +670,6 @@ watch(
     (isOpen) => {
         if (isOpen === false) {
             showNameStepModal.value = false
-            return
-        }
-
-        if (!hasConfirmedPoolName.value && !createdPoolEntry.value) {
-            showNameStepModal.value = true
         }
     },
     { immediate: true },
@@ -692,7 +692,9 @@ watch(
 <template>
 <Head title="Quiniela Mundial" />
 
-    <UserDashboardLayout>
+    <UserDashboardLayout
+        :ticker-class="[activeTickerTheme.tickerClass, activeTickerTheme.decorationClass || ''].join(' ')"
+    >
         <Head :title="`Quiniela Mundial ${tournament.year ?? ''}`" />
 
         <template #ticker>
@@ -715,7 +717,7 @@ watch(
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="h-8 w-8 fill-current text-cyan-500" aria-hidden="true">
                             <path d="M96 96c0-35.3 28.7-64 64-64H416c35.3 0 64 28.7 64 64V352c0 35.3-28.7 64-64 64H160c-35.3 0-64-28.7-64-64V96zM0 128c0-17.7 14.3-32 32-32s32 14.3 32 32V384c0 53 43 96 96 96H384c17.7 0 32 14.3 32 32s-14.3 32-32 32H160C71.6 544 0 472.4 0 384V128z"/>
                         </svg>
-                        <h1>Crear quiniela</h1>
+                        <h1>Quiniela</h1>
                     </div>
                     <Link
                         :href="route('pools.index')"
@@ -728,54 +730,35 @@ watch(
                     </Link>
                 </div>
 
-                <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/75">
-                    <div class="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
-                        <div class="grid gap-2 text-xs sm:grid-cols-2">
-                            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950/50">
-                                <p class="uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Usuario</p>
-                                <p class="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-white">{{ currentUserName }}</p>
-                            </div>
-                            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950/50">
-                                <div class="flex items-center justify-between gap-2">
-                                    <p class="uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nombre de quiniela</p>
-                                    <button
-                                        type="button"
-                                        @click="openNameStepModal"
-                                        class="inline-flex items-center rounded-full border border-cyan-300/40 bg-cyan-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200 dark:hover:bg-cyan-400/20"
-                                    >
-                                        Editar
-                                    </button>
-                                </div>
-                                <p class="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-white">
-                                    {{ poolEntryForm.name || 'Pendiente por definir' }}
-                                </p>
-                            </div>
-                        </div>
-
-                        <button
-                            type="button"
-                            @click="submitPoolEntry"
-                            :disabled="!canSubmitPoolEntry || poolEntryForm.processing || !hasConfirmedPoolName"
-                            class="inline-flex min-w-[220px] items-center justify-center rounded-xl border border-emerald-300/50 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-300/20 dark:bg-emerald-400/10 dark:text-emerald-100 dark:hover:bg-emerald-400/20"
+                <div class="mt-10 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                    <div>
+                        <label for="pool-entry-name-inline" class="mb-2.5 block text-sm font-medium text-slate-900 dark:text-slate-100">
+                            Nombre de la quiniela
+                        </label>
+                        <input
+                            id="pool-entry-name-inline"
+                            v-model="poolEntryForm.name"
+                            type="text"
+                            maxlength="80"
+                            class="block w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 shadow-sm focus:border-cyan-400 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-cyan-400"
+                            placeholder="Ej: Jrmcorneilly #3"
+                            required
                         >
-                            {{ poolEntryForm.processing ? 'Registrando quiniela...' : 'Registrar quiniela' }}
-                        </button>
                     </div>
 
-                    <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/60">
-                        <div class="flex items-center justify-between gap-4">
-                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Progreso global</p>
-                            <p class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ progress.filled }} / {{ progress.total }} · {{ progress.percentage }}%</p>
-                        </div>
-                        <div class="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
-                            <div
-                                class="h-full rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-emerald-400 transition-all duration-500"
-                                :style="{ width: `${progress.percentage}%` }"
-                            />
-                        </div>
-                    </div>
+                    <button
+                        type="button"
+                        @click="submitPoolEntry"
+                        :disabled="!canSubmitPoolEntry || poolEntryForm.processing || !hasConfirmedPoolName"
+                        :class="[
+                            themedPrimaryButtonClass,
+                            'inline-flex min-w-[220px] items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+                        ]"
+                    >
+                        {{ poolEntryForm.processing ? 'Registrando quiniela...' : 'Registrar quiniela' }}
+                    </button>
                 </div>
-
+                <div class="mt-[6px] border-b border-slate-300 dark:border-slate-700" />
                 <div v-if="flashError" class="mt-4 rounded-xl border border-rose-300/40 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-300/20 dark:bg-rose-400/10 dark:text-rose-100">
                     {{ flashError }}
                 </div>
@@ -789,7 +772,7 @@ watch(
                 </div>
             </section>
 
-            <section class="rounded-2xl border border-slate-200 bg-slate-100 p-4 dark:border-slate-800 dark:bg-slate-900/70">
+            <section class="mt-6">
                 <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
                     <button
                         v-for="stage in stageProgress"
@@ -813,6 +796,16 @@ watch(
                         </p>
                     </button>
                 </div>
+                <div class="mt-5 w-full">
+                    <div class="w-full rounded-full bg-slate-300/80 dark:bg-slate-700/70">
+                        <div
+                            class="flex h-4 items-center justify-center rounded-full bg-primary-600 p-0.5 text-xs font-medium leading-none text-white transition-all duration-500"
+                            :style="{ width: `${progress.percentage}%` }"
+                        >
+                            {{ progress.percentage }}%
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <section v-if="currentStage === 'group' && currentGroup" class="space-y-6">
@@ -826,9 +819,10 @@ watch(
                                     Completa un grupo a la vez.
                                 </p>
                             </div>
-                            <div class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-right dark:border-white/10 dark:bg-white/5">
-                                <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Actual</p>
-                                <p class="text-3xl font-black text-slate-900 dark:text-white">{{ currentGroup.name }}</p>
+                            <div class="flex h-20 min-w-[5.75rem] items-center justify-center rounded-2xl border border-emerald-400/70 bg-emerald-500/15 px-3 py-2 shadow-[0_0_18px_rgba(16,185,129,0.35)]">
+                                <p class="text-5xl font-black leading-none text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.8)] animate-pulse scale-y-110">
+                                    {{ currentGroup.name }}
+                                </p>
                             </div>
                         </div>
 
@@ -840,78 +834,70 @@ watch(
                                 @click="selectGroup(group.index)"
                                 :class="[
                                     currentGroupIndex === group.index
-                                        ? 'border-cyan-300 bg-cyan-50 text-cyan-800 dark:bg-cyan-300/15 dark:text-white'
-                                        : group.isComplete
-                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-200'
-                                            : 'border-slate-300 bg-white text-slate-700 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-300',
+                                        ? 'border-emerald-400/80 bg-emerald-500/10 text-white shadow-[0_0_16px_rgba(16,185,129,0.35)]'
+                                        : 'border-slate-700/70 bg-slate-950/40 text-slate-500 hover:border-slate-600',
                                 ]"
-                                class="rounded-2xl border px-4 py-3 text-left transition"
+                                class="flex min-h-[88px] flex-col rounded-2xl border px-4 py-2.5 text-left transition"
                             >
                                 <p class="text-xs font-semibold uppercase tracking-[0.2em]">
                                     Grupo {{ group.name }}
                                 </p>
-                                <p class="mt-2 text-xl font-black">
+                                <p class="mt-auto self-end text-2xl font-black leading-none">
                                     {{ group.completed }}/{{ group.total }}
                                 </p>
                             </button>
                         </div>
+
                     </div>
 
                     <StandingWidget :group-name="currentGroup.name" :standings="standingsByGroup[currentGroup.name] || []" />
                 </div>
 
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/75 md:p-5">
-                    <div class="mb-5 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5 xl:w-[360px] dark:border-white/10 dark:bg-slate-950/60">
-                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-300/80">Grupo</p>
-                            <div class="mt-3 flex items-end gap-4">
-                                <span class="text-5xl font-black leading-none text-slate-900 md:text-6xl dark:text-white">{{ currentGroup.name }}</span>
-                                <div class="pb-2 text-sm text-slate-500 dark:text-slate-400">
-                                    {{ currentGroupStatus?.completed || 0 }} / {{ currentGroupStatus?.total || 0 }} partidos
-                                </div>
-                            </div>
-                            <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                Encuentros del grupo seleccionado.
-                            </p>
-                        </div>
+                <div class="flex items-center justify-between gap-3">
+                    <button
+                        type="button"
+                        class="inline-flex min-w-[170px] items-center justify-center rounded-xl border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                        :disabled="currentGroupIndex === 0"
+                        @click="goToPreviousGroup"
+                    >
+                        Anterior
+                    </button>
+                    <button
+                        type="button"
+                        class="inline-flex min-w-[170px] items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-50 px-6 py-2.5 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200 dark:hover:bg-cyan-400/20"
+                        :disabled="currentGroupIndex >= groupProgress.length - 1"
+                        @click="goToNextGroup"
+                    >
+                        Siguiente
+                    </button>
+                </div>
 
-                        <div class="flex flex-1 flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-slate-950/60">
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Guia del usuario</p>
-                                <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                    Llena todos los marcadores del grupo {{ currentGroup.name }} para habilitar el siguiente paso.
-                                </p>
-                            </div>
+                <div ref="groupMatchesTopRef" class="space-y-3">
+                    <WorldCupMatchCard
+                        v-for="match in currentGroupMatches"
+                        :key="match.id"
+                        v-model="predictions[match.id]"
+                        :match="match"
+                    />
+                </div>
 
-                            <div class="flex flex-col gap-3 sm:flex-row">
-                                <button
-                                    type="button"
-                                    @click="goToPreviousGroup"
-                                    :disabled="currentGroupIndex === 0"
-                                    class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-slate-800"
-                                >
-                                    Anterior
-                                </button>
-                                <button
-                                    type="button"
-                                    @click="goToNextGroup"
-                                    :disabled="!currentGroupStatus?.isComplete"
-                                    class="inline-flex items-center justify-center rounded-xl border border-cyan-300/50 bg-cyan-50 px-4 py-3 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200 dark:hover:bg-cyan-400/20"
-                                >
-                                    {{ currentGroupIndex === groupedStageMatches.length - 1 ? 'Continuar a Round 32' : 'Siguiente grupo' }}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="space-y-3">
-                        <WorldCupMatchCard
-                            v-for="match in currentGroupMatches"
-                            :key="match.id"
-                            v-model="predictions[match.id]"
-                            :match="match"
-                        />
-                    </div>
+                <div class="flex items-center justify-between gap-3 pt-2">
+                    <button
+                        type="button"
+                        class="inline-flex min-w-[170px] items-center justify-center rounded-xl border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                        :disabled="currentGroupIndex === 0"
+                        @click="goToPreviousGroup"
+                    >
+                        Anterior
+                    </button>
+                    <button
+                        type="button"
+                        class="inline-flex min-w-[170px] items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-50 px-6 py-2.5 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200 dark:hover:bg-cyan-400/20"
+                        :disabled="currentGroupIndex >= groupProgress.length - 1"
+                        @click="goToNextGroup"
+                    >
+                        Siguiente
+                    </button>
                 </div>
             </section>
 
