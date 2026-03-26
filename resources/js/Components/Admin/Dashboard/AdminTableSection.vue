@@ -24,7 +24,7 @@ const isUserDashboard = computed(() => props.variant === 'user-dashboard')
 
 const wrapperClass = computed(() => {
     if (isUserDashboard.value) {
-        return 'relative overflow-x-auto overflow-y-visible rounded-lg border border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/85'
+        return 'relative min-w-0 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/85'
     }
 
     return 'relative overflow-x-auto overflow-y-visible rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800'
@@ -32,7 +32,7 @@ const wrapperClass = computed(() => {
 
 const headerClass = computed(() => {
     if (isUserDashboard.value) {
-        return 'flex items-start justify-between gap-4 border-b border-gray-200 p-5 dark:border-slate-800'
+        return 'flex flex-col gap-3 border-b border-gray-200 p-5 sm:flex-row sm:items-start sm:justify-between dark:border-slate-800'
     }
 
     return 'flex items-start justify-between gap-4 border-b border-gray-200 p-5 dark:border-gray-700'
@@ -74,3 +74,4 @@ const descriptionClass = computed(() => {
         <slot />
     </div>
 </template>
+

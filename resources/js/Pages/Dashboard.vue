@@ -685,9 +685,9 @@ onBeforeUnmount(() => {
             </Link>
         </section>
 
-        <section class="mt-6 grid gap-6 xl:grid-cols-[1.55fr_1fr]">
-            <div class="space-y-6">
-                <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/85">
+        <section class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+            <div class="min-w-0 space-y-6">
+                <div class="min-w-0 rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/85">
                     <div class="mb-4 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
                             <h2 class="text-base font-semibold text-gray-900 dark:text-white">Resultados del dia</h2>
@@ -820,6 +820,7 @@ onBeforeUnmount(() => {
                 </div>
 
                 <AdminTableSection
+                    class="min-w-0"
                     title="Proximos juegos"
                     :title-icon="upcomingTitleIcon"
                     variant="user-dashboard"
@@ -923,8 +924,9 @@ onBeforeUnmount(() => {
                 </AdminTableSection>
             </div>
 
-            <div class="space-y-6">
+            <div class="min-w-0 space-y-6">
                 <SectionCard
+                    class="min-w-0"
                     title="Cobertura del torneo"
                     subtitle="Indicadores globales del Mundial 2026."
                 >
@@ -1010,6 +1012,7 @@ onBeforeUnmount(() => {
                 </SectionCard>
 
                 <AdminTableSection
+                    class="min-w-0"
                     title="Quiniela 2026 - Top 15"
                     :description="`Ranking por puntos - Actualizado: ${rankingUpdatedAt}`"
                     variant="user-dashboard"
