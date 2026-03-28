@@ -44,18 +44,17 @@ const submit = () => {
 
     const options = {
         onSuccess: (page) => {
-            const flash = page.props.flash
+            // AdminLayout already renders flash notifications globally.
+            // Keep only a fallback when flash is not present.
+            const flash = page?.props?.flash
 
-            if (flash?.success) {
-                notifySuccess(flash.success)
-            } else if (isScoreUpdate) {
-                notifySuccess('Score actualizado correctamente.')
-            } else {
-                notifySuccess(isEdit ? 'Juego actualizado correctamente.' : 'Juego creado correctamente.')
+            if (!flash?.success && !flash?.error) {
+                if (isScoreUpdate) {
+                    notifySuccess('Score actualizado correctamente.')
+                } else {
+                    notifySuccess(isEdit ? 'Juego actualizado correctamente.' : 'Juego creado correctamente.')
+                }
             }
-
-            if (flash?.error) notifyError(flash.error)
-
             emit('close')
         },
         onError: () => notifyError('No se pudo guardar. Verifica los datos e intenta nuevamente.'),

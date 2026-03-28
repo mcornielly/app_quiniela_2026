@@ -43,6 +43,7 @@ const notificationItems = ref([])
 const deferFlashNotifications = ref(false)
 const pendingFlash = ref(null)
 const liveChannelName = 'matches.live'
+const USER_NOTIFICATIONS_STORAGE_KEY = 'user.notifications.v1'
 
 const worldCupNavigation = computed(() => [
     { name: 'Calendario', href: route('calendar.index'), current: route().current('calendar.index') || route().current('matches.index'), icon: 'calendar' },
@@ -61,6 +62,37 @@ const navigation = computed(() => [
 const isWorldCupActive = computed(() => worldCupNavigation.value.some((item) => item.current))
 const unreadNotifications = computed(() => notificationItems.value.filter((item) => !item.read).length)
 
+const loadNotificationHistory = () => {
+    if (typeof window === 'undefined') {
+        return
+    }
+
+    try {
+        const raw = window.localStorage.getItem(USER_NOTIFICATIONS_STORAGE_KEY)
+        if (!raw) {
+            return
+        }
+
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) {
+            notificationItems.value = parsed.slice(0, 20)
+        }
+    } catch {
+        notificationItems.value = []
+    }
+}
+
+const persistNotificationHistory = () => {
+    if (typeof window === 'undefined') {
+        return
+    }
+
+    try {
+        window.localStorage.setItem(USER_NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notificationItems.value.slice(0, 20)))
+    } catch {
+        // Ignore localStorage quota/errors silently.
+    }
+}
 const applyTheme = (theme) => {
     currentTheme.value = theme
     localStorage.setItem('user-theme', theme)
@@ -75,7 +107,7 @@ const pushNotification = (payload) => {
     notificationItems.value = [
         {
             id: `${payload?.gameId ?? 'game'}-${payload?.occurredAt ?? Date.now()}`,
-            type: payload?.type === 'result' ? 'result' : 'start',
+            type: payload?.type === 'result' ? 'result' : (payload?.type === 'update' ? 'update' : 'start'),
             stageLabel: payload?.stageLabel ?? 'Mundial 2026',
             homeTeam: payload?.homeTeam ?? 'Local',
             awayTeam: payload?.awayTeam ?? 'Visitante',
@@ -97,6 +129,14 @@ const pushNotification = (payload) => {
 
 const markNotificationsRead = () => {
     notificationItems.value = notificationItems.value.map((item) => ({ ...item, read: true }))
+}
+
+const removeNotificationItem = (id) => {
+    notificationItems.value = notificationItems.value.filter((item) => item.id !== id)
+}
+
+const clearAllNotifications = () => {
+    notificationItems.value = []
 }
 
 const showFlashNotification = (flash) => {
@@ -133,6 +173,7 @@ const worldCupIconPaths = {
 }
 
 onMounted(() => {
+    loadNotificationHistory()
     window.addEventListener('favorite-team:applying', onFavoriteTeamApplyingChange)
 
     const storedTheme = localStorage.getItem('user-theme')
@@ -175,6 +216,14 @@ watch(
     { immediate: true, deep: true },
 )
 
+watch(
+    notificationItems,
+    () => {
+        persistNotificationHistory()
+    },
+    { deep: true },
+)
+
 </script>
 
 <template>
@@ -182,7 +231,7 @@ watch(
         <div class="absolute inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_55%)] dark:bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.18),_transparent_45%)]" />
 
         <header class="sticky top-0 z-40 border-b border-white/80 bg-white/88 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/92">
-            <div class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-3 sm:px-6 lg:px-8">
+            <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-3 py-3 sm:gap-6 sm:px-6 lg:px-8">
                 <div class="flex items-center gap-2">
                     <Link :href="route('dashboard')" class="flex items-center gap-2">
                         <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-sky-500 text-white shadow-lg shadow-primary-500/25">
@@ -257,7 +306,7 @@ watch(
                 </nav>
 
                 <div class="flex items-center gap-2">
-                    <Dropdown align="right" width="96" content-classes="py-0 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700">
+                    <Dropdown align="center" width="96" content-classes="py-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700">
                         <template #trigger>
                             <button
                                 type="button"
@@ -281,6 +330,9 @@ watch(
                             <NotificationsDropdown
                                 :notifications="notificationItems"
                                 :view-all-href="route('dashboard')"
+                                :total-count="unreadNotifications"
+                                :on-remove="removeNotificationItem"
+                                :on-clear-all="clearAllNotifications"
                             />
                         </template>
                     </Dropdown>
@@ -409,15 +461,15 @@ watch(
             </div>
         </header>
 
-        <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-            <div class="mb-8 flex flex-col gap-6 xl:flex-row xl:items-stretch">
+        <main class="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
+            <div class="mb-5 flex flex-col gap-5 sm:mb-8 sm:gap-6 xl:flex-row xl:items-stretch">
                 <div v-if="$slots.headerAside" class="xl:w-[19rem] xl:shrink-0">
                     <slot name="headerAside" />
                 </div>
 
                 <slot v-if="$slots.headerContent" name="headerContent" />
 
-                <div v-else class="min-w-0 flex-1 overflow-hidden rounded-[2rem] border border-white/80 bg-white/90 p-6 shadow-xl shadow-slate-200/70 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none">
+                <div v-else class="min-w-0 flex-1 overflow-hidden rounded-[2rem] border border-white/80 bg-white/90 p-4 shadow-xl shadow-slate-200/70 backdrop-blur sm:p-6 dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none">
                     <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                         <div class="max-w-2xl">
                             <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary-600 dark:text-primary-400">
@@ -456,10 +508,4 @@ watch(
         </main>
     </div>
 </template>
-
-
-
-
-
-
 

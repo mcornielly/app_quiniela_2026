@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import { EyeIcon } from '@heroicons/vue/24/outline'
@@ -11,6 +11,18 @@ const props = defineProps({
     viewAllHref: {
         type: String,
         default: '#',
+    },
+    totalCount: {
+        type: Number,
+        default: 0,
+    },
+    onRemove: {
+        type: Function,
+        default: null,
+    },
+    onClearAll: {
+        type: Function,
+        default: null,
     },
 })
 
@@ -77,26 +89,46 @@ const awayScoreClass = (item) => {
 
     return 'text-slate-900 dark:text-white'
 }
+
+const removeNotification = (id) => {
+    props.onRemove?.(id)
+}
+
+const clearAll = () => {
+    props.onClearAll?.()
+}
 </script>
 
 <template>
-    <div class="max-w-sm overflow-hidden">
-        <div class="block border-b border-gray-200 bg-gray-50 px-4 py-1.5 text-center text-sm font-semibold text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
+    <div class="max-w-sm overflow-hidden rounded-xl bg-white shadow-lg dark:bg-gray-700">
+        <div class="relative block border-b border-gray-200 bg-gray-50 px-4 py-2 text-center text-sm font-semibold text-gray-700 dark:border-gray-600 dark:bg-gray-600 dark:text-gray-300">
             Notificaciones
+            <button
+                v-if="normalizedItems.length > 0"
+                type="button"
+                @click.stop="clearAll"
+                class="absolute right-3 top-1/2 -translate-y-1/2 rounded-md bg-transparent p-1.5 text-slate-600 transition hover:bg-slate-300 hover:text-red-600 dark:text-slate-200 dark:hover:bg-slate-500/40 dark:hover:text-red-400"
+                title="Limpiar todo"
+                aria-label="Limpiar todo"
+            >
+                <svg class="h-4 w-4" viewBox="0 0 448 512" fill="currentColor" aria-hidden="true">
+                    <path d="M136.7 5.9C141.1-7.2 153.3-16 167.1-16l113.9 0c13.8 0 26 8.8 30.4 21.9L320 32 416 32c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 96C14.3 96 0 81.7 0 64S14.3 32 32 32l96 0 8.7-26.1zM32 144l384 0 0 304c0 35.3-28.7 64-64 64L96 512c-35.3 0-64-28.7-64-64l0-304zm88 64c-13.3 0-24 10.7-24 24l0 192c0 13.3 10.7 24 24 24s24-10.7 24-24l0-192c0-13.3-10.7-24-24-24zm104 0c-13.3 0-24 10.7-24 24l0 192c0 13.3 10.7 24 24 24s24-10.7 24-24l0-192c0-13.3-10.7-24-24-24zm104 0c-13.3 0-24 10.7-24 24l0 192c0 13.3 10.7 24 24 24s24-10.7 24-24l0-192c0-13.3-10.7-24-24-24z"/>
+                </svg>
+            </button>
         </div>
 
         <div v-if="normalizedItems.length" class="max-h-[24rem] overflow-y-auto divide-y divide-gray-100 bg-white dark:divide-gray-600 dark:bg-gray-700">
             <div
                 v-for="item in normalizedItems"
                 :key="item.id"
-                class="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-600"
+                class="relative px-4 py-3 pr-12 hover:bg-gray-100 dark:hover:bg-gray-600"
             >
                 <div class="flex items-center justify-between gap-3">
                     <p
-                        :class="item.type === 'result' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'"
+                        :class="item.type === 'result' ? 'text-emerald-700 dark:text-emerald-400' : (item.type === 'update' ? 'text-amber-700 dark:text-amber-400' : 'text-rose-700 dark:text-rose-400')"
                         class="text-[11px] font-semibold uppercase tracking-[0.14em]"
                     >
-                        {{ item.type === 'result' ? 'Resultado final' : 'Partido en vivo' }}
+                        {{ item.type === 'result' ? 'Resultado final' : (item.type === 'update' ? 'Clasificacion proxima ronda' : 'Partido en vivo') }}
                     </p>
                     <p class="whitespace-nowrap text-[11px] text-gray-500 dark:text-gray-300">
                         {{ item.stageLabel || 'Mundial 2026' }}
@@ -138,6 +170,18 @@ const awayScoreClass = (item) => {
                 <p :class="timeClass(item.occurredAt)" class="mt-1">
                     {{ timeAgo(item.occurredAt) }}
                 </p>
+
+                <button
+                    type="button"
+                    @click.stop="removeNotification(item.id)"
+                    class="absolute right-3 top-3 inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-300 bg-transparent text-slate-400 transition hover:border-red-300 hover:bg-red-100 hover:text-red-600 dark:border-slate-500 dark:text-slate-300 dark:hover:border-red-500/40 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+                    title="Eliminar notificacion"
+                    aria-label="Eliminar notificacion"
+                >
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M4.22 4.22a.75.75 0 0 1 1.06 0L10 8.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L11.06 10l4.72 4.72a.75.75 0 1 1-1.06 1.06L10 11.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L8.94 10 4.22 5.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                    </svg>
+                </button>
             </div>
         </div>
 
@@ -145,14 +189,20 @@ const awayScoreClass = (item) => {
             Aun no tienes notificaciones.
         </div>
 
-        <Link
-            :href="viewAllHref"
-            class="block border-t border-gray-200 bg-gray-50 py-2 text-center text-base font-semibold text-gray-900 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-        >
-            <span class="inline-flex items-center gap-2">
-                <EyeIcon class="h-5 w-5" />
-                View all
-            </span>
-        </Link>
+        <div class="bg-gray-50 dark:bg-gray-600">
+            <Link
+                :href="viewAllHref"
+                class="group relative flex items-center justify-center px-4 py-2 text-base font-semibold text-gray-900 transition hover:bg-blue-50 hover:text-blue-700 dark:text-white dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
+            >
+                <span class="inline-flex items-center gap-2">
+                    <EyeIcon class="h-5 w-5" />
+                    View all
+                </span>
+                <span class="absolute right-4 inline-flex min-w-6 items-center justify-center rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-700 transition group-hover:bg-green-200 group-hover:text-green-900 dark:bg-slate-500 dark:text-white dark:group-hover:bg-green-700/30 dark:group-hover:text-green-200">
+                    {{ totalCount }}
+                </span>
+            </Link>
+        </div>
     </div>
 </template>
+

@@ -12,7 +12,11 @@ const props = defineProps({
     },
     contentClasses: {
         type: String,
-        default: 'py-1 bg-white',
+        default: 'py-1 bg-white rounded-md',
+    },
+    panelClasses: {
+        type: String,
+        default: '',
     },
 });
 
@@ -46,16 +50,18 @@ const widthClass = computed(() => {
     return ({
         48: 'w-48',
         80: 'w-80',
-        96: 'w-96',
-        112: 'w-[28rem]',
+        96: 'w-[min(24rem,calc(100vw-1rem))]',
+        112: 'w-[min(28rem,calc(100vw-1rem))]',
     }[value] ?? value);
 });
 
 const alignmentClasses = computed(() => {
     if (props.align === 'left') {
-        return 'ltr:origin-top-left rtl:origin-top-right start-0';
+        return 'origin-top-left left-0';
+    } else if (props.align === 'center') {
+        return 'origin-top left-1/2 -translate-x-1/2';
     } else if (props.align === 'right') {
-        return 'ltr:origin-top-right rtl:origin-top-left end-0';
+        return 'origin-top-right right-0';
     } else {
         return 'origin-top';
     }
@@ -80,13 +86,13 @@ const open = ref(false);
         >
             <div
                 v-show="open"
-                class="absolute z-50 mt-2 rounded-md shadow-lg"
-                :class="[widthClass, alignmentClasses]"
+                class="absolute top-full z-50 mt-3 max-w-[calc(100vw-1rem)] shadow-lg"
+                :class="[widthClass, alignmentClasses, panelClasses]"
                 style="display: none"
                 @click="open = false"
             >
                 <div
-                    class="rounded-md ring-1 ring-black ring-opacity-5"
+                    class="ring-1 ring-black ring-opacity-5"
                     :class="contentClasses"
                 >
                     <slot name="content" />
@@ -95,4 +101,3 @@ const open = ref(false);
         </Transition>
     </div>
 </template>
-
