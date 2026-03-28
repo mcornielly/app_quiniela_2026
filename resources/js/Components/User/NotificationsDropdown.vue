@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import { EyeIcon } from '@heroicons/vue/24/outline'
@@ -11,6 +11,10 @@ const props = defineProps({
     viewAllHref: {
         type: String,
         default: '#',
+    },
+    totalCount: {
+        type: Number,
+        default: 0,
     },
 })
 
@@ -80,8 +84,8 @@ const awayScoreClass = (item) => {
 </script>
 
 <template>
-    <div class="max-w-sm overflow-hidden">
-        <div class="block border-b border-gray-200 bg-gray-50 px-4 py-1.5 text-center text-sm font-semibold text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
+    <div class="max-w-sm overflow-hidden rounded-xl bg-white shadow-lg dark:bg-gray-700">
+        <div class="block border-b border-gray-200 bg-gray-50 px-4 py-1.5 text-center text-sm font-semibold text-gray-700 dark:border-gray-600 dark:bg-gray-600 dark:text-gray-300">
             Notificaciones
         </div>
 
@@ -93,10 +97,10 @@ const awayScoreClass = (item) => {
             >
                 <div class="flex items-center justify-between gap-3">
                     <p
-                        :class="item.type === 'result' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'"
+                        :class="item.type === 'result' ? 'text-emerald-700 dark:text-emerald-400' : (item.type === 'update' ? 'text-amber-700 dark:text-amber-400' : 'text-rose-700 dark:text-rose-400')"
                         class="text-[11px] font-semibold uppercase tracking-[0.14em]"
                     >
-                        {{ item.type === 'result' ? 'Resultado final' : 'Partido en vivo' }}
+                        {{ item.type === 'result' ? 'Resultado final' : (item.type === 'update' ? 'Clasificacion proxima ronda' : 'Partido en vivo') }}
                     </p>
                     <p class="whitespace-nowrap text-[11px] text-gray-500 dark:text-gray-300">
                         {{ item.stageLabel || 'Mundial 2026' }}
@@ -145,14 +149,20 @@ const awayScoreClass = (item) => {
             Aun no tienes notificaciones.
         </div>
 
-        <Link
-            :href="viewAllHref"
-            class="block border-t border-gray-200 bg-gray-50 py-2 text-center text-base font-semibold text-gray-900 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-        >
-            <span class="inline-flex items-center gap-2">
-                <EyeIcon class="h-5 w-5" />
-                View all
-            </span>
-        </Link>
+        <div class="bg-gray-50 dark:bg-gray-600">
+            <Link
+                :href="viewAllHref"
+                class="group relative flex items-center justify-center px-4 py-2 text-base font-semibold text-gray-900 transition hover:bg-blue-50 hover:text-blue-700 dark:text-white dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
+            >
+                <span class="inline-flex items-center gap-2">
+                    <EyeIcon class="h-5 w-5" />
+                    View all
+                </span>
+                <span class="absolute right-4 inline-flex min-w-6 items-center justify-center rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-700 transition group-hover:bg-green-200 group-hover:text-green-900 dark:bg-slate-500 dark:text-white dark:group-hover:bg-green-700/30 dark:group-hover:text-green-200">
+                    {{ totalCount }}
+                </span>
+            </Link>
+        </div>
     </div>
 </template>
+

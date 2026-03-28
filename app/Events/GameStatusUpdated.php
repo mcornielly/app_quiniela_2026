@@ -21,7 +21,7 @@ class GameStatusUpdated implements ShouldBroadcastNow
     {
     }
 
-    public static function fromGame(Game $game): self
+    public static function fromGame(Game $game, ?string $type = null): self
     {
         $game->loadMissing(['homeTeam.country', 'awayTeam.country']);
 
@@ -29,17 +29,21 @@ class GameStatusUpdated implements ShouldBroadcastNow
         $awayTeam = self::transformTeam($game->awayTeam, $game->away_slot);
         $stageLabel = self::stageLabel((string) $game->stage);
 
-        $type = $game->status === 'finished' ? 'result' : 'start';
+        $resolvedType = in_array($type, ['result', 'start', 'update'], true)
+            ? $type
+            : ($game->status === 'finished' ? 'result' : ($game->status === 'in_progress' ? 'start' : 'update'));
 
         $homeScore = is_numeric($game->home_score) ? (int) $game->home_score : 0;
         $awayScore = is_numeric($game->away_score) ? (int) $game->away_score : 0;
 
-        $message = $type === 'result'
-            ? sprintf('Resultado final: %s %d - %d %s', $homeTeam['name'], $homeScore, $awayScore, $awayTeam['name'])
-            : sprintf('En directo: %s vs %s (%s)', $homeTeam['name'], $awayTeam['name'], $stageLabel);
+        $message = match ($resolvedType) {
+            'result' => sprintf('Resultado final: %s %d - %d %s', $homeTeam['name'], $homeScore, $awayScore, $awayTeam['name']),
+            'start' => sprintf('En directo: %s vs %s (%s)', $homeTeam['name'], $awayTeam['name'], $stageLabel),
+            default => sprintf('Partido actualizado: %s vs %s (%s)', $homeTeam['name'], $awayTeam['name'], $stageLabel),
+        };
 
         return new self([
-            'type' => $type,
+            'type' => $resolvedType,
             'gameId' => $game->id,
             'tournamentId' => $game->tournament_id,
             'stage' => $game->stage,
@@ -129,4 +133,3 @@ class GameStatusUpdated implements ShouldBroadcastNow
         return Str::upper(Str::substr($clean, 0, 3));
     }
 }
-

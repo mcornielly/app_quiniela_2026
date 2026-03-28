@@ -161,7 +161,7 @@ onBeforeUnmount(() => {
                 </svg>
             </button>
                         <!-- Notifications -->
-            <Dropdown align="right" width="96" content-classes="py-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700">
+            <Dropdown align="center" width="96" panel-classes="[transform:translateX(calc(-50%-26px))]" content-classes="py-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700">
                 <template #trigger>
                     <button
                         type="button"
@@ -566,4 +566,3 @@ onBeforeUnmount(() => {
         </div>
     </nav>
 </template>
-

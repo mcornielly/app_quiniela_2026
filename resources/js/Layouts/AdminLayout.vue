@@ -54,7 +54,7 @@ watch(
     <Sidebar />
 
     <!-- Container -->
-    <div class="mt-14 sm:ml-32 md:ml-64  bg-gray-50 lg:ml-64 dark:bg-gray-900">
+    <div class="mt-14 bg-gray-50 md:ml-64 dark:bg-gray-900">
         <!-- Page Content -->
         <main>
             <slot />
