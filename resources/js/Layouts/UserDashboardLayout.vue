@@ -131,6 +131,14 @@ const markNotificationsRead = () => {
     notificationItems.value = notificationItems.value.map((item) => ({ ...item, read: true }))
 }
 
+const removeNotificationItem = (id) => {
+    notificationItems.value = notificationItems.value.filter((item) => item.id !== id)
+}
+
+const clearAllNotifications = () => {
+    notificationItems.value = []
+}
+
 const showFlashNotification = (flash) => {
     if (!flash) {
         return
@@ -323,6 +331,8 @@ watch(
                                 :notifications="notificationItems"
                                 :view-all-href="route('dashboard')"
                                 :total-count="unreadNotifications"
+                                :on-remove="removeNotificationItem"
+                                :on-clear-all="clearAllNotifications"
                             />
                         </template>
                     </Dropdown>
