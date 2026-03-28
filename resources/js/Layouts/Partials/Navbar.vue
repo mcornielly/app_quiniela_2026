@@ -10,6 +10,7 @@ let onClick = null
 const {
     notificationItems,
     unreadNotifications,
+    markNotificationsRead,
     markNotificationRead,
     clearNotifications,
     initAdminNotifications,
@@ -161,10 +162,11 @@ onBeforeUnmount(() => {
                 </svg>
             </button>
                         <!-- Notifications -->
-            <Dropdown align="center" width="96" panel-classes="[transform:translateX(calc(-50%-26px))]" content-classes="py-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700">
+            <Dropdown align="center" width="96" panel-classes="[transform:translateX(calc(-50%-34px))]" content-classes="py-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700">
                 <template #trigger>
                     <button
                         type="button"
+                        @click="markNotificationsRead"
                         class="relative p-2 mr-1 text-gray-500 rounded-lg hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600"
                     >
                         <span class="sr-only">View notifications</span>

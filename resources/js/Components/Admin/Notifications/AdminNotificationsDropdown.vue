@@ -70,7 +70,7 @@ const timeAgo = (value) => {
     return `hace ${diffDays} dia${diffDays === 1 ? '' : 's'}`
 }
 
-const visibleNotifications = computed(() => props.notifications.filter((item) => !item.read).slice(0, 10))
+const visibleNotifications = computed(() => props.notifications)
 const visibleCount = computed(() => visibleNotifications.value.length)
 
 const markRead = (id) => {
@@ -100,7 +100,7 @@ const clearAll = () => {
             </button>
         </div>
 
-        <div v-if="visibleCount > 0">
+        <div v-if="visibleCount > 0" class="max-h-[22rem] overflow-y-auto">
             <div
                 v-for="item in visibleNotifications"
                 :key="item.id"
