@@ -77,8 +77,8 @@ return [
             'teamNameClass' => 'text-[#B9A675] dark:text-[#D4C390]',
             'teamNameDarkClass' => 'dark:text-[#D4C390]',
             'statsValueClass' => 'text-[#39C4E0] dark:text-[#39C4E0]',
-            'buttonSecondaryClass' => 'border-[#39C4E0] bg-slate-100 text-[#39C4E0] hover:bg-[#39C4E0] hover:text-white focus:ring-[#39C4E0]/35 dark:border-[#39C4E0] dark:bg-slate-800 dark:text-[#39C4E0] dark:hover:bg-[#39C4E0] dark:hover:text-white dark:focus:ring-[#39C4E0]/35',
-            'buttonPrimaryClass' => 'bg-[#39C4E0] text-white hover:bg-[#22B8D8] hover:text-[#CE1126] focus:ring-[#39C4E0]/35 dark:bg-[#39C4E0] dark:text-white dark:hover:bg-[#22B8D8] dark:hover:text-[#CE1126] dark:focus:ring-[#39C4E0]/35',
+            'buttonSecondaryClass' => 'border-[#39C4E0] bg-slate-100 text-[#39C4E0] hover:bg-[#39C4E0] hover:text-[#0F6FB8] focus:ring-[#39C4E0]/35 dark:border-[#39C4E0] dark:bg-slate-800 dark:text-[#39C4E0] dark:hover:bg-[#39C4E0] dark:hover:text-[#0F6FB8] dark:focus:ring-[#39C4E0]/35',
+            'buttonPrimaryClass' => 'bg-[#39C4E0] text-white hover:bg-[#22B8D8] hover:text-[#0F6FB8] focus:ring-[#39C4E0]/35 dark:bg-[#39C4E0] dark:text-white dark:hover:bg-[#22B8D8] dark:hover:text-[#0F6FB8] dark:focus:ring-[#39C4E0]/35',
         ],
         'uy' => [
             'key' => 'uy',
