@@ -21,6 +21,49 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
+## Railway + Docker
+
+This project includes a Docker setup ready for Railway deployment.
+
+### Included files
+
+- `Dockerfile`: Multi-stage image (Composer deps + Vite build + PHP runtime)
+- `docker/entrypoint.sh`: Runtime roles for web, queue, scheduler and reverb
+- `railway.json`: Railway builder/deploy config
+
+### Runtime roles
+
+Set `APP_RUNTIME_ROLE` per Railway service:
+
+- `web`: Runs `php artisan serve --host=0.0.0.0 --port=$PORT`
+- `queue`: Runs `php artisan queue:work`
+- `scheduler`: Runs `php artisan schedule:run` every 60s
+- `reverb`: Runs `php artisan reverb:start --host=0.0.0.0 --port=$PORT`
+
+### Recommended Railway services
+
+1. `app-web` with `APP_RUNTIME_ROLE=web`
+2. `app-queue` with `APP_RUNTIME_ROLE=queue`
+3. `app-scheduler` with `APP_RUNTIME_ROLE=scheduler`
+4. `app-reverb` with `APP_RUNTIME_ROLE=reverb`
+
+### Required environment variables
+
+At minimum:
+
+- `APP_NAME`, `APP_ENV=production`, `APP_DEBUG=false`, `APP_KEY`
+- `APP_URL`
+- `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`
+- `QUEUE_CONNECTION` (recommended: `redis`)
+- `CACHE_STORE` (recommended: `redis`)
+- `BROADCAST_CONNECTION=reverb`
+- `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`
+- `REVERB_HOST`, `REVERB_PORT`, `REVERB_SCHEME`
+
+Optional:
+
+- `RUN_MIGRATIONS=true` only on the `web` service during deploy
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
