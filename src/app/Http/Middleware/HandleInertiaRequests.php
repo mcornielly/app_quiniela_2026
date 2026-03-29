@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -62,10 +63,35 @@ class HandleInertiaRequests extends Middleware
                 'name' => $user->favoriteTeam->name,
                 'country_code' => $user->favoriteTeam->country?->code,
                 'flag_path' => $user->favoriteTeam->country?->flag_path,
-                'shield_path' => $user->favoriteTeam->shield_path,
+                'shield_path' => $this->resolveFavoriteTeamShieldPath($user),
             ] : null,
             'favorite_team_theme' => $this->resolveFavoriteTeamTheme($user),
         ];
+    }
+
+    private function resolveFavoriteTeamShieldPath(User $user): ?string
+    {
+        $team = $user->favoriteTeam;
+
+        if (! $team) {
+            return null;
+        }
+
+        if ($team->shield_path) {
+            return $team->shield_path;
+        }
+
+        $countryCode = strtolower(trim((string) $team->country?->code));
+
+        if ($countryCode === '') {
+            return null;
+        }
+
+        $fallbackShieldPath = "shield/{$countryCode}.png";
+
+        return Storage::disk('public')->exists($fallbackShieldPath)
+            ? $fallbackShieldPath
+            : null;
     }
 
     private function resolveFavoriteTeamTheme(User $user): ?array

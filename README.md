@@ -55,6 +55,16 @@ Notas:
 - Modo Docker usa `.env.docker`.
 - En Docker, `.env.docker` se monta como `/var/www/html/.env` dentro del contenedor para evitar conflictos con `src/.env`.
 
+- php artisan serve --host=0.0.0.0 --port=8000
+- npm run dev
+- php artisan reverb:start --host=0.0.0.0 --port=8080
+- php artisan queue:work
+- php artisan schedule:work
+
+## Domanins
+-- App: http://astrocopa.app.test:8000
+-- Reverb WS: ws://astrocopa.app.test:8080
+
 ## Activar MySQL local (opcional)
 
 1. En `.env.docker`, configurar:

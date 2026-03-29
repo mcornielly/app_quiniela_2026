@@ -1,5 +1,4 @@
 export const imageUrl = (path) => {
-
     if (!path) return null
 
     // URL externa (API)
@@ -9,9 +8,14 @@ export const imageUrl = (path) => {
 
     // ya viene con /storage
     if (path.startsWith('/storage')) {
-        return path
+        const baseUrl = import.meta.env.VITE_APP_URL?.replace(/\/$/, '')
+        return baseUrl ? `${baseUrl}${path}` : path
     }
 
     // storage local
-    return `/storage/${path}`
+    const normalizedPath = String(path).replace(/^\/+/, '')
+    const relativeStoragePath = `/storage/${normalizedPath}`
+    const baseUrl = import.meta.env.VITE_APP_URL?.replace(/\/$/, '')
+
+    return baseUrl ? `${baseUrl}${relativeStoragePath}` : relativeStoragePath
 }

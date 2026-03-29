@@ -12,5 +12,6 @@ src/storage/framework/sessions/*
 src/storage/framework/views/*
 src/storage/debugbar/*
 src/tests
+src/public/storage
 docker-compose.yml
 docker-compose.yaml

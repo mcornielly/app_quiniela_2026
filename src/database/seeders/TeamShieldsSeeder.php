@@ -62,7 +62,7 @@ class TeamShieldsSeeder extends Seeder
     {
         $existingFiles = [];
 
-        foreach (Storage::disk('public')->files('shield') as $path) {
+        foreach ($this->shieldFiles() as $path) {
             if (!str_ends_with(strtolower($path), '.png')) {
                 continue;
             }
@@ -106,7 +106,7 @@ class TeamShieldsSeeder extends Seeder
 
     private function cleanupLegacyShieldFiles(array $slugToIso): void
     {
-        foreach (Storage::disk('public')->files('shield') as $path) {
+        foreach ($this->shieldFiles() as $path) {
             $basename = pathinfo($path, PATHINFO_FILENAME);
             $extension = pathinfo($path, PATHINFO_EXTENSION);
             $iso = $this->resolveIsoFromFilename($basename, $slugToIso);
@@ -125,6 +125,23 @@ class TeamShieldsSeeder extends Seeder
                 Storage::disk('public')->delete($path);
             }
         }
+    }
+
+    /**
+     * Read shield files directly from the filesystem.
+     * This avoids incomplete listings seen with Storage::files() on some Docker/Windows mounts.
+     *
+     * @return array<int, string>
+     */
+    private function shieldFiles(): array
+    {
+        $absolutePattern = storage_path('app/public/shield/*.png');
+        $absoluteFiles = glob($absolutePattern) ?: [];
+
+        return array_map(
+            static fn (string $absolutePath): string => 'shield/' . basename($absolutePath),
+            $absoluteFiles
+        );
     }
 
     private function resolveIsoFromFilename(string $basename, array $slugToIso): ?string
