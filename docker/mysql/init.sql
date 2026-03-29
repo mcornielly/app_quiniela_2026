@@ -1,0 +1,2 @@
+﻿-- Optional bootstrap SQL for local Docker MySQL.
+-- Keep this file empty if you don't need seed bootstrap.

@@ -1,102 +1,130 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+﻿# Quiniela 2026 - Guía de Proyecto
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplicación Laravel + Inertia/Vue para quiniela del Mundial 2026.
 
-## About Laravel
+## Estructura del repositorio
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- `src/`: código Laravel completo (app, rutas, recursos, tests, etc.)
+- `docker/`: configuración de contenedores (`entrypoint.sh`, `php.ini`, `mysql/init.sql`)
+- `Dockerfile`: imagen única para local y Railway
+- `docker-compose.yml`: orquestación local
+- `railway.json`: build/deploy para Railway
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Servicios locales automáticos
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Con un solo `docker compose up`, se levantan automáticamente:
 
-## Railway + Docker
+1. `app` (web Laravel) en `http://astrocopa.app.test`
+2. `queue` (trabajos de cola)
+3. `scheduler` (cron de Laravel cada 60s)
+4. `reverb` (WebSocket para notificaciones push) en `ws://localhost:8081`
+5. `redis` (cache/colas)
 
-This project includes a Docker setup ready for Railway deployment.
+MySQL es opcional y se levanta con profile.
 
-### Included files
+## Inicialización rápida (primera vez)
 
-- `Dockerfile`: Multi-stage image (Composer deps + Vite build + PHP runtime)
-- `docker/entrypoint.sh`: Runtime roles for web, queue, scheduler and reverb
-- `railway.json`: Railway builder/deploy config
+1. Crear archivo de entorno Docker:
+```powershell
+Copy-Item .env.docker.example .env.docker
+```
 
-### Runtime roles
+2. Levantar todo el stack local:
+```powershell
+docker compose up --build -d
+```
 
-Set `APP_RUNTIME_ROLE` per Railway service:
+3. Ver logs en vivo:
+```powershell
+docker compose logs -f app queue scheduler reverb
+```
 
-- `web`: Runs `php artisan serve --host=0.0.0.0 --port=$PORT`
-- `queue`: Runs `php artisan queue:work`
-- `scheduler`: Runs `php artisan schedule:run` every 60s
-- `reverb`: Runs `php artisan reverb:start --host=0.0.0.0 --port=$PORT`
+4. (Opcional) correr seeders:
+```powershell
+docker compose exec app php artisan db:seed
+```
 
-### Recommended Railway services
+Notas:
 
-1. `app-web` with `APP_RUNTIME_ROLE=web`
-2. `app-queue` with `APP_RUNTIME_ROLE=queue`
-3. `app-scheduler` with `APP_RUNTIME_ROLE=scheduler`
-4. `app-reverb` with `APP_RUNTIME_ROLE=reverb`
+- `RUN_MIGRATIONS=true` viene activo en `.env.docker.example`, así que las migraciones se ejecutan automáticamente al iniciar `app`.
+- Si usas SQLite, el `entrypoint` crea automáticamente el archivo de base de datos local.
 
-### Required environment variables
+## Doble modo (sin Docker y con Docker)
 
-At minimum:
+- Modo sin Docker usa `src/.env` (tu entorno local normal, por ejemplo MySQL en `127.0.0.1`).
+- Modo Docker usa `.env.docker`.
+- En Docker, `.env.docker` se monta como `/var/www/html/.env` dentro del contenedor para evitar conflictos con `src/.env`.
 
-- `APP_NAME`, `APP_ENV=production`, `APP_DEBUG=false`, `APP_KEY`
-- `APP_URL`
-- `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`
-- `QUEUE_CONNECTION` (recommended: `redis`)
-- `CACHE_STORE` (recommended: `redis`)
-- `BROADCAST_CONNECTION=reverb`
-- `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`
-- `REVERB_HOST`, `REVERB_PORT`, `REVERB_SCHEME`
+## Activar MySQL local (opcional)
 
-Optional:
+1. En `.env.docker`, configurar:
 
-- `RUN_MIGRATIONS=true` only on the `web` service during deploy
+- `DB_CONNECTION=mysql`
+- `DB_HOST=mysql`
+- `DB_PORT=3306`
+- `DB_DATABASE=quiniela`
+- `DB_USERNAME=quiniela`
+- `DB_PASSWORD=quiniela123`
 
-## Learning Laravel
+2. Levantar con profile MySQL:
+```powershell
+docker compose --profile mysql up --build -d
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Laravel Reverb (push notifications)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Configuración local recomendada (ya incluida en `.env.docker.example`):
 
-## Laravel Sponsors
+- Backend publica a Reverb interno:
+  - `REVERB_HOST=reverb`
+  - `REVERB_PORT=8080`
+  - `REVERB_SCHEME=http`
+- Frontend cliente conecta por navegador:
+  - `VITE_REVERB_HOST=astrocopa.app.test`
+  - `VITE_REVERB_PORT=8081`
+  - `VITE_REVERB_SCHEME=http`
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Comprobar que Reverb está arriba:
+```powershell
+docker compose logs -f reverb
+```
 
-### Premium Partners
+## Comandos útiles
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```powershell
+# Subir stack local
 
-## Contributing
+docker compose up --build -d
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# Bajar stack
 
-## Code of Conduct
+docker compose down
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Reiniciar solo web
 
-## Security Vulnerabilities
+docker compose restart app
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# Ejecutar comandos artisan
 
-## License
+docker compose exec app php artisan route:list
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+# Ver estado de servicios
+
+docker compose ps
+```
+
+## Deploy en Railway
+
+Usa la misma imagen (`Dockerfile`) y crea servicios separados por rol:
+
+1. `app-web` con `APP_RUNTIME_ROLE=web`
+2. `app-queue` con `APP_RUNTIME_ROLE=queue`
+3. `app-scheduler` con `APP_RUNTIME_ROLE=scheduler`
+4. `app-reverb` con `APP_RUNTIME_ROLE=reverb` (si usarás push en producción)
+
+Recomendado en Railway:
+
+- DB y Redis gestionados por Railway (no contenedores propios en producción)
+- `APP_ENV=production`
+- `APP_DEBUG=false`
+- `RUN_MIGRATIONS=true` solo en la ventana de deploy del servicio web

@@ -3,22 +3,38 @@
 FROM node:20-alpine AS assets
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY src/package.json src/package-lock.json ./
 RUN npm ci
 
-COPY resources ./resources
-COPY public ./public
-COPY vite.config.js ./
-COPY postcss.config.js ./
-COPY tailwind.config.js ./
+COPY src/resources ./resources
+COPY src/public ./public
+COPY src/vite.config.js ./
+COPY src/postcss.config.js ./
+COPY src/tailwind.config.js ./
 
 RUN npm run build
 
 
-FROM composer:2 AS vendor
+FROM php:8.3-cli-alpine AS vendor
 WORKDIR /app
 
-COPY composer.json composer.lock ./
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+RUN apk add --no-cache \
+    freetype-dev \
+    libjpeg-turbo-dev \
+    libpng-dev \
+    libzip-dev \
+    oniguruma-dev \
+    unzip \
+    zip \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install \
+    gd \
+    mbstring \
+    zip
+
+COPY src/composer.json src/composer.lock ./
 RUN composer install \
     --no-dev \
     --no-interaction \
@@ -32,27 +48,39 @@ WORKDIR /var/www/html
 
 RUN apk add --no-cache \
     bash \
+    freetype-dev \
     icu-dev \
+    libjpeg-turbo-dev \
+    linux-headers \
+    libpng-dev \
     libzip-dev \
     oniguruma-dev \
     unzip \
     zip \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
     bcmath \
+    gd \
     intl \
     mbstring \
     pcntl \
     pdo_mysql \
     sockets \
-    zip
+    zip \
+    && apk add --no-cache --virtual .phpize-deps $PHPIZE_DEPS \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del .phpize-deps
 
-COPY . .
+COPY src/ ./
 COPY --from=vendor /app/vendor ./vendor
 COPY --from=assets /app/public/build ./public/build
+COPY docker/php/php.ini /usr/local/etc/php/conf.d/zz-app.ini
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 RUN mkdir -p storage/framework/{cache,sessions,testing,views} storage/logs bootstrap/cache \
     && chmod -R ug+rwx storage bootstrap/cache \
-    && chmod +x docker/entrypoint.sh
+    && chmod +x /usr/local/bin/entrypoint.sh
 
 ENV APP_ENV=production
 ENV APP_DEBUG=false
@@ -61,6 +89,5 @@ ENV PORT=8080
 
 EXPOSE 8080
 
-ENTRYPOINT ["sh", "/var/www/html/docker/entrypoint.sh"]
+ENTRYPOINT ["sh", "/usr/local/bin/entrypoint.sh"]
 CMD ["web"]
-

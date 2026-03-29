@@ -5,6 +5,12 @@ cd /var/www/html
 
 ROLE="${APP_RUNTIME_ROLE:-${1:-web}}"
 
+if [ "${DB_CONNECTION:-}" = "sqlite" ] && [ -n "${DB_DATABASE:-}" ]; then
+  DB_DIR="$(dirname "$DB_DATABASE")"
+  mkdir -p "$DB_DIR"
+  [ -f "$DB_DATABASE" ] || touch "$DB_DATABASE"
+fi
+
 if [ "${RUN_MIGRATIONS:-false}" = "true" ] && [ "$ROLE" = "web" ]; then
   php artisan migrate --force
 fi
@@ -31,4 +37,3 @@ case "$ROLE" in
     exit 1
     ;;
 esac
-
