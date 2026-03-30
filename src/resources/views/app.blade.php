@@ -13,6 +13,14 @@
 
         <!-- Scripts -->
         @routes
+        <script>
+            window.__APP_REVERB__ = {
+                key: @json(env('REVERB_APP_KEY')),
+                host: @json(env('VITE_REVERB_HOST', env('REVERB_HOST', request()->getHost()))),
+                port: @json((int) env('VITE_REVERB_PORT', env('REVERB_PORT', 8080))),
+                scheme: @json(env('VITE_REVERB_SCHEME', env('REVERB_SCHEME', 'http'))),
+            };
+        </script>
         @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
         @inertiaHead
     </head>

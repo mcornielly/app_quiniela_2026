@@ -26,6 +26,7 @@ class AdminPoolActivityNotification extends Notification
     public function toArray(object $notifiable): array
     {
         $poolName = $this->poolEntry->name ?: "Quiniela #{$this->poolEntry->id}";
+        $poolReference = sprintf('#%05d', (int) $this->poolEntry->id);
         $actionLabel = match ($this->action) {
             'created' => 'creo',
             'inactivated' => 'inactivo',
@@ -39,10 +40,11 @@ class AdminPoolActivityNotification extends Notification
             'userName' => $this->actor->name,
             'userEmail' => $this->actor->email,
             'poolEntryId' => $this->poolEntry->id,
+            'poolEntryReference' => $poolReference,
+            'registrationNumber' => $poolReference,
             'poolEntryName' => $poolName,
             'messageSuffix' => sprintf('%s la quiniela "%s".', $actionLabel, $poolName),
             'occurredAt' => now()->toIso8601String(),
         ];
     }
 }
-

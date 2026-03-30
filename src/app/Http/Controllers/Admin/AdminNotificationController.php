@@ -18,6 +18,7 @@ class AdminNotificationController extends Controller
             ->get()
             ->map(function ($notification) {
                 $data = $notification->data ?? [];
+                $registrationNumber = $data['registrationNumber'] ?? $data['poolEntryReference'] ?? null;
 
                 return [
                     'id' => $notification->id,
@@ -26,6 +27,8 @@ class AdminNotificationController extends Controller
                     'userEmail' => $data['userEmail'] ?? '',
                     'messageSuffix' => $data['messageSuffix'] ?? 'actualizo una quiniela.',
                     'poolEntryId' => $data['poolEntryId'] ?? null,
+                    'poolEntryReference' => $data['poolEntryReference'] ?? null,
+                    'registrationNumber' => $registrationNumber,
                     'poolEntryName' => $data['poolEntryName'] ?? null,
                     'occurredAt' => $data['occurredAt'] ?? optional($notification->created_at)->toIso8601String(),
                     'read' => !is_null($notification->read_at),

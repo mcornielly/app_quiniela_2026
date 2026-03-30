@@ -154,7 +154,8 @@ const applyingThemeOverlayBodyClass = computed(() => (
 const tickerThemes = {
     neutral: {
         label: 'Neutral',
-        tickerClass: 'border-t border-slate-300/70 bg-[linear-gradient(to_right,_#cfd6df_0%,_#e4e8ee_45%,_#f4f6f9_100%)] text-slate-900',
+        tickerClass: 'border-t border-slate-300/70 bg-[linear-gradient(to_right,_#cfd6df_0%,_#e4e8ee_45%,_#f4f6f9_100%)] text-slate-900 dark:border-slate-600 dark:bg-none dark:bg-slate-700 dark:text-slate-100',
+        shieldContainerClass: 'bg-slate-100 dark:bg-slate-700',
         surfaceClass: 'rounded-[1.5rem] bg-white/38 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] ring-1 ring-white/34 backdrop-blur-md',
         iconClass: 'bg-white/80 text-slate-600 ring-1 ring-slate-200/80',
         eyebrowClass: 'text-slate-700',
@@ -211,6 +212,20 @@ const favoriteTeamStats = computed(() => {
     ]
 })
 
+const handleIdentityShieldError = (event) => {
+    const imageElement = event?.target
+
+    if (!(imageElement instanceof HTMLImageElement)) {
+        return
+    }
+
+    const fallbackSource = favoriteTeamFlag.value || tournamentLogo.value || defaultIdentityShield
+
+    if (imageElement.src !== fallbackSource) {
+        imageElement.src = fallbackSource
+    }
+}
+
 const emitFavoriteThemeApplyingState = (applying) => {
     if (typeof window === 'undefined') {
         return
@@ -231,6 +246,7 @@ const submitFavoriteTeam = (teamId) => {
         return
     }
 
+    favoriteTeamModalOpen.value = false
     isApplyingFavoriteTeam.value = true
     emitFavoriteThemeApplyingState(true)
     const applyingStartedAt = Date.now()
@@ -240,7 +256,6 @@ const submitFavoriteTeam = (teamId) => {
     }, {
         preserveScroll: true,
         onSuccess: () => {
-            favoriteTeamModalOpen.value = false
             window.setTimeout(() => {
                 launchThemeChangeConfetti()
             }, 520)
@@ -523,12 +538,13 @@ onBeforeUnmount(() => {
             <div class="overflow-visible rounded-[2rem] border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
                 <div class="flex flex-col lg:min-h-[12.75rem] lg:flex-row">
                     <div class="flex flex-col overflow-hidden border-b border-slate-200 lg:w-[24%] lg:border-b-0 lg:border-r dark:border-slate-700">
-                        <div :class="activeTickerTheme.shieldContainerClass" class="h-44 sm:h-56 lg:h-auto lg:min-h-[8.25rem] lg:flex-1 overflow-hidden bg-slate-100 dark:bg-slate-950/40">
+                        <div :class="activeTickerTheme.shieldContainerClass" class="h-44 sm:h-56 lg:h-auto lg:min-h-[8.25rem] lg:flex-1 overflow-hidden">
                             <img
                                 :src="identityShield"
                                 :alt="identityTitle"
                                 :class="[activeShieldImageClass, activeShieldImageBaseClass]"
                                 class="h-full w-full object-contain p-0 lg:p-2.5"
+                                @error="handleIdentityShieldError"
                             >
                         </div>
 

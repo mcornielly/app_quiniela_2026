@@ -56,7 +56,9 @@ class OfficialBracketResolverService
             }
 
             if ($game->isDirty()) {
-                $game->save();
+                // These are system-driven bracket sync updates.
+                // Avoid duplicate user notifications triggered by GameObserver.
+                $game->saveQuietly();
             }
 
             $winnerTeam = $this->resolveWinnerTeam($game, $homeTeam, $awayTeam);

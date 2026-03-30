@@ -50,6 +50,7 @@ const handleSelect = (teamId) => {
         return
     }
 
+    emit('close')
     emit('select', teamId)
 }
 
@@ -58,6 +59,7 @@ const clearSelection = () => {
         return
     }
 
+    emit('close')
     emit('select', null)
 }
 

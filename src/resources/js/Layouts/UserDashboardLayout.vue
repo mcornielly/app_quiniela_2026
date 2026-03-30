@@ -8,7 +8,7 @@ import FlagRibbonTicker from '@/Components/User/FlagRibbonTicker.vue'
 import UserAvatar from '@/Components/User/UserAvatar.vue'
 import UserFooter from '@/Components/User/UserFooter.vue'
 import NotificationsDropdown from '@/Components/User/NotificationsDropdown.vue'
-import { notifyError, notifySuccess } from '@/Utils/notify'
+import { notifyError, notifyInfo, notifySuccess } from '@/Utils/notify'
 import {
     Bars3Icon,    CalendarDaysIcon,
     ChartBarSquareIcon,
@@ -103,6 +103,26 @@ const toggleTheme = () => {
     applyTheme(currentTheme.value === 'dark' ? 'light' : 'dark')
 }
 
+const buildLiveInfoMessage = (payload) => {
+    const homeTeam = payload?.homeTeam ?? 'Local'
+    const awayTeam = payload?.awayTeam ?? 'Visitante'
+    const type = payload?.type
+
+    if (type === 'result') {
+        return `Partido finalizado: ${homeTeam} vs ${awayTeam}.`
+    }
+
+    if (type === 'update') {
+        return `Resultados actualizados: ${homeTeam} vs ${awayTeam}.`
+    }
+
+    if (type === 'start') {
+        return `Encuentro en juego: ${homeTeam} vs ${awayTeam}.`
+    }
+
+    return payload?.message ?? `Actualizacion del partido: ${homeTeam} vs ${awayTeam}.`
+}
+
 const pushNotification = (payload) => {
     notificationItems.value = [
         {
@@ -124,6 +144,7 @@ const pushNotification = (payload) => {
         ...notificationItems.value,
     ].slice(0, 20)
 
+    notifyInfo(buildLiveInfoMessage(payload))
     window.dispatchEvent(new CustomEvent('dashboard:game-status-updated', { detail: payload }))
 }
 
@@ -150,6 +171,10 @@ const showFlashNotification = (flash) => {
 
     if (flash.error) {
         notifyError(flash.error)
+    }
+
+    if (flash.info) {
+        notifyInfo(flash.info)
     }
 }
 
@@ -508,4 +533,3 @@ watch(
         </main>
     </div>
 </template>
-

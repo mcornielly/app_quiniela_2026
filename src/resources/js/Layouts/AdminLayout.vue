@@ -3,7 +3,7 @@ import { Link, usePage, Head } from '@inertiajs/vue3'
 import { onMounted, watch } from 'vue'
 import { initFlowbite } from 'flowbite'
 import { router } from '@inertiajs/vue3'
-import { notifySuccess, notifyError } from '@/Utils/notify'
+import { notifySuccess, notifyError, notifyInfo } from '@/Utils/notify'
 // Inicializar Flowbite para dropdowns, sidebar, etc.
 import 'flowbite'
 import Navbar from './Partials/Navbar.vue'
@@ -37,6 +37,10 @@ watch(
 
         if(flash.error){
             notifyError(flash.error)
+        }
+
+        if(flash.info){
+            notifyInfo(flash.info)
         }
 
     },

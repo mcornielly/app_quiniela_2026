@@ -29,6 +29,17 @@ export function notifyError(message) {
 
 }
 
+export function notifyInfo(message) {
+
+    ElNotification({
+        title: 'Info',
+        message: message,
+        type: 'info',
+        customClass: notificationClass(),
+    })
+
+}
+
 export function confirmDelete(message) {
 
     return ElMessageBox.confirm(

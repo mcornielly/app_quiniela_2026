@@ -70,6 +70,19 @@ const timeAgo = (value) => {
     return `hace ${diffDays} dia${diffDays === 1 ? '' : 's'}`
 }
 
+const registrationLabel = (item) => {
+    if (item?.registrationNumber) {
+        return String(item.registrationNumber)
+    }
+
+    const numericId = Number(item?.poolEntryId)
+    if (!Number.isFinite(numericId) || numericId <= 0) {
+        return null
+    }
+
+    return `#${String(Math.trunc(numericId)).padStart(5, '0')}`
+}
+
 const visibleNotifications = computed(() => props.notifications)
 const visibleCount = computed(() => visibleNotifications.value.length)
 
@@ -121,6 +134,7 @@ const clearAll = () => {
                     <div class="mb-1.5 text-sm font-normal text-gray-500 dark:text-gray-400">
                         <span class="font-semibold text-gray-900 dark:text-white">{{ item.userName }}</span>
                         {{ item.messageSuffix }}
+                        <span v-if="registrationLabel(item)"> Registro: {{ registrationLabel(item) }}.</span>
                     </div>
                     <div class="text-xs font-medium text-primary-600 dark:text-primary-500">
                         {{ timeAgo(item.occurredAt) }}
@@ -162,3 +176,4 @@ const clearAll = () => {
         </div>
     </div>
 </template>
+

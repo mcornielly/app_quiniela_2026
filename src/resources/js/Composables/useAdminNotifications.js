@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import axios from 'axios'
 import { route } from 'ziggy-js'
+import { notifyInfo } from '@/Utils/notify'
 
 const STORAGE_KEY = 'admin.notifications.v1'
 const MAX_ITEMS = 50
@@ -14,6 +15,8 @@ let isInitialized = false
 let isListening = false
 let echoRetryTimer = null
 let pollingTimer = null
+let hasFetchedOnce = false
+const emittedToastKeys = new Set()
 
 const hydrate = () => {
     try {
@@ -23,6 +26,11 @@ const hydrate = () => {
         const parsed = JSON.parse(raw)
         if (Array.isArray(parsed)) {
             notificationItems.value = parsed
+            parsed.forEach((item) => {
+                if (item?.id) {
+                    emittedToastKeys.add(buildToastKey(item))
+                }
+            })
         }
     } catch (error) {
         notificationItems.value = []
@@ -37,24 +45,94 @@ const persist = () => {
     }
 }
 
+const formatRegistrationNumber = (payload) => {
+    const explicit = payload?.registrationNumber ?? payload?.poolEntryReference ?? null
+    if (explicit) {
+        return String(explicit)
+    }
+
+    const numericId = Number(payload?.poolEntryId)
+    if (!Number.isFinite(numericId) || numericId <= 0) {
+        return null
+    }
+
+    return `#${String(Math.trunc(numericId)).padStart(5, '0')}`
+}
+
+const buildAdminInfoMessage = (payload) => {
+    const userName = String(payload?.userName ?? 'Usuario').trim() || 'Usuario'
+    const poolName = payload?.poolEntryName ? ` "${payload.poolEntryName}"` : ''
+    const registrationNumber = formatRegistrationNumber(payload)
+    const registrationLabel = registrationNumber ? ` Registro ${registrationNumber}.` : ''
+    const action = payload?.action ?? 'updated'
+
+    if (action === 'created') {
+        return `${userName}: ha creado su quiniela${poolName}.${registrationLabel}`.trim()
+    }
+
+    if (action === 'inactivated') {
+        return `${userName}: ha inactivado su quiniela${poolName}.${registrationLabel}`.trim()
+    }
+
+    if (action === 'reactivated') {
+        return `${userName}: ha reactivado su quiniela${poolName}.${registrationLabel}`.trim()
+    }
+
+    return `${userName}: ha actualizado su quiniela${poolName}.${registrationLabel}`.trim()
+}
+
+const buildToastKey = (payload) => {
+    const action = payload?.action ?? 'updated'
+    const userName = payload?.userName ?? 'usuario'
+    const poolEntryId = payload?.poolEntryId ?? 'pool'
+    const occurredAt = payload?.occurredAt ?? ''
+
+    return `${action}|${userName}|${poolEntryId}|${occurredAt}`
+}
+
+const emitInfoToast = (payload) => {
+    const key = buildToastKey(payload)
+    if (emittedToastKeys.has(key)) {
+        return
+    }
+
+    emittedToastKeys.add(key)
+    if (emittedToastKeys.size > 400) {
+        const firstKey = emittedToastKeys.values().next().value
+        emittedToastKeys.delete(firstKey)
+    }
+
+    notifyInfo(buildAdminInfoMessage(payload))
+}
+
+const normalizeNotificationItem = (payload) => ({
+    id: payload?.id ?? `${payload?.poolEntryId ?? 'pool'}-${payload?.occurredAt ?? Date.now()}`,
+    action: payload?.action ?? 'updated',
+    userName: payload?.userName ?? 'Usuario',
+    userEmail: payload?.userEmail ?? '',
+    message: payload?.message ?? 'Actividad de quiniela registrada.',
+    messageSuffix: payload?.messageSuffix ?? 'actualizo una quiniela.',
+    poolEntryId: payload?.poolEntryId ?? null,
+    poolEntryReference: payload?.poolEntryReference ?? null,
+    registrationNumber: formatRegistrationNumber(payload),
+    poolEntryName: payload?.poolEntryName ?? null,
+    occurredAt: payload?.occurredAt ?? new Date().toISOString(),
+    read: Boolean(payload?.read ?? false),
+})
+
 const pushNotification = (payload) => {
+    const normalized = normalizeNotificationItem(payload)
+
     notificationItems.value = [
         {
-            id: `${payload?.poolEntryId ?? 'pool'}-${payload?.occurredAt ?? Date.now()}`,
-            action: payload?.action ?? 'updated',
-            userName: payload?.userName ?? 'Usuario',
-            userEmail: payload?.userEmail ?? '',
-            message: payload?.message ?? 'Actividad de quiniela registrada.',
-            messageSuffix: payload?.messageSuffix ?? 'actualizo una quiniela.',
-            poolEntryId: payload?.poolEntryId ?? null,
-            poolEntryName: payload?.poolEntryName ?? null,
-            occurredAt: payload?.occurredAt ?? new Date().toISOString(),
+            ...normalized,
             read: false,
         },
         ...notificationItems.value,
     ].slice(0, MAX_ITEMS)
     totalNotifications.value = Math.max(totalNotifications.value + 1, notificationItems.value.length)
 
+    emitInfoToast(normalized)
     persist()
 }
 
@@ -94,9 +172,20 @@ const initAdminNotifications = ({ canListen } = {}) => {
     const fetchNotifications = () => {
         axios.get(route('admin.notifications.index'))
             .then((response) => {
-                const items = Array.isArray(response?.data?.notifications) ? response.data.notifications : []
+                const incoming = Array.isArray(response?.data?.notifications) ? response.data.notifications : []
+                const items = incoming.map((item) => normalizeNotificationItem(item))
+
+                if (!hasFetchedOnce) {
+                    items.forEach((item) => emittedToastKeys.add(buildToastKey(item)))
+                } else {
+                    items
+                        .filter((item) => !item.read)
+                        .forEach((item) => emitInfoToast(item))
+                }
+
                 notificationItems.value = items
                 totalNotifications.value = Number(response?.data?.total ?? items.length)
+                hasFetchedOnce = true
                 persist()
             })
             .catch(() => {})

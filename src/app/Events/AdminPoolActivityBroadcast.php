@@ -23,6 +23,7 @@ class AdminPoolActivityBroadcast implements ShouldBroadcastNow
     public static function fromPoolEntryAction(PoolEntry $poolEntry, User $actor, string $action): self
     {
         $poolName = $poolEntry->name ?: ("Quiniela #{$poolEntry->id}");
+        $poolReference = sprintf('#%05d', (int) $poolEntry->id);
         $actionLabel = match ($action) {
             'created' => 'creo',
             'inactivated' => 'inactivo',
@@ -38,6 +39,8 @@ class AdminPoolActivityBroadcast implements ShouldBroadcastNow
             'userName' => $actor->name,
             'userEmail' => $actor->email,
             'poolEntryId' => $poolEntry->id,
+            'poolEntryReference' => $poolReference,
+            'registrationNumber' => $poolReference,
             'poolEntryName' => $poolName,
             'message' => sprintf('%s %s', $actor->name, $messageSuffix),
             'messageSuffix' => $messageSuffix,
