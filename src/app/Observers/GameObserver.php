@@ -4,8 +4,11 @@ namespace App\Observers;
 
 use App\Events\GameStatusUpdated;
 use App\Models\Game;
+use App\Models\User;
+use App\Notifications\UserGameStatusNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Throwable;
 
 class GameObserver
@@ -44,7 +47,15 @@ class GameObserver
 
         DB::afterCommit(function () use ($game, $notificationType) {
             try {
-                broadcast(GameStatusUpdated::fromGame($game, $notificationType));
+                $event = GameStatusUpdated::fromGame($game, $notificationType);
+                broadcast($event);
+
+                User::query()
+                    ->where('is_admin', false)
+                    ->select('id')
+                    ->chunkById(200, function ($users) use ($event) {
+                        Notification::send($users, new UserGameStatusNotification($event->payload));
+                    });
             } catch (Throwable $e) {
                 // Do not block score updates if websocket server is temporarily unavailable.
                 Log::warning('Game broadcast failed', [

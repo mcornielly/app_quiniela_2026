@@ -24,7 +24,16 @@ class WorldCupSeeder extends Seeder
 
             $tournament = Tournament::where('year', 2026)->firstOrFail();
 
-            $file = storage_path('app/WCup_2026_4.0_en2.xlsx');
+            $file = $this->resolveScheduleFilePath();
+
+            if (!$file) {
+                $this->command?->warn(
+                    'WorldCupSeeder skipped: missing schedule file "WCup_2026_4.0_en2.xlsx". '
+                    . 'Place it in storage/app/ and run php artisan db:seed --class=WorldCupSeeder'
+                );
+                DB::rollBack();
+                return;
+            }
 
             $spreadsheet = IOFactory::load($file);
             $sheet = $spreadsheet->getSheetByName('DailySchedule');
@@ -182,6 +191,23 @@ class WorldCupSeeder extends Seeder
             DB::rollBack();
             throw $e;
         }
+    }
+
+    private function resolveScheduleFilePath(): ?string
+    {
+        $candidates = [
+            storage_path('app/WCup_2026_4.0_en2.xlsx'),
+            base_path('database/data/WCup_2026_4.0_en2.xlsx'),
+            base_path('database/seeders/data/WCup_2026_4.0_en2.xlsx'),
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate) && is_readable($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     private function resolveTeam($teamName, $slot, $tournamentId, $stage, &$groupsCache)

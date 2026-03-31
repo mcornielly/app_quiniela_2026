@@ -12,9 +12,10 @@ Aplicación Laravel + Inertia/Vue para quiniela del Mundial 2026.
 
 ## Servicios locales automáticos
 
-Con un solo `docker compose up`, se levantan automáticamente:
+Después de instalar dependencias (paso inicial), con `docker compose up` se levantan automáticamente:
 
 1. `app` (web Laravel) en `http://astrocopa.app.test`
+   - Dentro del mismo contenedor corre Vite dev server (HMR) en `http://localhost:5173`
 2. `queue` (trabajos de cola)
 3. `scheduler` (cron de Laravel cada 60s)
 4. `reverb` (WebSocket para notificaciones push) en `ws://localhost:8081`
@@ -29,17 +30,27 @@ MySQL es opcional y se levanta con profile.
 Copy-Item .env.docker.example .env.docker
 ```
 
-2. Levantar todo el stack local:
+2. Construir imagen de dependencias PHP (stage `vendor`):
+```powershell
+docker build --target vendor -t app_quiniela_vendor_local .
+```
+
+3. Instalar dependencias de Laravel en `src/vendor`:
+```powershell
+docker run --rm -v "${PWD}/src:/app" -w /app app_quiniela_vendor_local composer install --no-interaction
+```
+
+4. Levantar todo el stack local:
 ```powershell
 docker compose up --build -d
 ```
 
-3. Ver logs en vivo:
+5. Ver logs en vivo:
 ```powershell
 docker compose logs -f app queue scheduler reverb
 ```
 
-4. (Opcional) correr seeders:
+6. (Opcional) correr seeders:
 ```powershell
 docker compose exec app php artisan db:seed
 ```
@@ -48,6 +59,8 @@ Notas:
 
 - `RUN_MIGRATIONS=true` viene activo en `.env.docker.example`, así que las migraciones se ejecutan automáticamente al iniciar `app`.
 - Si usas SQLite, el `entrypoint` crea automáticamente el archivo de base de datos local.
+- Si no instalas `vendor` primero, `app/queue/scheduler/reverb` pueden salir con error `vendor/autoload.php`.
+- Vite se levanta automáticamente dentro de `app` con `docker compose up -d`; no hace falta ejecutar `npm install` en host para usar Docker.
 
 ## Doble modo (sin Docker y con Docker)
 
@@ -62,8 +75,9 @@ Notas:
 - php artisan schedule:work
 
 ## Domanins
--- App: http://astrocopa.app.test:8000
--- Reverb WS: ws://astrocopa.app.test:8080
+- App: http://astrocopa.app.test
+- Vite HMR: http://localhost:5173
+- Reverb WS: ws://astrocopa.app.test:8081
 
 ## Activar MySQL local (opcional)
 
@@ -106,6 +120,12 @@ docker compose logs -f reverb
 
 docker compose up --build -d
 
+# Primera vez (recomendado)
+
+docker build --target vendor -t app_quiniela_vendor_local .
+docker run --rm -v "${PWD}/src:/app" -w /app app_quiniela_vendor_local composer install --no-interaction
+docker compose up --build -d
+
 # Bajar stack
 
 docker compose down
@@ -121,7 +141,33 @@ docker compose exec app php artisan route:list
 # Ver estado de servicios
 
 docker compose ps
+
+# Ver logs de Vite (dentro de app)
+
+docker compose logs -f app
 ```
+
+## Troubleshooting WSL + npm
+
+Si al ejecutar `npm install` en WSL ves errores como `CMD.EXE ... rutas UNC` o paths `\\wsl.localhost\...`, estás usando `npm` de Windows dentro de Linux.
+
+Solución recomendada en este proyecto:
+
+```powershell
+docker compose up -d app
+docker compose logs -f app
+```
+
+Con esto no necesitas `npm install` en host, porque Vite corre dentro del contenedor `app` y maneja sus dependencias ahí.
+
+Si igual quieres usar Node en WSL (host Linux), instala Node con `nvm` y valida:
+
+```bash
+which npm
+which node
+```
+
+Ambos deben apuntar a una ruta Linux (por ejemplo `~/.nvm/...`) y no a `/mnt/c/Program Files/nodejs/...`.
 
 ## Deploy en Railway
 

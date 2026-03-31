@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
+import axios from 'axios'
 import ApplicationLogo from '@/Components/ApplicationLogo.vue'
 import Dropdown from '@/Components/Dropdown.vue'
 import DropdownLink from '@/Components/DropdownLink.vue'
@@ -43,7 +44,7 @@ const notificationItems = ref([])
 const deferFlashNotifications = ref(false)
 const pendingFlash = ref(null)
 const liveChannelName = 'matches.live'
-const USER_NOTIFICATIONS_STORAGE_KEY = 'user.notifications.v1'
+const USER_NOTIFICATIONS_STORAGE_KEY_BASE = 'user.notifications.v1'
 
 const worldCupNavigation = computed(() => [
     { name: 'Calendario', href: route('calendar.index'), current: route().current('calendar.index') || route().current('matches.index'), icon: 'calendar' },
@@ -62,37 +63,20 @@ const navigation = computed(() => [
 const isWorldCupActive = computed(() => worldCupNavigation.value.some((item) => item.current))
 const unreadNotifications = computed(() => notificationItems.value.filter((item) => !item.read).length)
 
-const loadNotificationHistory = () => {
+const clearLegacyNotificationHistory = () => {
     if (typeof window === 'undefined') {
         return
     }
 
     try {
-        const raw = window.localStorage.getItem(USER_NOTIFICATIONS_STORAGE_KEY)
-        if (!raw) {
-            return
-        }
-
-        const parsed = JSON.parse(raw)
-        if (Array.isArray(parsed)) {
-            notificationItems.value = parsed.slice(0, 20)
-        }
+        Object.keys(window.localStorage)
+            .filter((key) => key === USER_NOTIFICATIONS_STORAGE_KEY_BASE || key.startsWith(`${USER_NOTIFICATIONS_STORAGE_KEY_BASE}.`))
+            .forEach((key) => window.localStorage.removeItem(key))
     } catch {
-        notificationItems.value = []
+        // Ignore localStorage errors silently.
     }
 }
 
-const persistNotificationHistory = () => {
-    if (typeof window === 'undefined') {
-        return
-    }
-
-    try {
-        window.localStorage.setItem(USER_NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notificationItems.value.slice(0, 20)))
-    } catch {
-        // Ignore localStorage quota/errors silently.
-    }
-}
 const applyTheme = (theme) => {
     currentTheme.value = theme
     localStorage.setItem('user-theme', theme)
@@ -124,40 +108,48 @@ const buildLiveInfoMessage = (payload) => {
 }
 
 const pushNotification = (payload) => {
-    notificationItems.value = [
-        {
-            id: `${payload?.gameId ?? 'game'}-${payload?.occurredAt ?? Date.now()}`,
-            type: payload?.type === 'result' ? 'result' : (payload?.type === 'update' ? 'update' : 'start'),
-            stageLabel: payload?.stageLabel ?? 'Mundial 2026',
-            homeTeam: payload?.homeTeam ?? 'Local',
-            awayTeam: payload?.awayTeam ?? 'Visitante',
-            homeFlagUrl: payload?.homeFlagUrl ?? null,
-            awayFlagUrl: payload?.awayFlagUrl ?? null,
-            homeScore: payload?.homeScore,
-            awayScore: payload?.awayScore,
-            matchDate: payload?.matchDate ?? null,
-            matchTime: payload?.matchTime ?? null,
-            venue: payload?.venue ?? null,
-            occurredAt: payload?.occurredAt ?? new Date().toISOString(),
-            read: false,
-        },
-        ...notificationItems.value,
-    ].slice(0, 20)
-
     notifyInfo(buildLiveInfoMessage(payload))
+    fetchUserNotificationInbox()
     window.dispatchEvent(new CustomEvent('dashboard:game-status-updated', { detail: payload }))
 }
 
-const markNotificationsRead = () => {
+const fetchUserNotificationInbox = async () => {
+    try {
+        const { data } = await axios.get(route('user.notifications.index'))
+        notificationItems.value = Array.isArray(data?.notifications) ? data.notifications : []
+    } catch {
+        notificationItems.value = []
+    }
+}
+
+const markNotificationsRead = async () => {
     notificationItems.value = notificationItems.value.map((item) => ({ ...item, read: true }))
+
+    try {
+        await axios.post(route('user.notifications.read-all'))
+    } catch {
+        // Ignore API errors silently; local UI state remains marked.
+    }
 }
 
-const removeNotificationItem = (id) => {
+const removeNotificationItem = async (id) => {
     notificationItems.value = notificationItems.value.filter((item) => item.id !== id)
+
+    try {
+        await axios.delete(route('user.notifications.destroy', id))
+    } catch {
+        // Ignore API errors silently; local UI state already removed.
+    }
 }
 
-const clearAllNotifications = () => {
+const clearAllNotifications = async () => {
     notificationItems.value = []
+
+    try {
+        await axios.delete(route('user.notifications.clear'))
+    } catch {
+        // Ignore API errors silently; local UI state already cleared.
+    }
 }
 
 const showFlashNotification = (flash) => {
@@ -198,7 +190,7 @@ const worldCupIconPaths = {
 }
 
 onMounted(() => {
-    loadNotificationHistory()
+    clearLegacyNotificationHistory()
     window.addEventListener('favorite-team:applying', onFavoriteTeamApplyingChange)
 
     const storedTheme = localStorage.getItem('user-theme')
@@ -207,6 +199,7 @@ onMounted(() => {
         : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
 
     applyTheme(initialTheme)
+    fetchUserNotificationInbox()
 
     if (window.Echo) {
         window.Echo.channel(liveChannelName)
@@ -241,18 +234,10 @@ watch(
     { immediate: true, deep: true },
 )
 
-watch(
-    notificationItems,
-    () => {
-        persistNotificationHistory()
-    },
-    { deep: true },
-)
-
 </script>
 
 <template>
-    <div class="min-h-screen bg-slate-100 text-slate-900 transition-colors dark:bg-slate-950 dark:text-slate-100">
+    <div class="flex min-h-screen flex-col bg-slate-100 text-slate-900 transition-colors dark:bg-slate-950 dark:text-slate-100">
         <div class="absolute inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_55%)] dark:bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.18),_transparent_45%)]" />
 
         <header class="sticky top-0 z-40 border-b border-white/80 bg-white/88 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/92">
@@ -486,7 +471,7 @@ watch(
             </div>
         </header>
 
-        <main class="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
+        <main class="mx-auto flex w-full max-w-7xl flex-1 flex-col px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
             <div class="mb-5 flex flex-col gap-5 sm:mb-8 sm:gap-6 xl:flex-row xl:items-stretch">
                 <div v-if="$slots.headerAside" class="xl:w-[19rem] xl:shrink-0">
                     <slot name="headerAside" />
@@ -529,7 +514,7 @@ watch(
             </div>
             <slot />
 
-            <UserFooter />
+            <UserFooter class="mt-auto" />
         </main>
     </div>
 </template>

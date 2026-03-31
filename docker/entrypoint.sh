@@ -21,7 +21,27 @@ fi
 
 case "$ROLE" in
   web)
-    exec php artisan serve --host=0.0.0.0 --port="${PORT:-8080}"
+    if [ "${ENABLE_VITE_DEV_SERVER:-true}" = "true" ]; then
+      if [ ! -x node_modules/.bin/vite ]; then
+        npm ci
+      fi
+
+      npm run dev -- --host=0.0.0.0 --port="${VITE_PORT:-5173}" &
+      VITE_PID=$!
+    else
+      VITE_PID=""
+    fi
+
+    php artisan serve --host=0.0.0.0 --port="${PORT:-8080}" &
+    WEB_PID=$!
+
+    cleanup() {
+      [ -n "${VITE_PID:-}" ] && kill "$VITE_PID" 2>/dev/null || true
+      kill "$WEB_PID" 2>/dev/null || true
+    }
+
+    trap cleanup INT TERM
+    wait "$WEB_PID"
     ;;
   queue)
     exec php artisan queue:work --tries="${QUEUE_TRIES:-3}" --timeout="${QUEUE_TIMEOUT:-120}" --sleep="${QUEUE_SLEEP:-1}"

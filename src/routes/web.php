@@ -24,6 +24,7 @@ use App\Http\Controllers\PoolEntryController;
 use App\Http\Controllers\QuinielaWorldCupController;
 use App\Http\Controllers\MatchesController;
 use App\Http\Controllers\LeaderboardController;
+use App\Http\Controllers\UserNotificationController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -173,6 +174,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/pools/{poolEntry}/restore', [PoolEntryController::class, 'restore'])->whereNumber('poolEntry')->name('pools.restore');
     Route::get('/pools/create', [PoolEntryController::class, 'create'])->name('pools.create');
     Route::get('/pools/{poolEntry}', [PoolEntryController::class, 'show'])->whereNumber('poolEntry')->name('pools.show');
+    Route::get('/user/notifications', [UserNotificationController::class, 'index'])->name('user.notifications.index');
+    Route::post('/user/notifications/read-all', [UserNotificationController::class, 'markAllRead'])->name('user.notifications.read-all');
+    Route::post('/user/notifications/{notificationId}/read', [UserNotificationController::class, 'markRead'])->name('user.notifications.read');
+    Route::delete('/user/notifications/{notificationId}', [UserNotificationController::class, 'destroy'])->name('user.notifications.destroy');
+    Route::delete('/user/notifications', [UserNotificationController::class, 'clearAll'])->name('user.notifications.clear');
 
     // Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
     // Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');

@@ -27,9 +27,12 @@ services:
       APP_RUNTIME_ROLE: web
       APP_URL: http://astrocopa.app.test
       PORT: 8080
+      ENABLE_VITE_DEV_SERVER: ${ENABLE_VITE_DEV_SERVER:-true}
+      VITE_PORT: ${VITE_PORT:-5173}
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
     ports:
       - "80:8080"
+      - "5173:5173"
 
   queue:
     <<: *app-base

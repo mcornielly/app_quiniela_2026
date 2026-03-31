@@ -52,6 +52,8 @@ RUN apk add --no-cache \
     icu-dev \
     libjpeg-turbo-dev \
     linux-headers \
+    nodejs \
+    npm \
     libpng-dev \
     libzip-dev \
     oniguruma-dev \
