@@ -47,6 +47,24 @@ const setScore = (side, value) => {
     updateScores(props.modelValue.home, value)
 }
 
+const normalizeIncompleteScore = () => {
+    const home = sanitizeScore(props.modelValue.home)
+    const away = sanitizeScore(props.modelValue.away)
+
+    if (home === null && away === null) {
+        return
+    }
+
+    if (home === null) {
+        updateScores(0, away)
+        return
+    }
+
+    if (away === null) {
+        updateScores(home, 0)
+    }
+}
+
 const adjustScore = (side, delta) => {
     const current = Number.isFinite(Number(props.modelValue?.[side]))
         ? Number(props.modelValue?.[side])
@@ -63,6 +81,9 @@ const hiddenFlags = ref({})
 const teamKey = (team, slot) => team?.id || team?.code || slot || 'unknown'
 const flagSrc = (team) => team?.flag_url || imageUrl(team?.flag_path)
 const shouldShowFlag = (team, slot) => Boolean(flagSrc(team)) && !hiddenFlags.value[teamKey(team, slot)]
+const flagClass = (team) => team?.is_special_slot
+    ? 'h-6 w-9 rounded object-contain scale-125'
+    : 'h-6 w-9 rounded object-cover'
 const hideFlag = (team, slot) => {
     hiddenFlags.value = {
         ...hiddenFlags.value,
@@ -72,13 +93,21 @@ const hideFlag = (team, slot) => {
 </script>
 
 <template>
-    <article class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-primary-300 dark:border-slate-800 dark:bg-slate-900/75 dark:hover:border-primary-500/40">
-        <div class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 border-b border-slate-200 pb-3 dark:border-slate-800">
+    <article class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:border-primary-300 dark:border-slate-800 dark:bg-slate-900/75 dark:hover:border-primary-500/40">
+        <div class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-slate-200 pb-2.5 dark:border-slate-800">
             <div class="min-w-0">
                 <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                     {{ match.stage === 'group' ? `Grupo ${match.group_name}` : match.stage_label }}
                 </p>
-                <div class="mt-1 flex min-w-0 flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            </div>
+
+            <div class="min-w-0 text-center">
+                <div class="flex items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-slate-400 dark:text-slate-500">
+                    <span class="h-px w-6 bg-slate-200 dark:bg-slate-700" />
+                    <span>Partido #{{ match.match_number }}</span>
+                    <span class="h-px w-6 bg-slate-200 dark:bg-slate-700" />
+                </div>
+                <div class="mt-0.5 flex min-w-0 flex-wrap items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                     <span>{{ match.display_date }} <span v-if="match.display_time" class="font-semibold">- {{ match.display_time }}</span></span>
                     <AppTooltip :text="`Estadio: ${match.venue || 'Sede por confirmar'}`" placement="top">
                         <span class="inline-flex min-w-0 items-center gap-1.5 truncate">
@@ -90,12 +119,15 @@ const hideFlag = (team, slot) => {
                     </AppTooltip>
                 </div>
             </div>
-            <span class="inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700 dark:border-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-300">
-                {{ match.win_probability }}
-            </span>
+
+            <AppTooltip :text="match.probability_text" placement="top">
+                <span class="inline-flex cursor-default items-center rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700 dark:border-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-300">
+                    {{ match.win_probability }}
+                </span>
+            </AppTooltip>
         </div>
 
-        <div class="grid gap-4 py-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center">
+        <div class="grid gap-3 py-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center">
             <div class="flex items-center justify-start gap-3 md:justify-end md:text-right">
                 <div class="min-w-0">
                     <p class="truncate text-base font-semibold text-slate-900 dark:text-white">{{ teamLabel(match.home_team, match.home_slot) }}</p>
@@ -105,7 +137,7 @@ const hideFlag = (team, slot) => {
                     v-if="shouldShowFlag(match.home_team, match.home_slot)"
                     :src="flagSrc(match.home_team)"
                     :alt="teamLabel(match.home_team, match.home_slot)"
-                    class="h-6 w-9 rounded object-cover"
+                    :class="flagClass(match.home_team)"
                     @error="hideFlag(match.home_team, match.home_slot)"
                 >
                 <span
@@ -136,6 +168,7 @@ const hideFlag = (team, slot) => {
                         placeholder="0"
                         class="h-9 w-10 rounded-lg border border-slate-300 bg-white text-center text-xl font-black text-slate-900 focus:border-primary-500 focus:ring-primary-200 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-primary-500 dark:focus:ring-primary-500/20"
                         @input="setScore('home', $event.target.value)"
+                        @blur="normalizeIncompleteScore"
                     >
                     <button
                         type="button"
@@ -167,6 +200,7 @@ const hideFlag = (team, slot) => {
                         placeholder="0"
                         class="h-9 w-10 rounded-lg border border-slate-300 bg-white text-center text-xl font-black text-slate-900 focus:border-primary-500 focus:ring-primary-200 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-primary-500 dark:focus:ring-primary-500/20"
                         @input="setScore('away', $event.target.value)"
+                        @blur="normalizeIncompleteScore"
                     >
                     <button
                         type="button"
@@ -183,7 +217,7 @@ const hideFlag = (team, slot) => {
                     v-if="shouldShowFlag(match.away_team, match.away_slot)"
                     :src="flagSrc(match.away_team)"
                     :alt="teamLabel(match.away_team, match.away_slot)"
-                    class="h-6 w-9 rounded object-cover"
+                    :class="flagClass(match.away_team)"
                     @error="hideFlag(match.away_team, match.away_slot)"
                 >
                 <span
@@ -197,13 +231,6 @@ const hideFlag = (team, slot) => {
                     <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ teamCode(match.away_team, match.away_slot) }}</p>
                 </div>
             </div>
-        </div>
-
-        <div class="flex items-center justify-between gap-2 border-t border-slate-200 pt-3 text-sm dark:border-slate-800">
-            <p class="font-semibold text-primary-600 dark:text-cyan-300">
-                {{ match.probability_text }}
-            </p>
-            <span class="text-xs text-slate-500 dark:text-slate-400">Partido #{{ match.match_number }}</span>
         </div>
     </article>
 </template>

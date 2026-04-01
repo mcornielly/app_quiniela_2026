@@ -35,6 +35,9 @@ const statColumns = [
 const teamKey = (team) => team?.id || team?.code || team?.name || 'unknown'
 const getFlagSrc = (team) => team?.flag_url || imageUrl(team?.flag_path)
 const shouldShowFlag = (team) => Boolean(getFlagSrc(team)) && !hiddenFlags.value[teamKey(team)]
+const flagClass = (team) => team?.is_special_slot
+    ? 'h-5 w-7 rounded object-contain scale-125 shadow-sm shadow-slate-200 dark:shadow-black/30'
+    : 'h-5 w-7 rounded object-cover shadow-sm shadow-slate-200 dark:shadow-black/30'
 const hideFlag = (team) => {
     hiddenFlags.value = {
         ...hiddenFlags.value,
@@ -116,7 +119,7 @@ onBeforeUnmount(() => {
                                         v-if="shouldShowFlag(row.team)"
                                         :src="getFlagSrc(row.team)"
                                         :alt="row.team.name || row.team.code"
-                                        class="h-5 w-7 rounded object-cover shadow-sm shadow-slate-200 dark:shadow-black/30"
+                                        :class="flagClass(row.team)"
                                         @error="hideFlag(row.team)"
                                     >
                                     <span v-else class="text-lg drop-shadow-sm text-slate-500 dark:text-slate-300">{{ row.team.flag }}</span>

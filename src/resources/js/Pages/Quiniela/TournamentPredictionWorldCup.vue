@@ -45,6 +45,26 @@ const themedSecondaryButtonClass = computed(() => activeTickerTheme.value?.butto
     ?? 'border-cyan-400 bg-slate-100 text-slate-700 hover:text-white hover:bg-cyan-300 focus:ring-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:focus:ring-slate-700')
 const themedPrimaryButtonClass = computed(() => activeTickerTheme.value?.buttonPrimaryClass
     ?? 'bg-cyan-400 text-slate-950 hover:bg-cyan-300 hover:text-white focus:ring-cyan-200 dark:bg-cyan-400 dark:hover:bg-cyan-300 dark:focus:ring-cyan-900')
+const themedGroupPanelClass = computed(() => activeTickerTheme.value?.groupPanelClass
+    ?? 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/70')
+const themedGroupEyebrowClass = computed(() => activeTickerTheme.value?.groupEyebrowClass
+    ?? activeTickerTheme.value?.eyebrowClass
+    ?? 'text-cyan-600 dark:text-cyan-300/80')
+const themedGroupTitleClass = computed(() => activeTickerTheme.value?.groupTitleClass
+    ?? activeTickerTheme.value?.teamNameClass
+    ?? 'text-slate-900 dark:text-white')
+const themedGroupBodyClass = computed(() => activeTickerTheme.value?.groupBodyClass
+    ?? 'text-slate-500 dark:text-slate-400')
+const themedCurrentGroupBadgeClass = computed(() => activeTickerTheme.value?.groupBadgeClass
+    ?? 'border-cyan-300/70 bg-cyan-400/15 shadow-[0_0_18px_rgba(34,211,238,0.28)]')
+const themedCurrentGroupValueClass = computed(() => activeTickerTheme.value?.groupBadgeValueClass
+    ?? activeTickerTheme.value?.statsValueClass
+    ?? 'text-cyan-500 dark:text-cyan-300')
+const themedActiveGroupCardClass = computed(() => activeTickerTheme.value?.groupActiveCardClass
+    ?? activeTickerTheme.value?.buttonPrimaryClass
+    ?? 'border-cyan-400 bg-cyan-400 text-slate-950 shadow-[0_0_16px_rgba(34,211,238,0.28)] dark:bg-cyan-400 dark:text-slate-950')
+const themedInactiveGroupCardClass = computed(() => activeTickerTheme.value?.groupInactiveCardClass
+    ?? 'border-slate-300 bg-white text-slate-500 opacity-70 hover:border-slate-400 hover:opacity-90 dark:border-slate-700/70 dark:bg-slate-950/40 dark:text-slate-500 dark:opacity-80 dark:hover:border-slate-600 dark:hover:opacity-100')
 const poolEntryForm = useForm({
     tournament_id: props.tournament.id,
     name: '',
@@ -52,7 +72,7 @@ const poolEntryForm = useForm({
 })
 const showNameStepModal = ref(false)
 const hasConfirmedPoolName = ref(false)
-const groupMatchesTopRef = ref(null)
+const groupTopNavRef = ref(null)
 
 const stageDefinitions = [
     { key: 'group', label: 'Grupos' },
@@ -597,7 +617,16 @@ const selectGroup = (index) => {
 
 const scrollToCurrentGroupMatches = async () => {
     await nextTick()
-    groupMatchesTopRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (!groupTopNavRef.value) {
+        return
+    }
+
+    const topOffset = 406
+    const targetTop = groupTopNavRef.value.getBoundingClientRect().top + window.scrollY - topOffset
+    window.scrollTo({
+        top: Math.max(0, targetTop),
+        behavior: 'smooth',
+    })
 }
 
 const goToPreviousGroup = () => {
@@ -610,6 +639,11 @@ const goToNextGroup = async () => {
     if (currentGroupIndex.value < groupProgress.value.length - 1) {
         currentGroupIndex.value += 1
         await scrollToCurrentGroupMatches()
+        return
+    }
+
+    if (currentStageStatus.value?.isComplete && nextUnlockedStage.value) {
+        currentStage.value = nextUnlockedStage.value.key
     }
 }
 
@@ -812,17 +846,17 @@ watch(
 
             <section v-if="currentStage === 'group' && currentGroup" class="space-y-6">
                 <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-                    <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/70">
+                    <div :class="themedGroupPanelClass" class="rounded-2xl border p-5">
                         <div class="flex items-center justify-between gap-4">
                             <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-300/80">Progreso por grupos</p>
-                                <h2 class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">Fase de grupos guiada</h2>
-                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                <p :class="themedGroupEyebrowClass" class="text-xs font-semibold uppercase tracking-[0.2em]">Progreso por grupos</p>
+                                <h2 :class="themedGroupTitleClass" class="mt-2 text-2xl font-bold">Fase de grupos guiada</h2>
+                                <p :class="themedGroupBodyClass" class="mt-1 text-sm">
                                     Completa un grupo a la vez.
                                 </p>
                             </div>
-                            <div class="flex h-20 min-w-[5.75rem] items-center justify-center rounded-2xl border border-emerald-400/70 bg-emerald-500/15 px-3 py-2 shadow-[0_0_18px_rgba(16,185,129,0.35)]">
-                                <p class="block -translate-y-1 text-6xl font-black leading-[0.9] text-emerald-400 drop-shadow-[0_0_3px_rgba(52,211,153,0.45)]">
+                            <div :class="themedCurrentGroupBadgeClass" class="flex h-20 min-w-[5.75rem] items-center justify-center rounded-2xl border px-3 py-2">
+                                <p :class="themedCurrentGroupValueClass" class="block -translate-y-1 text-6xl font-black leading-[0.9]">
                                     {{ currentGroup.name }}
                                 </p>
                             </div>
@@ -836,8 +870,8 @@ watch(
                                 @click="selectGroup(group.index)"
                                 :class="[
                                     currentGroupIndex === group.index
-                                        ? 'border-emerald-500 bg-emerald-500 text-white shadow-[0_0_16px_rgba(16,185,129,0.35)] dark:bg-emerald-500 dark:text-white'
-                                        : 'border-slate-300 bg-white text-slate-500 opacity-70 hover:border-slate-400 hover:opacity-90 dark:border-slate-700/70 dark:bg-slate-950/40 dark:text-slate-500 dark:opacity-80 dark:hover:border-slate-600 dark:hover:opacity-100',
+                                        ? themedActiveGroupCardClass
+                                        : themedInactiveGroupCardClass,
                                 ]"
                                 class="flex min-h-[88px] flex-col rounded-2xl border px-4 py-2.5 text-left transition"
                             >
@@ -855,7 +889,7 @@ watch(
                     <StandingWidget :group-name="currentGroup.name" :standings="standingsByGroup[currentGroup.name] || []" />
                 </div>
 
-                <div class="flex items-center justify-between gap-3">
+                <div ref="groupTopNavRef" class="flex items-center justify-between gap-3">
                     <button
                         type="button"
                         :class="[
@@ -873,14 +907,14 @@ watch(
                             themedPrimaryButtonClass,
                             'inline-flex min-w-[170px] items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold shadow-sm transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
                         ]"
-                        :disabled="currentGroupIndex >= groupProgress.length - 1"
+                        :disabled="currentGroupIndex >= groupProgress.length - 1 && !(currentStageStatus?.isComplete && nextUnlockedStage)"
                         @click="goToNextGroup"
                     >
-                        Siguiente
+                        {{ currentGroupIndex >= groupProgress.length - 1 && currentStageStatus?.isComplete && nextUnlockedStage ? `Continuar a ${nextUnlockedStage.label}` : 'Siguiente' }}
                     </button>
                 </div>
 
-                <div ref="groupMatchesTopRef" class="space-y-3">
+                <div class="space-y-3">
                     <WorldCupMatchCard
                         v-for="match in currentGroupMatches"
                         :key="match.id"
@@ -907,10 +941,10 @@ watch(
                             themedPrimaryButtonClass,
                             'inline-flex min-w-[170px] items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold shadow-sm transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
                         ]"
-                        :disabled="currentGroupIndex >= groupProgress.length - 1"
+                        :disabled="currentGroupIndex >= groupProgress.length - 1 && !(currentStageStatus?.isComplete && nextUnlockedStage)"
                         @click="goToNextGroup"
                     >
-                        Siguiente
+                        {{ currentGroupIndex >= groupProgress.length - 1 && currentStageStatus?.isComplete && nextUnlockedStage ? `Continuar a ${nextUnlockedStage.label}` : 'Siguiente' }}
                     </button>
                 </div>
             </section>
