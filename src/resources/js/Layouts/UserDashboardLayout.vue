@@ -49,6 +49,7 @@ const USER_NOTIFICATIONS_STORAGE_KEY_BASE = 'user.notifications.v1'
 const worldCupNavigation = computed(() => [
     { name: 'Calendario', href: route('calendar.index'), current: route().current('calendar.index') || route().current('matches.index'), icon: 'calendar' },
     { name: 'Juegos', href: route('predictions.worldcup'), current: route().current('predictions.worldcup'), icon: 'ball' },
+    { name: 'Selecciones', href: route('teams.profile'), current: route().current('teams.profile'), icon: 'team' },
     { name: 'Resultados', href: route('results.index'), current: route().current('results.index'), icon: 'score' },
     { name: 'Estadisticas', href: route('leaderboard'), current: route().current('leaderboard'), icon: 'chart' },
     { name: 'Roadmap', href: route('groups.index'), current: route().current('groups.index'), icon: 'roadmap' },
@@ -186,6 +187,7 @@ const worldCupIconPaths = {
     ball: 'M222.7 32.1c-18.3-4.5-37.1-4.5-55.4 0L131 96H259L222.7 32.1zM94.1 118.6 62.6 173.1 94.9 228l73.2-3.4 31.3-54.6L167.1 115H104.5c-3.6 1.1-7.1 2.3-10.4 3.6zm323 54.5-31.2-54.1c-3.4-1.3-6.9-2.5-10.5-3.6H312.8l-32.3 55 31.3 54.6 73.2 3.4 32.1-54.9zm-193.4 79.8H184.3L153 307.4l36.3 63.9c18.3 4.5 37.1 4.5 55.4 0L281 307.4l-31.3-54.5zm-136 17.5-57.4-2.7L7.5 322.6c8.6 28.1 24.6 53 45.8 72.5l58.9-10.3L144 330.3 87.7 270.4zm336.6-2.7-57.4 2.7L368 330.3l31.8 54.5 58.9 10.3c21.2-19.6 37.2-44.4 45.8-72.5l-22.8-54.9zM127.8 412.2 83.1 420c24.3 16.7 53.7 27.1 85.2 28.8l-40.5-36.6zm216.4 0-40.5 36.6c31.5-1.7 60.9-12.1 85.2-28.8l-44.7-7.8z',
     score: 'M80 80c0-26.5 21.5-48 48-48H384c26.5 0 48 21.5 48 48V400c0 26.5-21.5 48-48 48H128c-26.5 0-48-21.5-48-48V80zm144 64a24 24 0 1 0 0 48 24 24 0 1 0 0-48zm0 112a24 24 0 1 0 0 48 24 24 0 1 0 0-48zM32 112c17.7 0 32 14.3 32 32V336c0 17.7-14.3 32-32 32S0 353.7 0 336V144c0-17.7 14.3-32 32-32zm448 0c17.7 0 32 14.3 32 32V336c0 17.7-14.3 32-32 32s-32-14.3-32-32V144c0-17.7 14.3-32 32-32z',
     chart: 'M32 32C14.3 32 0 46.3 0 64V448c0 17.7 14.3 32 32 32H480c17.7 0 32-14.3 32-32s-14.3-32-32-32H64V64c0-17.7-14.3-32-32-32zM160 224c17.7 0 32 14.3 32 32V416H128V256c0-17.7 14.3-32 32-32zm128-64c17.7 0 32 14.3 32 32V416H256V192c0-17.7 14.3-32 32-32zM480 96V416H416V96c0-17.7 14.3-32 32-32s32 14.3 32 32z',
+    team: 'M48 80c0-26.5 21.5-48 48-48H416c26.5 0 48 21.5 48 48V432c0 26.5-21.5 48-48 48H96c-26.5 0-48-21.5-48-48V80zm96 64a64 64 0 1 0 128 0 64 64 0 1 0-128 0zm224 240V352c0-53-43-96-96-96H144c-53 0-96 43-96 96v32H368z',
     roadmap: 'M128 64c0-35.3 28.7-64 64-64H320c35.3 0 64 28.7 64 64v32h64c35.3 0 64 28.7 64 64V288c0 35.3-28.7 64-64 64H320c-35.3 0-64-28.7-64-64V256H192v32c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V160c0-35.3 28.7-64 64-64h64V64zm64 32H320V64H192V96zM64 160V288h64V160H64zm256 128h128V160H320V288z',
 }
 
