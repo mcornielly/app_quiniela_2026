@@ -29,3 +29,4 @@ src/.env.backup
 src/.env.production
 .phpactor.json
 auth.json
+.codex/
