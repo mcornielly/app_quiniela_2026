@@ -146,6 +146,14 @@ class FootballApiService
         );
     }
 
+    /**
+     * Uncached fixtures request for sync jobs.
+     */
+    public function getFixturesFresh(array $params = []): array
+    {
+        return $this->get('fixtures', $params);
+    }
+
     public function getFixtureById(int $fixtureId): array
     {
         return $this->getFixtures(['id' => $fixtureId]);
