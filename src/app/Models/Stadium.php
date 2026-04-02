@@ -15,6 +15,11 @@ class Stadium extends Model
         'capacity',
         'surface',
         'image_url',
+        'image_gallery',
+    ];
+
+    protected $casts = [
+        'image_gallery' => 'array',
     ];
 
     public function games()

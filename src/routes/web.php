@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\MatchController;
 use App\Http\Controllers\Admin\PoolEntriesController;
 use App\Http\Controllers\Admin\PoolEntryController as AdminPoolEntryController;
 use App\Http\Controllers\Admin\RuleController;
+use App\Http\Controllers\Admin\StadiumController;
 use App\Http\Controllers\Admin\TournamentParticipantController;
 use App\Http\Controllers\Admin\AdminNotificationController;
 use App\Http\Controllers\PoolEntryController;
@@ -87,6 +88,11 @@ Route::middleware(['auth', 'verified', 'admin'])
         ->name('countries.bulkDelete');
 
     Route::resource('countries', CountryController::class)->only(['index','store','update','destroy']);
+
+    Route::delete('stadiums/bulk-delete', [StadiumController::class, 'bulkDelete'])
+        ->name('stadiums.bulkDelete');
+
+    Route::resource('stadiums', StadiumController::class)->only(['index','store','update','destroy']);
 
     Route::delete('groups/bulk-delete', [GroupController::class, 'bulkDelete'])
         ->name('groups.bulkDelete');
