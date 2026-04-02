@@ -429,7 +429,7 @@ onBeforeUnmount(() => {
         <section>
             <div class="-mt-8 flex items-center justify-between gap-4 text-left">
                 <div class="inline-flex items-center gap-2 text-3xl font-bold text-slate-900 dark:text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="h-8 w-8 fill-current text-amber-400" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="h-9 w-9 fill-current text-amber-400" aria-hidden="true">
                         <path d="M96 96c0-35.3 28.7-64 64-64H416c35.3 0 64 28.7 64 64V352c0 35.3-28.7 64-64 64H160c-35.3 0-64-28.7-64-64V96zM0 128c0-17.7 14.3-32 32-32s32 14.3 32 32V384c0 53 43 96 96 96H384c17.7 0 32 14.3 32 32s-14.3 32-32 32H160C71.6 544 0 472.4 0 384V128z"/>
                     </svg>
                     <h1>{{ poolEntry.name }}</h1>
@@ -486,8 +486,8 @@ onBeforeUnmount(() => {
             </div>
 
             <article class="mt-6">
-                <div class="border-b border-slate-300 px-1 pb-2 dark:border-slate-700">
-                    <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                <div class="border-b border-slate-300 px-1 dark:border-slate-700">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <ul class="-mb-px flex flex-wrap text-sm font-semibold text-slate-500 dark:text-slate-400">
                         <li v-for="tab in tabItems" :key="tab.key" class="me-2">
                             <button
@@ -498,10 +498,10 @@ onBeforeUnmount(() => {
                                     ? 'border-primary-500 text-primary-700 dark:border-primary-400 dark:text-primary-300'
                                     : 'border-transparent hover:border-primary-300 hover:text-primary-700 dark:hover:border-primary-500 dark:hover:text-primary-300'"
                             >
-                                <CheckCircleIcon v-if="tab.key === 'played'" class="me-2 h-4 w-4" />
-                                <ClockIcon v-else-if="tab.key === 'pending'" class="me-2 h-4 w-4" />
-                                <BoltIcon v-else class="me-2 h-4 w-4" />
-                                <span>{{ tab.label }}</span>
+                                <CheckCircleIcon v-if="tab.key === 'played'" class="me-2 h-5 w-5" />
+                                <ClockIcon v-else-if="tab.key === 'pending'" class="me-2 h-5 w-5" />
+                                <BoltIcon v-else class="me-2 h-5 w-5" />
+                                <span class="text-xs font-semibold uppercase tracking-[0.2em]">{{ tab.label }}</span>
                                 <span
                                     class="ms-2 rounded-full px-2 py-0.5 text-[11px] font-bold"
                                     :class="activeTab === tab.key
@@ -514,7 +514,7 @@ onBeforeUnmount(() => {
                         </li>
                     </ul>
 
-                        <div class="flex flex-wrap items-center justify-end gap-2 pb-1 text-xs">
+                        <div class="flex flex-wrap items-center justify-end gap-2 text-xs">
                             <FilterSelect
                                 v-model="sortBy"
                                 :options="sortOptions"

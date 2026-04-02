@@ -72,31 +72,62 @@ const statusClass = (status) => {
                 <h1 class="text-3xl font-black text-slate-900 dark:text-white">{{ tournament?.name || 'Selecciones' }}</h1>
             </div>
 
-            <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-2 dark:border-slate-800">
-                <button
-                    type="button"
-                    class="rounded-xl px-4 py-2 text-sm font-semibold transition"
-                    :class="activeTab === 'teams' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'"
-                    @click="activeTab = 'teams'"
-                >
-                    Equipos
-                </button>
-                <button
-                    type="button"
-                    class="rounded-xl px-4 py-2 text-sm font-semibold transition"
-                    :class="activeTab === 'stadiums' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'"
-                    @click="activeTab = 'stadiums'"
-                >
-                    Estadios
-                </button>
-                <button
-                    type="button"
-                    class="rounded-xl px-4 py-2 text-sm font-semibold transition"
-                    :class="activeTab === 'roadmap' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'"
-                    @click="activeTab = 'roadmap'"
-                >
-                    Roadmap
-                </button>
+            <div class="border-b border-slate-200 dark:border-slate-800">
+                <ul class="-mb-px flex flex-wrap text-center text-sm font-medium text-slate-600 dark:text-slate-300">
+                    <li class="me-2">
+                        <button
+                            type="button"
+                            class="group inline-flex items-center justify-center rounded-t-xl border-b px-4 py-4 leading-none transition"
+                            :class="activeTab === 'teams'
+                                ? 'border-primary-500 text-primary-700 dark:border-primary-400 dark:text-primary-300'
+                                : 'border-transparent hover:border-primary-300 hover:text-primary-700 dark:hover:border-primary-500 dark:hover:text-primary-300'"
+                            @click="activeTab = 'teams'"
+                        >
+                            <span class="me-2 inline-flex h-6 w-6 shrink-0 items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" class="h-6 w-6 fill-current" aria-hidden="true">
+                                    <path d="M320 16a104 104 0 1 1 0 208 104 104 0 1 1 0-208zM96 88a72 72 0 1 1 0 144 72 72 0 1 1 0-144zM0 416c0-70.7 57.3-128 128-128 12.8 0 25.2 1.9 36.9 5.4-32.9 36.8-52.9 85.4-52.9 138.6l0 16c0 11.4 2.4 22.2 6.7 32L32 480c-17.7 0-32-14.3-32-32l0-32zm521.3 64c4.3-9.8 6.7-20.6 6.7-32l0-16c0-53.2-20-101.8-52.9-138.6 11.7-3.5 24.1-5.4 36.9-5.4 70.7 0 128 57.3 128 128l0 32c0 17.7-14.3 32-32 32l-86.7 0zM472 160a72 72 0 1 1 144 0 72 72 0 1 1 -144 0zM160 432c0-88.4 71.6-160 160-160s160 71.6 160 160l0 16c0 17.7-14.3 32-32 32l-256 0c-17.7 0-32-14.3-32-32l0-16z"/>
+                                </svg>
+                            </span>
+                            <span class="text-xs font-semibold uppercase tracking-[0.2em]">Equipos</span>
+                        </button>
+                    </li>
+                    <li class="me-2">
+                        <button
+                            type="button"
+                            class="group inline-flex items-center justify-center rounded-t-xl border-b px-4 py-4 leading-none transition"
+                            :class="activeTab === 'stadiums'
+                                ? 'border-primary-500 text-primary-700 dark:border-primary-400 dark:text-primary-300'
+                                : 'border-transparent hover:border-primary-300 hover:text-primary-700 dark:hover:border-primary-500 dark:hover:text-primary-300'"
+                            @click="activeTab = 'stadiums'"
+                        >
+                            <img
+                                src="/noun-stadium.png"
+                                alt=""
+                                aria-hidden="true"
+                                class="me-2 h-6 w-6 shrink-0 object-contain"
+                                :class="activeTab === 'stadiums' ? 'opacity-95' : 'opacity-75'"
+                            >
+                            <span class="text-xs font-semibold uppercase tracking-[0.2em]">Estadios</span>
+                        </button>
+                    </li>
+                    <li class="me-2">
+                        <button
+                            type="button"
+                            class="group inline-flex items-center justify-center rounded-t-xl border-b px-4 py-4 leading-none transition"
+                            :class="activeTab === 'roadmap'
+                                ? 'border-primary-500 text-primary-700 dark:border-primary-400 dark:text-primary-300'
+                                : 'border-transparent hover:border-primary-300 hover:text-primary-700 dark:hover:border-primary-500 dark:hover:text-primary-300'"
+                            @click="activeTab = 'roadmap'"
+                        >
+                            <span class="me-2 inline-flex h-6 w-6 shrink-0 items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="h-5 w-5 fill-current" aria-hidden="true">
+                                    <path d="M512 48c0-11.1-5.7-21.4-15.2-27.2s-21.2-6.4-31.1-1.4L349.5 77.5 170.1 17.6c-8.1-2.7-16.8-2.1-24.4 1.7l-128 64C6.8 88.8 0 99.9 0 112L0 464c0 11.1 5.7 21.4 15.2 27.2s21.2 6.4 31.1 1.4l116.1-58.1 179.4 59.8c8.1 2.7 16.8 2.1 24.4-1.7l128-64c10.8-5.4 17.7-16.5 17.7-28.6l0-352zM192 376.9l0-284.5 128 42.7 0 284.5-128-42.7z"/>
+                                </svg>
+                            </span>
+                            <span class="text-xs font-semibold uppercase tracking-[0.2em]">Roadmap</span>
+                        </button>
+                    </li>
+                </ul>
             </div>
 
             <div v-if="activeTab === 'teams'" class="space-y-4">
