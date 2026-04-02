@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
 import { imageUrl } from '@/Utils/image'
+import FixtureMatchCard from '@/Components/Quiniela/FixtureMatchCard.vue'
 
 const props = defineProps({
     tournament: { type: Object, default: null },
@@ -47,12 +48,6 @@ const panelClass = computed(() => activeTickerTheme.value?.groupPanelClass
 const accentClass = computed(() => activeTickerTheme.value?.statsValueClass ?? 'text-emerald-600 dark:text-emerald-300')
 const selectedTeamHeadline = computed(() => String(props.selectedTeam?.name ?? '').toUpperCase())
 const groupStageMatches = computed(() => props.teamMatches.filter((match) => match.stage === 'group'))
-
-const statusClass = (status) => {
-    if (status === 'finished') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
-    if (status === 'in_progress') return 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
-    return 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
-}
 </script>
 
 <template>
@@ -227,7 +222,7 @@ const statusClass = (status) => {
                     <div v-else key="team-detail" class="space-y-4">
                         <div class="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
                             <article :class="panelClass" class="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-300/90 bg-slate-100 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900/75">
-                            <div class="flex flex-1 items-center">
+                            <div class="mb-4 flex items-center">
                                 <div class="grid w-full grid-cols-4 gap-2">
                                 <div class="rounded-xl border border-slate-200 bg-white p-2 text-center dark:border-slate-700 dark:bg-slate-900/60">
                                     <p class="text-[10px] uppercase text-slate-500">FIFA</p>
@@ -248,7 +243,7 @@ const statusClass = (status) => {
                                 </div>
                             </div>
 
-                            <div class="mt-auto -mx-4 -mb-4 sm:-mx-5 sm:-mb-5">
+                            <div class="mt-2 sm:mt-auto -mx-4 -mb-4 sm:-mx-5 sm:-mb-5">
                                 <table class="w-full text-left text-sm">
                                     <thead class="bg-slate-200 text-[11px] uppercase tracking-[0.14em] text-slate-600 dark:bg-slate-800">
                                         <tr>
@@ -278,60 +273,11 @@ const statusClass = (status) => {
                             </article>
 
                             <div class="space-y-2">
-                                <article
+                                <FixtureMatchCard
                                     v-for="match in groupStageMatches"
                                     :key="match.id"
-                                    class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900/70"
-                                >
-                                    <div class="flex items-center justify-center">
-                                        <p class="text-xs text-slate-500 dark:text-slate-400">
-                                            {{ match.stage_label }} · {{ match.match_date_label }} {{ match.match_time_label }}
-                                        </p>
-                                    </div>
-                                    <div class="mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 overflow-visible">
-                                        <div class="flex items-center gap-3 overflow-visible">
-                                            <img
-                                                v-if="imageUrl(match.home_team.shield_url || match.home_team.flag_url)"
-                                                :src="imageUrl(match.home_team.shield_url || match.home_team.flag_url)"
-                                                :alt="match.home_team.name"
-                                                class="relative -top-[5px] h-16 w-16 shrink-0 rounded object-contain mix-blend-multiply dark:mix-blend-normal"
-                                            >
-                                            <span
-                                                v-else
-                                                class="relative -top-[5px] flex h-16 w-16 shrink-0 items-center justify-center rounded bg-slate-200 text-xs font-bold dark:bg-slate-700"
-                                            >
-                                                {{ match.home_team.country_code || match.home_team.code }}
-                                            </span>
-                                            <p class="text-sm font-semibold leading-tight text-slate-900 dark:text-white">
-                                                {{ match.home_team.name }}
-                                            </p>
-                                        </div>
-
-                                        <p class="px-2 text-xl font-black tracking-widest text-slate-900 dark:text-white">
-                                            {{ Number.isInteger(match.home_score) ? match.home_score : '-' }}
-                                            :
-                                            {{ Number.isInteger(match.away_score) ? match.away_score : '-' }}
-                                        </p>
-
-                                        <div class="flex items-center justify-end gap-3 overflow-visible">
-                                            <p class="text-right text-sm font-semibold leading-tight text-slate-900 dark:text-white">
-                                                {{ match.away_team.name }}
-                                            </p>
-                                            <img
-                                                v-if="imageUrl(match.away_team.shield_url || match.away_team.flag_url)"
-                                                :src="imageUrl(match.away_team.shield_url || match.away_team.flag_url)"
-                                                :alt="match.away_team.name"
-                                                class="relative -top-[5px] h-16 w-16 shrink-0 rounded object-contain mix-blend-multiply dark:mix-blend-normal"
-                                            >
-                                            <span
-                                                v-else
-                                                class="relative -top-[5px] flex h-16 w-16 shrink-0 items-center justify-center rounded bg-slate-200 text-xs font-bold dark:bg-slate-700"
-                                            >
-                                                {{ match.away_team.country_code || match.away_team.code }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </article>
+                                    :match="match"
+                                />
                                 <p
                                     v-if="!groupStageMatches.length"
                                     class="rounded-xl border border-dashed border-slate-300 px-3 py-4 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400"
