@@ -51,11 +51,12 @@ class TeamShieldsSeeder extends Seeder
                 $this->command?->error("Unable to open zip file: {$zipPath}");
             }
         } else {
-            $this->command?->warn('No shield zip found in storage/app/shield (expected fifa-world-cup-2026.football-shield.zip).');
+            $this->command?->warn('No shield zip found (expected database/data/fifa-world-cup-2026-shield(.zip) or fifa-world-cup-2026.football-shield.zip).');
         }
 
         $this->cleanupLegacyShieldFiles($slugToIso);
         $updated = $this->syncTeamsFromExistingFiles($slugToIso, $countryNameToIso, $teamNameToIso);
+        $updated += $this->applyFifaShieldFallback();
 
         $this->command?->info("Updated {$updated} teams with shield paths.");
     }
@@ -291,6 +292,7 @@ class TeamShieldsSeeder extends Seeder
             'turkey' => 'tr',
             'ucrania' => 'ua',
             'uruguay' => 'uy',
+            'fifa' => 'fifa',
             'usa' => 'us',
             'uzbekistan' => 'uz',
             'venezuela' => 've',
@@ -299,7 +301,18 @@ class TeamShieldsSeeder extends Seeder
 
     private function resolveZipPath(): ?string
     {
-        $candidates = [storage_path('app/shield/fifa-world-cup-2026.football-shield.zip')];
+        $candidates = [
+            base_path('database/data/fifa-world-cup-2026-shield'),
+            base_path('database/data/fifa-world-cup-2026-shield.zip'),
+            base_path('database/data/fifa-world-cup-2026.football-shield.zip'),
+        ];
+
+        // Optional local fallback. Keep disabled in Railway/production for deterministic deploys.
+        if (filter_var(env('SEEDER_ALLOW_STORAGE_FALLBACK', false), FILTER_VALIDATE_BOOL)) {
+            $candidates[] = storage_path('app/shield/fifa-world-cup-2026-shield');
+            $candidates[] = storage_path('app/shield/fifa-world-cup-2026-shield.zip');
+            $candidates[] = storage_path('app/shield/fifa-world-cup-2026.football-shield.zip');
+        }
 
         // Legacy source kept as optional fallback, disabled by default.
         if (filter_var(env('SHIELD_IMPORT_LEGACY_ZIP', false), FILTER_VALIDATE_BOOL)) {
@@ -313,6 +326,29 @@ class TeamShieldsSeeder extends Seeder
         }
 
         return null;
+    }
+
+    private function applyFifaShieldFallback(): int
+    {
+        $fifaShieldPath = 'shield/fifa.png';
+
+        if (!Storage::disk('public')->exists($fifaShieldPath)) {
+            return 0;
+        }
+
+        $updated = 0;
+
+        Team::query()
+            ->where(function ($query) {
+                $query->whereNull('shield_path')->orWhere('shield_path', '');
+            })
+            ->get()
+            ->each(function (Team $team) use (&$updated, $fifaShieldPath): void {
+                $team->forceFill(['shield_path' => $fifaShieldPath])->save();
+                $updated++;
+            });
+
+        return $updated;
     }
 
     /**
