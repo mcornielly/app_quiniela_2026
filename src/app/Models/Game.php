@@ -13,6 +13,7 @@ class Game extends Model
 
         'tournament_id',
         'match_number',
+        'api_fixture_id',
 
         // teams
         'home_team_id',
@@ -25,6 +26,7 @@ class Game extends Model
         // match info
         'stage',
         'venue',
+        'stadium_id',
         'match_date',
         'match_time',
 
@@ -74,6 +76,11 @@ class Game extends Model
     public function winnerTeam()
     {
         return $this->belongsTo(Team::class, 'winner_team_id');
+    }
+
+    public function stadium()
+    {
+        return $this->belongsTo(Stadium::class);
     }
 
     public function predictions()

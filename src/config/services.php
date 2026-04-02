@@ -35,4 +35,24 @@ return [
         ],
     ],
 
+    'football_api' => [
+        'key' => env('API_FOOTBALL_KEY'),
+        'url' => env('API_FOOTBALL_URL', 'https://v3.football.api-sports.io'),
+        'timeout' => (int) env('API_FOOTBALL_TIMEOUT', 15),
+        'retry_times' => (int) env('API_FOOTBALL_RETRY_TIMES', 2),
+        'retry_sleep_ms' => (int) env('API_FOOTBALL_RETRY_SLEEP_MS', 250),
+        'cache' => [
+            'countries' => (int) env('API_FOOTBALL_CACHE_COUNTRIES', 86400),
+            'venues' => (int) env('API_FOOTBALL_CACHE_VENUES', 86400),
+            'teams' => (int) env('API_FOOTBALL_CACHE_TEAMS', 43200),
+            'fixtures' => (int) env('API_FOOTBALL_CACHE_FIXTURES', 1800),
+            'live' => (int) env('API_FOOTBALL_CACHE_LIVE', 15),
+            'events' => (int) env('API_FOOTBALL_CACHE_EVENTS', 60),
+            'lineups' => (int) env('API_FOOTBALL_CACHE_LINEUPS', 600),
+            'statistics' => (int) env('API_FOOTBALL_CACHE_STATISTICS', 300),
+            'leagues' => (int) env('API_FOOTBALL_CACHE_LEAGUES', 86400),
+            'standings' => (int) env('API_FOOTBALL_CACHE_STANDINGS', 3600),
+        ],
+    ],
+
 ];

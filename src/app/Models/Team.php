@@ -14,6 +14,8 @@ class Team extends Model
         'name',
         'type',
         'shield_path',
+        'api_team_id',
+        'api_team_logo_url',
     ];
 
     public static function types(): array
