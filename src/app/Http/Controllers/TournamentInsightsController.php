@@ -111,7 +111,7 @@ class TournamentInsightsController extends Controller
             'stadium' => [
                 'name' => $venue,
                 'slug' => $venueSlug,
-                'image_url' => $this->resolveVenueImageUrl($venue),
+                'image_url' => $selectedVenueMatches->first()?->stadium?->image_url ?: $this->resolveVenueImageUrl($venue),
                 'matches_count' => $selectedVenueMatches->count(),
                 'info' => 'Template inicial: pronto incluiremos capacidad, ciudad, pais y datos historicos del estadio.',
             ],
@@ -379,7 +379,7 @@ class TournamentInsightsController extends Controller
                     'away_team' => $this->teamSnapshot($game->awayTeam, $game->away_slot),
                     'opponent' => $this->teamSnapshot($opponent, $opponentSlot),
                     'venue' => $game->venue,
-                    'venue_image_url' => $this->resolveVenueImageUrl($game->venue),
+                    'venue_image_url' => $game->stadium?->image_url ?: $this->resolveVenueImageUrl($game->venue),
                     'match_date_label' => $this->formatMatchDate($game->match_date),
                     'match_time_label' => $game->match_time ? Str::substr($game->match_time, 0, 5) : '--:--',
                     'home_score' => is_numeric($game->home_score) ? (int) $game->home_score : null,
@@ -409,7 +409,7 @@ class TournamentInsightsController extends Controller
                     'first_match_date_iso' => $first?->match_date?->format('Y-m-d'),
                     'first_match_date' => $this->formatMatchDate($first?->match_date),
                     'first_match_time' => $first?->match_time ? Str::substr($first->match_time, 0, 5) : '--:--',
-                    'image_url' => $this->resolveVenueImageUrl($venue),
+                    'image_url' => $first?->stadium?->image_url ?: $this->resolveVenueImageUrl($venue),
                 ];
             })
             ->sortBy('first_match_date_iso')
@@ -429,6 +429,7 @@ class TournamentInsightsController extends Controller
                 'awayTeam.country:id,name,code,flag_path',
                 'homeTeam.group:id,tournament_id,name',
                 'awayTeam.group:id,tournament_id,name',
+                'stadium:id,name,image_url',
             ])
             ->where('tournament_id', $tournamentId)
             ->orderBy('match_date')

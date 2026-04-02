@@ -106,6 +106,14 @@ class FootballApiService
         );
     }
 
+    /**
+     * Uncached venues request for sync jobs.
+     */
+    public function getVenuesFresh(array $params = []): array
+    {
+        return $this->get('venues', $params);
+    }
+
     public function getVenueById(int $id): array
     {
         return $this->getVenues(['id' => $id]);
