@@ -51,7 +51,7 @@ class TeamShieldsSeeder extends Seeder
                 $this->command?->error("Unable to open zip file: {$zipPath}");
             }
         } else {
-            $this->command?->warn('No shield zip found in storage/app/shield (expected fifa-world-cup-2026.football-shield.zip or shield.zip).');
+            $this->command?->warn('No shield zip found in storage/app/shield (expected fifa-world-cup-2026.football-shield.zip).');
         }
 
         $this->cleanupLegacyShieldFiles($slugToIso);
@@ -299,10 +299,12 @@ class TeamShieldsSeeder extends Seeder
 
     private function resolveZipPath(): ?string
     {
-        $candidates = [
-            storage_path('app/shield/fifa-world-cup-2026.football-shield.zip'),
-            storage_path('app/shield/shield.zip'),
-        ];
+        $candidates = [storage_path('app/shield/fifa-world-cup-2026.football-shield.zip')];
+
+        // Legacy source kept as optional fallback, disabled by default.
+        if (filter_var(env('SHIELD_IMPORT_LEGACY_ZIP', false), FILTER_VALIDATE_BOOL)) {
+            $candidates[] = storage_path('app/shield/shield.zip');
+        }
 
         foreach ($candidates as $candidate) {
             if (file_exists($candidate)) {
