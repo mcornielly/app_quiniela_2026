@@ -106,6 +106,14 @@ class FootballApiService
         );
     }
 
+    /**
+     * Uncached venues request for sync jobs.
+     */
+    public function getVenuesFresh(array $params = []): array
+    {
+        return $this->get('venues', $params);
+    }
+
     public function getVenueById(int $id): array
     {
         return $this->getVenues(['id' => $id]);
@@ -144,6 +152,14 @@ class FootballApiService
             (int) config('services.football_api.cache.fixtures', 1800),
             fn () => $this->get('fixtures', $params)
         );
+    }
+
+    /**
+     * Uncached fixtures request for sync jobs.
+     */
+    public function getFixturesFresh(array $params = []): array
+    {
+        return $this->get('fixtures', $params);
     }
 
     public function getFixtureById(int $fixtureId): array
