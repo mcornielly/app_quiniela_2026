@@ -27,6 +27,12 @@ const statusClass = (status) => {
     if (status === 'in_progress') return 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
     return 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
 }
+
+const capacityLabel = computed(() => {
+    const value = Number(props.stadium?.capacity)
+    if (!Number.isFinite(value) || value <= 0) return 'No disponible'
+    return new Intl.NumberFormat('es-ES').format(value)
+})
 </script>
 
 <template>
@@ -66,7 +72,16 @@ const statusClass = (status) => {
                 </div>
                 <div class="p-5 sm:p-6">
                     <p class="text-sm text-slate-600 dark:text-slate-300">{{ stadium?.info }}</p>
-                    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">{{ stadium?.matches_count ?? 0 }} encuentros registrados</p>
+                    <div class="mt-4 grid gap-2 text-xs text-slate-500 dark:text-slate-400 sm:grid-cols-2 lg:grid-cols-3">
+                        <p><span class="font-semibold text-slate-700 dark:text-slate-300">Ciudad:</span> {{ stadium?.city || 'No disponible' }}</p>
+                        <p><span class="font-semibold text-slate-700 dark:text-slate-300">País:</span> {{ stadium?.country || 'No disponible' }}</p>
+                        <p><span class="font-semibold text-slate-700 dark:text-slate-300">Capacidad:</span> {{ capacityLabel }}</p>
+                        <p><span class="font-semibold text-slate-700 dark:text-slate-300">Superficie:</span> {{ stadium?.surface || 'No disponible' }}</p>
+                        <p class="sm:col-span-2 lg:col-span-3">
+                            <span class="font-semibold text-slate-700 dark:text-slate-300">Dirección:</span> {{ stadium?.address || 'No disponible' }}
+                        </p>
+                    </div>
+                    <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">{{ stadium?.matches_count ?? 0 }} encuentros registrados</p>
                 </div>
             </article>
 

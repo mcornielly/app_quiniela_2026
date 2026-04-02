@@ -105,15 +105,24 @@ class TournamentInsightsController extends Controller
         }
 
         $venue = trim((string) $selectedVenueMatches->first()->venue);
+        $stadiumModel = $selectedVenueMatches->first()?->stadium;
 
         return Inertia::render('Quiniela/StadiumProfile', [
             'tournament' => $this->transformTournament($tournament),
             'stadium' => [
-                'name' => $venue,
+                'name' => $stadiumModel?->name ?: $venue,
                 'slug' => $venueSlug,
-                'image_url' => $selectedVenueMatches->first()?->stadium?->image_url ?: $this->resolveVenueImageUrl($venue),
+                'city' => $stadiumModel?->city,
+                'country' => $stadiumModel?->country,
+                'address' => $stadiumModel?->address,
+                'capacity' => $stadiumModel?->capacity,
+                'surface' => $stadiumModel?->surface,
+                'api_venue_id' => $stadiumModel?->api_venue_id,
+                'image_url' => $stadiumModel?->image_url ?: $this->resolveVenueImageUrl($venue),
                 'matches_count' => $selectedVenueMatches->count(),
-                'info' => 'Template inicial: pronto incluiremos capacidad, ciudad, pais y datos historicos del estadio.',
+                'info' => $stadiumModel
+                    ? 'Datos sincronizados desde API-FOOTBALL.'
+                    : 'Datos base cargados desde el calendario. Sincroniza estadios para enriquecer esta ficha.',
             ],
             'matches' => $selectedVenueMatches->map(fn (Game $game) => [
                 'id' => $game->id,
@@ -429,7 +438,7 @@ class TournamentInsightsController extends Controller
                 'awayTeam.country:id,name,code,flag_path',
                 'homeTeam.group:id,tournament_id,name',
                 'awayTeam.group:id,tournament_id,name',
-                'stadium:id,name,image_url',
+                'stadium:id,api_venue_id,name,city,country,address,capacity,surface,image_url',
             ])
             ->where('tournament_id', $tournamentId)
             ->orderBy('match_date')
