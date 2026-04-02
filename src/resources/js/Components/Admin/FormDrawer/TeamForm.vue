@@ -2,9 +2,7 @@
 import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { capitalize } from '@/Utils/format'
-import { notifySuccess, notifyError } from '@/Utils/notify'
-import { usePage } from '@inertiajs/vue3'
-const page = usePage()
+import { notifyError } from '@/Utils/notify'
 
 const props = defineProps({
     team: Object,
@@ -27,17 +25,6 @@ const submit = () => {
 
     const options = {
         onSuccess: () => {
-
-            const flash = page.props.flash
-
-            if (flash?.success) {
-                notifySuccess(flash.success)
-            }
-
-            if (flash?.error) {
-                notifyError(flash.error)
-            }
-
             emit('close')
         },
 

@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
-import { notifySuccess, notifyError } from '@/Utils/notify'
+import { notifyError } from '@/Utils/notify'
 import TextInput from '@/Components/Admin/Inputs/TextInput.vue'
 import ImageUpload from '@/Components/Admin/Inputs/ImageUpload.vue'
 
@@ -31,11 +31,6 @@ const form = ref({
 const submit = () => {
     const options = {
         onSuccess: () => {
-            const flash = page.props.flash
-
-            if (flash?.success) notifySuccess(flash.success)
-            if (flash?.error) notifyError(flash.error)
-
             emit('close')
         },
 
