@@ -29,7 +29,7 @@ class WorldCupSeeder extends Seeder
             if (!$file) {
                 $this->command?->warn(
                     'WorldCupSeeder skipped: missing schedule file "WCup_2026_4.0_en2.xlsx". '
-                    . 'Place it in storage/app/ and run php artisan db:seed --class=WorldCupSeeder'
+                    . 'Place it in database/data/ and run php artisan db:seed --class=WorldCupSeeder'
                 );
                 DB::rollBack();
                 return;
@@ -196,10 +196,14 @@ class WorldCupSeeder extends Seeder
     private function resolveScheduleFilePath(): ?string
     {
         $candidates = [
-            storage_path('app/WCup_2026_4.0_en2.xlsx'),
             base_path('database/data/WCup_2026_4.0_en2.xlsx'),
-            base_path('database/seeders/data/WCup_2026_4.0_en2.xlsx'),
         ];
+
+        // Optional local fallback. Keep disabled in Railway/production for deterministic deploys.
+        if (filter_var(env('SEEDER_ALLOW_STORAGE_FALLBACK', false), FILTER_VALIDATE_BOOL)) {
+            $candidates[] = storage_path('app/WCup_2026_4.0_en2.xlsx');
+            $candidates[] = base_path('database/seeders/data/WCup_2026_4.0_en2.xlsx');
+        }
 
         foreach ($candidates as $candidate) {
             if (is_file($candidate) && is_readable($candidate)) {

@@ -34,9 +34,7 @@ const hideFlag = (team, slot) => {
     }
 }
 
-const flagClass = (team) => team?.is_special_slot
-    ? 'h-10 w-14 rounded-md border border-gray-200 bg-white object-contain dark:border-gray-600'
-    : 'h-10 w-14 rounded-md border border-gray-200 object-cover dark:border-gray-600'
+const flagClass = () => 'h-10 w-14 rounded-md border border-gray-200 object-cover dark:border-gray-600'
 
 const homeScore = computed(() => props.match.homeScore ?? '-')
 const awayScore = computed(() => props.match.awayScore ?? '-')
