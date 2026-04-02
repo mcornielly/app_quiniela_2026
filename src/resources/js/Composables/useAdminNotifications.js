@@ -6,6 +6,7 @@ import { notifyInfo } from '@/Utils/notify'
 const STORAGE_KEY = 'admin.notifications.v1'
 const MAX_ITEMS = 50
 const adminActivityChannelName = 'admin.activity'
+const ADMIN_NOTIFICATIONS_POLLING_MS = 60000
 
 const notificationItems = ref([])
 const unreadNotifications = computed(() => notificationItems.value.filter((item) => !item.read).length)
@@ -170,6 +171,10 @@ const initAdminNotifications = ({ canListen } = {}) => {
     }
 
     const fetchNotifications = () => {
+        if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+            return
+        }
+
         axios.get(route('admin.notifications.index'))
             .then((response) => {
                 const incoming = Array.isArray(response?.data?.notifications) ? response.data.notifications : []
@@ -218,7 +223,7 @@ const initAdminNotifications = ({ canListen } = {}) => {
     fetchNotifications()
 
     if (!pollingTimer) {
-        pollingTimer = window.setInterval(fetchNotifications, 10000)
+        pollingTimer = window.setInterval(fetchNotifications, ADMIN_NOTIFICATIONS_POLLING_MS)
     }
 }
 

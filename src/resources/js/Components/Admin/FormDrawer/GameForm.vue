@@ -29,8 +29,8 @@ const form = ref({
     away_team_id: props.game?.away_team_id ?? '',
     home_slot: props.game?.home_slot ?? '',
     away_slot: props.game?.away_slot ?? '',
-    home_score: props.game?.home_score ?? '',
-    away_score: props.game?.away_score ?? '',
+    home_score: props.game?.home_score ?? 0,
+    away_score: props.game?.away_score ?? 0,
     winner_team_id: props.game?.winner_team_id ?? '',
     stage: props.game?.stage ?? '',
     venue: props.game?.venue ?? '',
@@ -116,14 +116,16 @@ const submit = () => {
             label="Away Team"
             :options="teams"
         />
-        <TextInput
-            v-model="form.home_score"
-            label="Home Score"
-        />
-        <TextInput
-            v-model="form.away_score"
-            label="Away Score"
-        />
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <NumberInput
+                v-model="form.home_score"
+                label="Home Score"
+            />
+            <NumberInput
+                v-model="form.away_score"
+                label="Away Score"
+            />
+        </div>
         <TextInput
             v-model="form.venue"
             label="Venue"

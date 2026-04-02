@@ -13,7 +13,7 @@ const props = defineProps({
     selected: Boolean
 })
 
-const emit = defineEmits(['toggle', 'edit', 'delete', 'view'])
+const emit = defineEmits(['toggle', 'edit', 'delete', 'view', 'gallery'])
 
 const toggle = () => {
     emit('toggle', props.row.id)
@@ -113,12 +113,13 @@ const formatDateValue = (column) => {
 
         <!-- actions -->
         <td
-            v-if="actions.show || actions.edit || actions.delete"
+            v-if="actions.show || actions.gallery || actions.edit || actions.delete"
             class="px-6 py-4 space-x-2 whitespace-nowrap">
             <TableActions
                 :row="row"
                 :actions="actions"
                 @view="$emit('view', $event)"
+                @gallery="$emit('gallery', $event)"
                 @edit="$emit('edit', $event)"
                 @delete="$emit('delete', $event)"
             />

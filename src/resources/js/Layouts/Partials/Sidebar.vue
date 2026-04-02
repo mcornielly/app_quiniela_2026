@@ -137,6 +137,30 @@ const isActive = (name) => {
                         <span class="ml-3">Countries</span>
                     </Link>
                 </li>
+                <!-- Stadiums -->
+                <li>
+                    <Link
+                        :href="route('admin.stadiums.index')"
+                        :active="route().current('admin.stadiums.*')"
+                        :class="[
+                            'flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group',
+                            isActive('admin.stadiums.*') && 'bg-gray-300 dark:bg-gray-400 text-gray-900 dark:text-white'
+                        ]">
+                        <img
+                            src="/icons/noun-stadium-black.png"
+                            alt=""
+                            aria-hidden="true"
+                            class="w-6 h-6 object-contain dark:hidden"
+                        />
+                        <img
+                            src="/icons/noun-stadium-white.png"
+                            alt=""
+                            aria-hidden="true"
+                            class="hidden w-6 h-6 object-contain dark:block"
+                        />
+                        <span class="ml-3">Stadiums</span>
+                    </Link>
+                </li>
                 <!-- Groups -->
                 <li>
                     <Link

@@ -118,7 +118,14 @@ class TournamentInsightsController extends Controller
                 'capacity' => $stadiumModel?->capacity,
                 'surface' => $stadiumModel?->surface,
                 'api_venue_id' => $stadiumModel?->api_venue_id,
-                'image_url' => $stadiumModel?->image_url ?: $this->resolveVenueImageUrl($venue),
+                'image_url' => $this->resolveMediaUrl($stadiumModel?->image_url)
+                    ?: $this->resolveMediaUrl($stadiumModel?->image_gallery[0] ?? null)
+                    ?: $this->resolveVenueImageUrl($venue),
+                'image_gallery' => collect($stadiumModel?->image_gallery ?? [])
+                    ->map(fn ($path) => $this->resolveMediaUrl($path))
+                    ->filter()
+                    ->values()
+                    ->all(),
                 'matches_count' => $selectedVenueMatches->count(),
                 'info' => $stadiumModel
                     ? 'Datos sincronizados desde API-FOOTBALL.'
@@ -388,7 +395,9 @@ class TournamentInsightsController extends Controller
                     'away_team' => $this->teamSnapshot($game->awayTeam, $game->away_slot),
                     'opponent' => $this->teamSnapshot($opponent, $opponentSlot),
                     'venue' => $game->venue,
-                    'venue_image_url' => $game->stadium?->image_url ?: $this->resolveVenueImageUrl($game->venue),
+                    'venue_image_url' => $this->resolveMediaUrl($game->stadium?->image_url)
+                        ?: $this->resolveMediaUrl($game->stadium?->image_gallery[0] ?? null)
+                        ?: $this->resolveVenueImageUrl($game->venue),
                     'match_date_label' => $this->formatMatchDate($game->match_date),
                     'match_time_label' => $game->match_time ? Str::substr($game->match_time, 0, 5) : '--:--',
                     'home_score' => is_numeric($game->home_score) ? (int) $game->home_score : null,
@@ -418,7 +427,9 @@ class TournamentInsightsController extends Controller
                     'first_match_date_iso' => $first?->match_date?->format('Y-m-d'),
                     'first_match_date' => $this->formatMatchDate($first?->match_date),
                     'first_match_time' => $first?->match_time ? Str::substr($first->match_time, 0, 5) : '--:--',
-                    'image_url' => $first?->stadium?->image_url ?: $this->resolveVenueImageUrl($venue),
+                    'image_url' => $this->resolveMediaUrl($first?->stadium?->image_url)
+                        ?: $this->resolveMediaUrl($first?->stadium?->image_gallery[0] ?? null)
+                        ?: $this->resolveVenueImageUrl($venue),
                 ];
             })
             ->sortBy('first_match_date_iso')
@@ -438,7 +449,7 @@ class TournamentInsightsController extends Controller
                 'awayTeam.country:id,name,code,flag_path',
                 'homeTeam.group:id,tournament_id,name',
                 'awayTeam.group:id,tournament_id,name',
-                'stadium:id,api_venue_id,name,city,country,address,capacity,surface,image_url',
+                'stadium:id,api_venue_id,name,city,country,address,capacity,surface,image_url,image_gallery',
             ])
             ->where('tournament_id', $tournamentId)
             ->orderBy('match_date')
@@ -533,6 +544,19 @@ class TournamentInsightsController extends Controller
         $slug = Str::slug(Str::lower($venue));
 
         return $images[$slug] ?? null;
+    }
+
+    private function resolveMediaUrl(?string $path): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        if (Str::startsWith($path, ['http://', 'https://', '/storage/'])) {
+            return $path;
+        }
+
+        return Storage::url($path);
     }
 
     private function formatMatchDate(?Carbon $date): string

@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
 import { imageUrl } from '@/Utils/image'
@@ -33,6 +33,73 @@ const capacityLabel = computed(() => {
     if (!Number.isFinite(value) || value <= 0) return 'No disponible'
     return new Intl.NumberFormat('es-ES').format(value)
 })
+
+const carouselIndex = ref(0)
+
+const galleryImages = computed(() => {
+    const list = Array.isArray(props.stadium?.image_gallery) ? props.stadium.image_gallery : []
+    const normalized = list
+        .map((item) => imageUrl(item) || item)
+        .filter((item) => typeof item === 'string' && item !== '')
+
+    const cover = imageUrl(props.stadium?.image_url)
+    if (cover && !normalized.includes(cover)) {
+        normalized.unshift(cover)
+    }
+
+    return normalized
+})
+
+const currentImage = computed(() => galleryImages.value[carouselIndex.value] ?? null)
+const hasCarousel = computed(() => galleryImages.value.length > 1)
+let carouselTimer = null
+
+const goNext = () => {
+    if (!galleryImages.value.length) return
+    carouselIndex.value = (carouselIndex.value + 1) % galleryImages.value.length
+}
+
+const goPrev = () => {
+    if (!galleryImages.value.length) return
+    carouselIndex.value = (carouselIndex.value - 1 + galleryImages.value.length) % galleryImages.value.length
+}
+
+watch(
+    () => galleryImages.value.length,
+    () => {
+        carouselIndex.value = 0
+    }
+)
+
+const startCarousel = () => {
+    if (carouselTimer || !hasCarousel.value) return
+    carouselTimer = setInterval(() => {
+        goNext()
+    }, 5000)
+}
+
+const stopCarousel = () => {
+    if (!carouselTimer) return
+    clearInterval(carouselTimer)
+    carouselTimer = null
+}
+
+watch(hasCarousel, (enabled) => {
+    if (enabled) {
+        startCarousel()
+        return
+    }
+
+    stopCarousel()
+})
+
+onMounted(() => {
+    startCarousel()
+})
+
+onBeforeUnmount(() => {
+    stopCarousel()
+})
 </script>
 
 <template>
@@ -62,13 +129,32 @@ const capacityLabel = computed(() => {
 
             <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/75">
                 <img
-                    v-if="imageUrl(stadium?.image_url)"
-                    :src="imageUrl(stadium?.image_url)"
+                    v-if="currentImage"
+                    :src="currentImage"
                     :alt="stadium?.name"
                     class="h-56 w-full object-cover sm:h-72"
                 >
                 <div v-else class="flex h-56 items-center justify-center bg-[linear-gradient(120deg,_#0f172a,_#1e3a8a,_#0f172a)] sm:h-72">
                     <p class="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200">Imagen del estadio (template)</p>
+                </div>
+                <div v-if="hasCarousel" class="flex items-center justify-between border-y border-slate-200 px-3 py-2 dark:border-slate-700">
+                    <button
+                        type="button"
+                        class="rounded-lg border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-cyan-400 hover:text-cyan-700 dark:border-slate-600 dark:text-slate-200"
+                        @click="goPrev"
+                    >
+                        Anterior
+                    </button>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        {{ carouselIndex + 1 }} / {{ galleryImages.length }}
+                    </p>
+                    <button
+                        type="button"
+                        class="rounded-lg border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-cyan-400 hover:text-cyan-700 dark:border-slate-600 dark:text-slate-200"
+                        @click="goNext"
+                    >
+                        Siguiente
+                    </button>
                 </div>
                 <div class="p-5 sm:p-6">
                     <p class="text-sm text-slate-600 dark:text-slate-300">{{ stadium?.info }}</p>
