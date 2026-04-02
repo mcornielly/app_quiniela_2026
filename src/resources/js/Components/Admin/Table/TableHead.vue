@@ -58,7 +58,7 @@ const toggle = (event) => {
 
             <!-- actions -->
             <th
-                v-if="actions.show || actions.edit || actions.delete"
+                v-if="actions.show || actions.gallery || actions.edit || actions.delete"
                 scope="col"
                 class="px-6 py-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400"
             >

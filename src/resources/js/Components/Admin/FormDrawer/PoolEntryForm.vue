@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
-import { router, usePage } from '@inertiajs/vue3'
-import { notifySuccess, notifyError } from '@/Utils/notify'
+import { router } from '@inertiajs/vue3'
+import { notifyError } from '@/Utils/notify'
 
             import TextInput from '@/Components/Admin/Inputs/TextInput.vue'
             import NumberInput from '@/Components/Admin/Inputs/NumberInput.vue'
@@ -10,8 +10,6 @@ import { notifySuccess, notifyError } from '@/Utils/notify'
             import CheckboxInput from '@/Components/Admin/Inputs/CheckboxInput.vue'
             import ImageUpload from '@/Components/Admin/Inputs/ImageUpload.vue'
             
-
-const page = usePage()
 
 const props = defineProps({
     poolEntry: Object,
@@ -37,11 +35,6 @@ const poolEntryForm = ref({
 const submit = () => {
     const options = {
         onSuccess: () => {
-            const flash = page.props.flash
-
-            if (flash?.success) notifySuccess(flash.success)
-            if (flash?.error) notifyError(flash.error)
-
             emit('close')
         },
 
