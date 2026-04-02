@@ -6,16 +6,21 @@ use App\Models\Country;
 use App\Models\Group;
 use App\Models\Team;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
 
 class NormalizeWorldCupSpecialSlotsSeeder extends Seeder
 {
     public function run(): void
     {
+        $fifaFlagPath = Storage::disk('public')->exists('flags/fifa.svg')
+            ? 'flags/fifa.svg'
+            : 'flags/fifa.png';
+
         $fifaCountry = Country::updateOrCreate(
             ['code' => 'fifa'],
             [
                 'name' => 'FIFA',
-                'flag_path' => 'flags/fifa.png',
+                'flag_path' => $fifaFlagPath,
             ]
         );
 

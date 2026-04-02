@@ -81,9 +81,7 @@ const hiddenFlags = ref({})
 const teamKey = (team, slot) => team?.id || team?.code || slot || 'unknown'
 const flagSrc = (team) => team?.flag_url || imageUrl(team?.flag_path)
 const shouldShowFlag = (team, slot) => Boolean(flagSrc(team)) && !hiddenFlags.value[teamKey(team, slot)]
-const flagClass = (team) => team?.is_special_slot
-    ? 'h-6 w-9 rounded object-contain scale-125'
-    : 'h-6 w-9 rounded object-cover'
+const flagClass = () => 'h-6 w-9 rounded object-cover'
 const hideFlag = (team, slot) => {
     hiddenFlags.value = {
         ...hiddenFlags.value,

@@ -35,9 +35,7 @@ const statColumns = [
 const teamKey = (team) => team?.id || team?.code || team?.name || 'unknown'
 const getFlagSrc = (team) => team?.flag_url || imageUrl(team?.flag_path)
 const shouldShowFlag = (team) => Boolean(getFlagSrc(team)) && !hiddenFlags.value[teamKey(team)]
-const flagClass = (team) => team?.is_special_slot
-    ? 'h-5 w-7 rounded object-contain scale-125 shadow-sm shadow-slate-200 dark:shadow-black/30'
-    : 'h-5 w-7 rounded object-cover shadow-sm shadow-slate-200 dark:shadow-black/30'
+const flagClass = () => 'h-5 w-7 rounded object-cover shadow-sm shadow-slate-200 dark:shadow-black/30'
 const hideFlag = (team) => {
     hiddenFlags.value = {
         ...hiddenFlags.value,
