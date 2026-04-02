@@ -61,7 +61,7 @@ const statusClass = (status) => {
     <UserDashboardLayout
         title="Selecciones"
         description="Organiza la informacion del torneo por equipos, estadios y roadmap."
-        :ticker-class="[activeTickerTheme.tickerClass, activeTickerTheme.decorationClass || ''].join(' ')"
+        :ticker-class="activeTickerTheme.tickerClass"
     >
         <template #ticker><div class="h-12 w-full" aria-hidden="true" /></template>
         <template #headerContent><div class="hidden" /></template>
@@ -158,7 +158,7 @@ const statusClass = (status) => {
 
                 <div
                     v-if="selectedTeam"
-                    class="flex items-center justify-between rounded-xl border-b border-slate-200 px-1 pb-3 dark:border-slate-700"
+                    class="flex items-center justify-between border-b border-slate-200 px-1 pb-3 dark:border-slate-700"
                 >
                     <img
                         v-if="imageUrl(selectedTeam.shield_url)"
@@ -226,7 +226,7 @@ const statusClass = (status) => {
 
                     <div v-else key="team-detail" class="space-y-4">
                         <div class="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-                            <article :class="panelClass" class="flex h-full flex-col rounded-2xl border border-slate-300/90 bg-slate-100 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900/75">
+                            <article :class="panelClass" class="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-300/90 bg-slate-100 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900/75">
                             <div class="flex flex-1 items-center">
                                 <div class="grid w-full grid-cols-4 gap-2">
                                 <div class="rounded-xl border border-slate-200 bg-white p-2 text-center dark:border-slate-700 dark:bg-slate-900/60">
@@ -264,7 +264,7 @@ const statusClass = (status) => {
                                             :class="row.is_selected ? 'bg-emerald-50 dark:bg-emerald-500/10' : 'bg-white dark:bg-slate-900/60'"
                                         >
                                             <td class="px-3 py-2 font-bold">{{ row.position }}</td>
-                                            <td class="px-3 py-2">{{ row.team_name }}</td>
+                                            <td class="px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ row.team_name }}</td>
                                             <td class="px-3 py-2 text-right font-black">{{ row.points }}</td>
                                         </tr>
                                     </tbody>
