@@ -196,13 +196,36 @@ watch(
                                 : 'border-transparent hover:border-primary-300 hover:text-primary-700 dark:hover:border-primary-500 dark:hover:text-primary-300'"
                             @click="goToStadiums"
                         >
-                            <img
-                                src="/noun-stadium.png"
-                                alt=""
-                                aria-hidden="true"
-                                class="me-2 h-6 w-6 shrink-0 object-contain"
-                                :class="activeTab === 'stadiums' ? 'opacity-95' : 'opacity-75'"
-                            >
+                            <span class="relative me-2 inline-flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden">
+                                <img
+                                    src="/icons/noun-stadium-black.png"
+                                    alt=""
+                                    aria-hidden="true"
+                                    class="absolute inset-0 h-6 w-6 object-contain dark:hidden"
+                                    :class="activeTab === 'stadiums' ? 'opacity-0' : 'opacity-95 group-hover:opacity-0'"
+                                >
+                                <img
+                                    src="/icons/noun-stadium-azul_hover_modo_light.png"
+                                    alt=""
+                                    aria-hidden="true"
+                                    class="absolute inset-0 h-6 w-6 object-contain dark:hidden"
+                                    :class="activeTab === 'stadiums' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"
+                                >
+                                <img
+                                    src="/icons/noun-stadium-gris_dark.png"
+                                    alt=""
+                                    aria-hidden="true"
+                                    class="absolute inset-0 hidden h-6 w-6 object-contain dark:block"
+                                    :class="activeTab === 'stadiums' ? 'opacity-0' : 'opacity-95 group-hover:opacity-0'"
+                                >
+                                <img
+                                    src="/icons/noun-stadium-azul_hover_dark.png"
+                                    alt=""
+                                    aria-hidden="true"
+                                    class="absolute inset-0 hidden h-6 w-6 object-contain dark:block"
+                                    :class="activeTab === 'stadiums' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"
+                                >
+                            </span>
                             <span class="text-xs font-semibold uppercase tracking-[0.2em]">Estadios</span>
                         </button>
                     </li>
