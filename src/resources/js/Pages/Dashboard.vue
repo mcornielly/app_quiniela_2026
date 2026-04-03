@@ -657,6 +657,14 @@ onBeforeUnmount(() => {
                                 {{ favoriteTeamButtonLabel }}
                             </button>
                             <Link
+                                v-if="currentFavoriteTeam?.id"
+                                :href="route('teams.profile', currentFavoriteTeam.id)"
+                                :class="themedSecondaryButtonClass"
+                                class="inline-flex min-w-[190px] flex-1 items-center justify-center rounded-xl border px-5 py-3 text-sm font-semibold transition focus:outline-none lg:flex-none"
+                            >
+                                Mi seleccion
+                            </Link>
+                            <Link
                                 :href="route('pools.index')"
                                 :class="themedSecondaryButtonClass"
                                 class="inline-flex min-w-[190px] flex-1 items-center justify-center rounded-xl border px-5 py-3 text-sm font-semibold transition focus:outline-none lg:flex-none"

@@ -31,6 +31,17 @@ const activeTickerTheme = computed(() => ({
 }))
 const themedPrimaryButtonClass = computed(() => activeTickerTheme.value?.buttonPrimaryClass
     ?? 'bg-cyan-400 text-slate-950 hover:bg-cyan-300 hover:text-white focus:ring-cyan-200 dark:bg-cyan-400 dark:hover:bg-cyan-300 dark:focus:ring-cyan-900')
+const themedCtaTextClass = computed(() => activeTickerTheme.value?.teamNameClass
+    ?? 'text-primary-700 dark:text-primary-400')
+const themedCtaHoverClass = computed(() => {
+    const themeKey = activeTickerTheme.value?.key
+
+    if (themeKey === 'co') {
+        return 'hover:text-[#CE1126] dark:hover:text-[#FF8A9A]'
+    }
+
+    return 'hover:opacity-80'
+})
 
 const poolsCountLabel = computed(() => `${props.poolEntries.length} quiniela(s) creadas`)
 
@@ -204,6 +215,7 @@ const onStatusToggle = async (poolEntry, event) => {
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <p class="text-sm leading-tight text-slate-500 dark:text-slate-400">{{ poolsCountLabel }}</p>
                     <Link
+                        v-if="poolEntries.length"
                         :href="route('predictions.worldcup')"
                         :class="[
                             themedPrimaryButtonClass,
@@ -357,17 +369,15 @@ const onStatusToggle = async (poolEntry, event) => {
                 <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
                     Crea tu primera quiniela y aquí verás su rendimiento con tus últimos pronósticos.
                 </p>
+                <p :class="themedCtaTextClass" class="mt-5 text-base font-semibold">
+                    Tu primera quiniela puede ser la jugada maestra del torneo.
+                </p>
                 <Link
                     :href="route('predictions.worldcup')"
-                    :class="[
-                        themedPrimaryButtonClass,
-                        'mt-5 inline-flex min-w-[190px] flex-1 items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold shadow-sm transition focus:outline-none lg:flex-none',
-                    ]"
+                    :class="[themedCtaTextClass, themedCtaHoverClass]"
+                    class="mt-2 inline-flex items-center text-sm font-bold uppercase tracking-[0.16em] underline decoration-2 underline-offset-4 transition"
                 >
-                    <svg class="me-2 h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
-                    </svg>
-                    Crear quiniela
+                    Crear mi quiniela ahora
                 </Link>
             </div>
         </section>

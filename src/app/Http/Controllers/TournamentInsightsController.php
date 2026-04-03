@@ -25,13 +25,15 @@ class TournamentInsightsController extends Controller
         $tournament = $this->resolveTournament();
 
         if (! $tournament) {
-            return Inertia::render('Quiniela/TeamProfile', [
+            return Inertia::render('Quiniela/TournamentProfile', [
                 'tournament' => null,
                 'teams' => [],
                 'selectedTeam' => null,
                 'groupStandings' => [],
                 'teamMatches' => [],
                 'venueCards' => [],
+                'selectedStadium' => null,
+                'stadiumMatches' => [],
             ]);
         }
 
@@ -52,26 +54,30 @@ class TournamentInsightsController extends Controller
         $tournamentGames = $this->resolveTournamentGames($tournament->id);
 
         if (! $selectedTeam) {
-            return Inertia::render('Quiniela/TeamProfile', [
+            return Inertia::render('Quiniela/TournamentProfile', [
                 'tournament' => $this->transformTournament($tournament),
                 'teams' => $this->transformTeamList($teams),
                 'selectedTeam' => null,
                 'groupStandings' => [],
                 'teamMatches' => [],
                 'venueCards' => $this->transformVenueCards($tournamentGames),
+                'selectedStadium' => null,
+                'stadiumMatches' => [],
             ]);
         }
 
         $groupStandings = $this->resolveGroupStandings($teams, $selectedTeam, $tournament->id);
         $teamMatchesCollection = $this->resolveTeamMatches($selectedTeam, $tournament->id);
 
-        return Inertia::render('Quiniela/TeamProfile', [
+        return Inertia::render('Quiniela/TournamentProfile', [
             'tournament' => $this->transformTournament($tournament),
             'teams' => $this->transformTeamList($teams),
             'selectedTeam' => $this->transformSelectedTeam($selectedTeam, $groupStandings),
             'groupStandings' => $groupStandings,
             'teamMatches' => $this->transformTeamMatches($teamMatchesCollection, $selectedTeam),
             'venueCards' => $this->transformVenueCards($tournamentGames),
+            'selectedStadium' => null,
+            'stadiumMatches' => [],
         ]);
     }
 
@@ -80,12 +86,30 @@ class TournamentInsightsController extends Controller
         $tournament = $this->resolveTournament();
 
         if (! $tournament) {
-            return Inertia::render('Quiniela/StadiumProfile', [
+            return Inertia::render('Quiniela/TournamentProfile', [
                 'tournament' => null,
-                'stadium' => null,
-                'matches' => [],
+                'teams' => [],
+                'selectedTeam' => null,
+                'groupStandings' => [],
+                'teamMatches' => [],
+                'venueCards' => [],
+                'selectedStadium' => null,
+                'stadiumMatches' => [],
             ]);
         }
+
+        $teams = Team::query()
+            ->with([
+                'country:id,name,code,flag_path',
+                'group:id,tournament_id,name',
+                'tournamentEntries' => fn ($query) => $query
+                    ->where('tournament_id', $tournament->id),
+            ])
+            ->whereHas('tournamentEntries', fn ($query) => $query->where('tournament_id', $tournament->id))
+            ->orderByRaw('COALESCE(group_id, 9999)')
+            ->orderByRaw('COALESCE(group_position, 9999)')
+            ->orderBy('name')
+            ->get();
 
         $games = $this->resolveTournamentGames($tournament->id);
         $selectedVenueMatches = $games
@@ -97,19 +121,29 @@ class TournamentInsightsController extends Controller
             ->values();
 
         if ($selectedVenueMatches->isEmpty()) {
-            return Inertia::render('Quiniela/StadiumProfile', [
+            return Inertia::render('Quiniela/TournamentProfile', [
                 'tournament' => $this->transformTournament($tournament),
-                'stadium' => null,
-                'matches' => [],
+                'teams' => $this->transformTeamList($teams),
+                'selectedTeam' => null,
+                'groupStandings' => [],
+                'teamMatches' => [],
+                'venueCards' => $this->transformVenueCards($games),
+                'selectedStadium' => null,
+                'stadiumMatches' => [],
             ]);
         }
 
         $venue = trim((string) $selectedVenueMatches->first()->venue);
         $stadiumModel = $selectedVenueMatches->first()?->stadium;
 
-        return Inertia::render('Quiniela/StadiumProfile', [
+        return Inertia::render('Quiniela/TournamentProfile', [
             'tournament' => $this->transformTournament($tournament),
-            'stadium' => [
+            'teams' => $this->transformTeamList($teams),
+            'selectedTeam' => null,
+            'groupStandings' => [],
+            'teamMatches' => [],
+            'venueCards' => $this->transformVenueCards($games),
+            'selectedStadium' => [
                 'name' => $stadiumModel?->name ?: $venue,
                 'slug' => $venueSlug,
                 'city' => $stadiumModel?->city,
@@ -131,7 +165,7 @@ class TournamentInsightsController extends Controller
                     ? 'Datos sincronizados desde API-FOOTBALL.'
                     : 'Datos base cargados desde el calendario. Sincroniza estadios para enriquecer esta ficha.',
             ],
-            'matches' => $selectedVenueMatches->map(fn (Game $game) => [
+            'stadiumMatches' => $selectedVenueMatches->map(fn (Game $game) => [
                 'id' => $game->id,
                 'match_number' => $game->match_number,
                 'stage' => $game->stage,

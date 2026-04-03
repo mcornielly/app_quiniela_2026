@@ -65,6 +65,131 @@ const themedActiveGroupCardClass = computed(() => activeTickerTheme.value?.group
     ?? 'border-cyan-400 bg-cyan-400 text-slate-950 shadow-[0_0_16px_rgba(34,211,238,0.28)] dark:bg-cyan-400 dark:text-slate-950')
 const themedInactiveGroupCardClass = computed(() => activeTickerTheme.value?.groupInactiveCardClass
     ?? 'border-slate-300 bg-white text-slate-500 opacity-70 hover:border-slate-400 hover:opacity-90 dark:border-slate-700/70 dark:bg-slate-950/40 dark:text-slate-500 dark:opacity-80 dark:hover:border-slate-600 dark:hover:opacity-100')
+
+const extractHexColor = (...classValues) => {
+    for (const classValue of classValues) {
+        const match = String(classValue ?? '').match(/#(?:[0-9a-fA-F]{3,8})/)
+
+        if (match) {
+            return match[0]
+        }
+    }
+
+    return null
+}
+
+const normalizeHexColor = (hexColor) => {
+    const cleanValue = String(hexColor ?? '').replace('#', '')
+
+    if (cleanValue.length === 3) {
+        return cleanValue
+            .split('')
+            .map((char) => `${char}${char}`)
+            .join('')
+    }
+
+    if (cleanValue.length === 6) {
+        return cleanValue
+    }
+
+    return null
+}
+
+const hexToRgba = (hexColor, alpha = 1) => {
+    const normalized = normalizeHexColor(hexColor)
+
+    if (!normalized) {
+        return null
+    }
+
+    const red = Number.parseInt(normalized.slice(0, 2), 16)
+    const green = Number.parseInt(normalized.slice(2, 4), 16)
+    const blue = Number.parseInt(normalized.slice(4, 6), 16)
+
+    return `rgba(${red}, ${green}, ${blue}, ${alpha})`
+}
+
+const isDarkHexColor = (hexColor) => {
+    const normalized = normalizeHexColor(hexColor)
+
+    if (!normalized) {
+        return false
+    }
+
+    const red = Number.parseInt(normalized.slice(0, 2), 16)
+    const green = Number.parseInt(normalized.slice(2, 4), 16)
+    const blue = Number.parseInt(normalized.slice(4, 6), 16)
+    const luma = ((red * 299) + (green * 587) + (blue * 114)) / 1000
+
+    return luma < 145
+}
+
+const themeAccentColor = computed(() => {
+    return activeTickerTheme.value?.groupAccentColor
+        ?? extractHexColor(
+            activeTickerTheme.value?.groupTitleClass,
+            activeTickerTheme.value?.teamNameClass,
+            activeTickerTheme.value?.statsValueClass,
+            activeTickerTheme.value?.counterValueClass,
+        )
+        ?? '#39C4E0'
+})
+
+const themeAccentTextColor = computed(() => (isDarkHexColor(themeAccentColor.value) ? '#F8FAFC' : '#0F172A'))
+
+const themedCurrentGroupBadgeStyle = computed(() => {
+    if (activeTickerTheme.value?.groupBadgeClass) {
+        return undefined
+    }
+
+    const accent = themeAccentColor.value
+
+    return {
+        borderColor: hexToRgba(accent, 0.75),
+        backgroundColor: hexToRgba(accent, 0.12),
+        boxShadow: `0 0 18px ${hexToRgba(accent, 0.30)}`,
+    }
+})
+
+const themedCurrentGroupValueStyle = computed(() => {
+    if (activeTickerTheme.value?.groupBadgeValueClass) {
+        return undefined
+    }
+
+    return {
+        color: themeAccentColor.value,
+    }
+})
+
+const themedActiveGroupCardStyle = computed(() => {
+    if (activeTickerTheme.value?.groupActiveCardClass) {
+        return undefined
+    }
+
+    const accent = themeAccentColor.value
+
+    return {
+        borderColor: accent,
+        backgroundColor: accent,
+        color: themeAccentTextColor.value,
+        boxShadow: `0 0 16px ${hexToRgba(accent, 0.28)}`,
+    }
+})
+const themedActiveStageClass = computed(() => activeTickerTheme.value?.stageActiveCardClass ?? '')
+const themedActiveStageStyle = computed(() => {
+    if (activeTickerTheme.value?.stageActiveCardClass) {
+        return undefined
+    }
+
+    const accent = themeAccentColor.value
+
+    return {
+        borderColor: hexToRgba(accent, 0.75),
+        backgroundColor: hexToRgba(accent, 0.12),
+        color: '#334155',
+        boxShadow: `0 0 16px ${hexToRgba(accent, 0.22)}`,
+    }
+})
 const poolEntryForm = useForm({
     tournament_id: props.tournament.id,
     name: '',
@@ -762,7 +887,7 @@ watch(
                         <svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                         </svg>
-                        Volver a mis quinielas
+                        Mis quinielas
                     </Link>
                 </div>
 
@@ -818,11 +943,12 @@ watch(
                         :disabled="!stage.unlocked"
                         :class="[
                             currentStage === stage.key
-                                ? 'border-cyan-300 bg-cyan-50 text-cyan-800 dark:bg-cyan-300/15 dark:text-white'
+                                ? themedActiveStageClass
                                 : 'border-slate-300 bg-white text-slate-500 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-400',
                             !stage.unlocked && 'cursor-not-allowed opacity-50',
                         ]"
-                        class="rounded-2xl border px-4 py-3 text-left transition hover:border-cyan-300/40"
+                        :style="currentStage === stage.key ? themedActiveStageStyle : undefined"
+                        class="rounded-2xl border px-4 py-3 text-left transition hover:border-slate-400 dark:hover:border-slate-600"
                     >
                         <p class="text-xs font-semibold uppercase tracking-[0.2em]">
                             {{ stage.label }}
@@ -846,7 +972,7 @@ watch(
 
             <section v-if="currentStage === 'group' && currentGroup" class="space-y-6">
                 <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-                    <div :class="themedGroupPanelClass" class="rounded-2xl border p-5">
+                    <div :class="themedGroupPanelClass" class="rounded-2xl border p-4">
                         <div class="flex items-center justify-between gap-4">
                             <div>
                                 <p :class="themedGroupEyebrowClass" class="text-xs font-semibold uppercase tracking-[0.2em]">Progreso por grupos</p>
@@ -855,14 +981,14 @@ watch(
                                     Completa un grupo a la vez.
                                 </p>
                             </div>
-                            <div :class="themedCurrentGroupBadgeClass" class="flex h-20 min-w-[5.75rem] items-center justify-center rounded-2xl border px-3 py-2">
-                                <p :class="themedCurrentGroupValueClass" class="block -translate-y-1 text-6xl font-black leading-[0.9]">
+                            <div :class="themedCurrentGroupBadgeClass" :style="themedCurrentGroupBadgeStyle" class="flex h-20 min-w-[5.75rem] items-center justify-center rounded-2xl border px-3 py-2">
+                                <p :class="themedCurrentGroupValueClass" :style="themedCurrentGroupValueStyle" class="block -translate-y-1 text-6xl font-black leading-[0.9]">
                                     {{ currentGroup.name }}
                                 </p>
                             </div>
                         </div>
 
-                        <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-6">
+                        <div class="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 xl:grid-cols-6">
                             <button
                                 v-for="group in groupProgress"
                                 :key="group.id"
@@ -873,7 +999,8 @@ watch(
                                         ? themedActiveGroupCardClass
                                         : themedInactiveGroupCardClass,
                                 ]"
-                                class="flex min-h-[88px] flex-col rounded-2xl border px-4 py-2.5 text-left transition"
+                                :style="currentGroupIndex === group.index ? themedActiveGroupCardStyle : undefined"
+                                class="flex min-h-[84px] flex-col rounded-2xl border px-3.5 py-2 text-left transition"
                             >
                                 <p class="text-xs font-semibold uppercase tracking-[0.2em]">
                                     Grupo {{ group.name }}
@@ -886,7 +1013,11 @@ watch(
 
                     </div>
 
-                    <StandingWidget :group-name="currentGroup.name" :standings="standingsByGroup[currentGroup.name] || []" />
+                    <StandingWidget
+                        class="self-start"
+                        :group-name="currentGroup.name"
+                        :standings="standingsByGroup[currentGroup.name] || []"
+                    />
                 </div>
 
                 <div ref="groupTopNavRef" class="flex items-center justify-between gap-3">
