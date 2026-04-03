@@ -6,6 +6,7 @@ import WorldCupMatchCard from '@/Components/Quiniela/WorldCupMatchCard.vue'
 import PredictionSuccessCard from '@/Components/Quiniela/PredictionSuccessCard.vue'
 import FlowbiteModal from '@/Components/UI/FlowbiteModal.vue'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
+import { ElMessageBox } from 'element-plus'
 
 const props = defineProps({
     tournament: {
@@ -196,6 +197,7 @@ const poolEntryForm = useForm({
     predictions: [],
 })
 const showNameStepModal = ref(false)
+const showGroupResultsModal = ref(false)
 const hasConfirmedPoolName = ref(false)
 const groupTopNavRef = ref(null)
 
@@ -730,6 +732,8 @@ const nextUnlockedStage = computed(() => {
         .find((stage) => stage.unlocked)
 })
 
+const canClickNextGroup = computed(() => groupProgress.value.length > 0)
+
 const switchStage = (stageKey, unlocked) => {
     if (unlocked) {
         currentStage.value = stageKey
@@ -738,6 +742,52 @@ const switchStage = (stageKey, unlocked) => {
 
 const selectGroup = (index) => {
     currentGroupIndex.value = index
+}
+
+const groupConfirmationRows = computed(() => {
+    if (!currentGroup.value) {
+        return []
+    }
+
+    return currentGroupMatches.value
+        .map((match) => {
+        const prediction = predictions[match.id] ?? { home: null, away: null }
+
+        return {
+            id: match.id,
+            homeTeam: match.home_team?.name ?? 'Local',
+            awayTeam: match.away_team?.name ?? 'Visitante',
+            home: prediction.home,
+            away: prediction.away,
+        }
+    })
+        .filter((row) => row.home !== null && row.away !== null)
+})
+
+const hasAnyPredictionInCurrentGroup = () => {
+    if (!currentGroup.value) {
+        return false
+    }
+
+    return currentGroupMatches.value.some((match) => {
+        const prediction = predictions[match.id] ?? { home: null, away: null }
+        return prediction.home !== null || prediction.away !== null
+    })
+}
+
+const showEmptyGroupAlert = async () => {
+    await ElMessageBox.alert(
+        'Debes completar los encuentros de la Fase de Grupo antes de continuar al siguiente grupo.',
+        `Grupo ${currentGroup.value?.name ?? ''}`,
+        {
+            confirmButtonText: 'Entendido',
+            type: 'warning',
+        },
+    )
+}
+
+const closeGroupResultsModal = () => {
+    showGroupResultsModal.value = false
 }
 
 const scrollToCurrentGroupMatches = async () => {
@@ -760,7 +810,7 @@ const goToPreviousGroup = () => {
     }
 }
 
-const goToNextGroup = async () => {
+const advanceToNextGroup = async () => {
     if (currentGroupIndex.value < groupProgress.value.length - 1) {
         currentGroupIndex.value += 1
         await scrollToCurrentGroupMatches()
@@ -772,6 +822,25 @@ const goToNextGroup = async () => {
     }
 }
 
+const confirmAndAdvanceToNextGroup = async () => {
+    showGroupResultsModal.value = false
+    await advanceToNextGroup()
+}
+
+const goToNextGroup = async () => {
+    if (!hasAnyPredictionInCurrentGroup()) {
+        await showEmptyGroupAlert()
+        return
+    }
+
+    if (groupConfirmationRows.value.length > 0) {
+        showGroupResultsModal.value = true
+        return
+    }
+
+    await advanceToNextGroup()
+}
+
 const goToNextStage = () => {
     if (nextUnlockedStage.value) {
         currentStage.value = nextUnlockedStage.value.key
@@ -779,10 +848,15 @@ const goToNextStage = () => {
 }
 
 const submitPoolEntry = () => {
-    if (!hasConfirmedPoolName.value || !poolEntryForm.name.trim()) {
+    const normalizedName = poolEntryForm.name.trim().replace(/\s+/g, ' ')
+
+    if (normalizedName.length < 3) {
         showNameStepModal.value = true
         return
     }
+
+    poolEntryForm.name = normalizedName
+    hasConfirmedPoolName.value = true
 
     if (!canSubmitPoolEntry.value || poolEntryForm.processing) {
         return
@@ -910,7 +984,7 @@ watch(
                     <button
                         type="button"
                         @click="submitPoolEntry"
-                        :disabled="!canSubmitPoolEntry || poolEntryForm.processing || !hasConfirmedPoolName"
+                        :disabled="!canSubmitPoolEntry || poolEntryForm.processing"
                         :class="[
                             themedPrimaryButtonClass,
                             'inline-flex min-w-[220px] items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
@@ -1038,7 +1112,7 @@ watch(
                             themedPrimaryButtonClass,
                             'inline-flex min-w-[170px] items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold shadow-sm transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
                         ]"
-                        :disabled="currentGroupIndex >= groupProgress.length - 1 && !(currentStageStatus?.isComplete && nextUnlockedStage)"
+                        :disabled="!canClickNextGroup"
                         @click="goToNextGroup"
                     >
                         {{ currentGroupIndex >= groupProgress.length - 1 && currentStageStatus?.isComplete && nextUnlockedStage ? `Continuar a ${nextUnlockedStage.label}` : 'Siguiente' }}
@@ -1072,7 +1146,7 @@ watch(
                             themedPrimaryButtonClass,
                             'inline-flex min-w-[170px] items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold shadow-sm transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
                         ]"
-                        :disabled="currentGroupIndex >= groupProgress.length - 1 && !(currentStageStatus?.isComplete && nextUnlockedStage)"
+                        :disabled="!canClickNextGroup"
                         @click="goToNextGroup"
                     >
                         {{ currentGroupIndex >= groupProgress.length - 1 && currentStageStatus?.isComplete && nextUnlockedStage ? `Continuar a ${nextUnlockedStage.label}` : 'Siguiente' }}
@@ -1081,15 +1155,12 @@ watch(
             </section>
 
             <section v-else class="space-y-6">
-                <div class="grid gap-6 xl:grid-cols-[1fr_auto]">
-                    <div class="rounded-2xl border border-amber-300/40 bg-amber-50 p-5 text-sm text-amber-700 dark:border-amber-300/15 dark:bg-amber-300/5 dark:text-amber-100">
-                        La navegacion entre fases avanza a medida que completas la etapa previa. Los cruces muestran equipos resueltos cuando existen y, mientras tanto, mantienen un placeholder visual.
-                    </div>
+                <div class="flex items-center justify-end">
                     <button
                         v-if="currentStageStatus?.isComplete && nextUnlockedStage"
                         type="button"
                         @click="goToNextStage"
-                        class="inline-flex items-center justify-center rounded-xl border border-cyan-300/50 bg-cyan-50 px-5 py-4 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200 dark:hover:bg-cyan-400/20"
+                        class="inline-flex items-center justify-center rounded-xl border border-cyan-300/50 bg-cyan-50 px-5 py-3 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200 dark:hover:bg-cyan-400/20"
                     >
                         Continuar a {{ nextUnlockedStage.label }}
                     </button>
@@ -1103,8 +1174,75 @@ watch(
                         :match="match"
                     />
                 </div>
+
+                <div class="flex items-center justify-end">
+                    <button
+                        v-if="currentStageStatus?.isComplete && nextUnlockedStage"
+                        type="button"
+                        @click="goToNextStage"
+                        class="inline-flex items-center justify-center rounded-xl border border-cyan-300/50 bg-cyan-50 px-5 py-3 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200 dark:hover:bg-cyan-400/20"
+                    >
+                        Continuar a {{ nextUnlockedStage.label }}
+                    </button>
+                </div>
             </section>
         </div>
+
+        <FlowbiteModal
+            :show="showGroupResultsModal"
+            max-width="xl"
+            :closeable="true"
+            @close="closeGroupResultsModal"
+        >
+            <div class="space-y-4 -mb-4 md:-mb-6">
+                <div>
+                    <h2 class="text-xl font-black tracking-tight text-slate-900 sm:text-2xl dark:text-white">
+                        Grupo {{ currentGroup?.name ?? '' }}
+                    </h2>
+                </div>
+
+                <div class="mx-auto flex max-w-[36rem] items-start justify-center gap-2 text-slate-700 sm:gap-2.5 dark:text-slate-200">
+                    <span
+                        aria-hidden="true"
+                        class="mt-0.5 inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-amber-500 text-[12px] font-bold leading-none text-white sm:h-[22px] sm:w-[22px] sm:text-[14px]"
+                    >
+                        !
+                    </span>
+                    <p class="m-0 text-[15px] font-medium leading-6 sm:text-[18px]">
+                        Confirma los resultados antes de continuar al siguiente grupo.
+                    </p>
+                </div>
+
+                <ul class="m-0 grid list-none gap-1.5 p-0">
+                    <li
+                        v-for="row in groupConfirmationRows"
+                        :key="row.id"
+                        class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 text-[14px] leading-6 text-slate-700 sm:gap-3 sm:text-[18px] sm:leading-7 dark:text-slate-200"
+                    >
+                        <strong class="justify-self-end text-right">{{ row.homeTeam }}</strong>
+                        <span class="inline-block min-w-[62px] text-center font-semibold sm:min-w-[72px]">{{ row.home }} - {{ row.away }}</span>
+                        <strong class="justify-self-start text-left">{{ row.awayTeam }}</strong>
+                    </li>
+                </ul>
+
+                <div class="mt-1 flex min-h-[56px] items-center justify-center gap-2 border-t border-slate-200 py-2.5 sm:justify-end dark:border-slate-700">
+                    <button
+                        type="button"
+                        class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                        @click="closeGroupResultsModal"
+                    >
+                        Revisar
+                    </button>
+                    <button
+                        type="button"
+                        class="inline-flex items-center justify-center rounded-xl border border-primary-300/30 bg-primary-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600"
+                        @click="confirmAndAdvanceToNextGroup"
+                    >
+                        Continuar
+                    </button>
+                </div>
+            </div>
+        </FlowbiteModal>
 
         <FlowbiteModal
             :show="showNameStepModal"
