@@ -972,7 +972,7 @@ watch(
 
             <section v-if="currentStage === 'group' && currentGroup" class="space-y-6">
                 <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-                    <div :class="themedGroupPanelClass" class="rounded-2xl border p-5">
+                    <div :class="themedGroupPanelClass" class="rounded-2xl border p-4">
                         <div class="flex items-center justify-between gap-4">
                             <div>
                                 <p :class="themedGroupEyebrowClass" class="text-xs font-semibold uppercase tracking-[0.2em]">Progreso por grupos</p>
@@ -988,7 +988,7 @@ watch(
                             </div>
                         </div>
 
-                        <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-6">
+                        <div class="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 xl:grid-cols-6">
                             <button
                                 v-for="group in groupProgress"
                                 :key="group.id"
@@ -1000,7 +1000,7 @@ watch(
                                         : themedInactiveGroupCardClass,
                                 ]"
                                 :style="currentGroupIndex === group.index ? themedActiveGroupCardStyle : undefined"
-                                class="flex min-h-[88px] flex-col rounded-2xl border px-4 py-2.5 text-left transition"
+                                class="flex min-h-[84px] flex-col rounded-2xl border px-3.5 py-2 text-left transition"
                             >
                                 <p class="text-xs font-semibold uppercase tracking-[0.2em]">
                                     Grupo {{ group.name }}
@@ -1013,7 +1013,11 @@ watch(
 
                     </div>
 
-                    <StandingWidget :group-name="currentGroup.name" :standings="standingsByGroup[currentGroup.name] || []" />
+                    <StandingWidget
+                        class="self-start"
+                        :group-name="currentGroup.name"
+                        :standings="standingsByGroup[currentGroup.name] || []"
+                    />
                 </div>
 
                 <div ref="groupTopNavRef" class="flex items-center justify-between gap-3">
