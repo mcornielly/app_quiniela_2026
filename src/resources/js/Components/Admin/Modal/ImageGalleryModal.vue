@@ -112,14 +112,14 @@ watch(
                         </button>
                     </header>
 
-                    <div class="relative flex h-[56vh] items-center justify-center bg-slate-100 dark:bg-slate-950">
+                    <div class="relative m-3 flex h-[56vh] items-center justify-center overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-950">
                         <Transition :name="direction === 'next' ? 'gallery-slide-next' : 'gallery-slide-prev'" mode="out-in">
                             <img
                                 v-if="hasImages"
                                 :key="currentImage"
                                 :src="currentImage"
                                 alt="Stadium image"
-                                class="h-full w-full object-contain"
+                                class="h-full w-full rounded-xl object-cover"
                             >
                         </Transition>
                         <p v-if="!hasImages" class="text-sm text-slate-500 dark:text-slate-400">No hay imagenes disponibles</p>
@@ -144,9 +144,6 @@ watch(
 
                     <footer class="border-t border-slate-200 dark:border-slate-700">
                         <div class="px-4 pt-3">
-                            <div class="mb-2 text-center text-xs font-medium text-slate-500 dark:text-slate-400">
-                            {{ hasImages ? `${currentIndex + 1} / ${normalizedImages.length}` : '0 / 0' }}
-                            </div>
                             <div class="flex gap-2 overflow-x-auto pb-3">
                             <button
                                 v-for="(img, index) in normalizedImages"
@@ -165,7 +162,10 @@ watch(
                             </div>
                         </div>
                         <div class="w-full border-t border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/40">
-                            <div class="flex w-full justify-end">
+                            <div class="relative flex w-full items-center justify-end">
+                            <p class="absolute left-0 text-left text-xs font-medium text-slate-500 dark:text-slate-400 sm:left-1/2 sm:-translate-x-1/2 sm:text-center">
+                                {{ hasImages ? `${currentIndex + 1} / ${normalizedImages.length}` : '0 / 0' }}
+                            </p>
                             <button
                                 type="button"
                                 class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:z-10 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-600"
