@@ -34,8 +34,17 @@ const props = defineProps({
         </div>
 
         <div class="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-            <article class="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-300/90 bg-white p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900/75">
-                <div class="mb-4 flex items-center">
+            <article class="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-300/90 bg-white dark:border-slate-800 dark:bg-slate-900/75">
+                <div>
+                    <div class="bg-slate-300/40 px-4 py-3 sm:px-5 dark:bg-slate-700/40">
+                        <p class="text-center text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                            Fase de grupo {{ selectedTeam?.group_name || '-' }}
+                        </p>
+                    </div>
+                    <div class="border-b border-slate-200 dark:border-slate-700" />
+                </div>
+                <div class="p-4 sm:p-5">
+                <div class="mb-4 pb-2 flex items-center">
                     <div class="mx-auto grid w-full grid-cols-4 gap-2 md:max-w-3xl">
                         <div class="flex h-16 flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-center dark:border-slate-700 dark:bg-slate-900/60">
                             <p class="text-[10px] uppercase text-slate-500">FIFA</p>
@@ -82,6 +91,7 @@ const props = defineProps({
                             </tr>
                         </tfoot>
                     </table>
+                </div>
                 </div>
             </article>
 
