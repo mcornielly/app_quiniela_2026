@@ -30,10 +30,18 @@ const homeScore = computed(() => props.modelValue.home ?? '')
 const awayScore = computed(() => props.modelValue.away ?? '')
 
 const updateScores = (nextHome, nextAway) => {
+    const sanitizedHome = sanitizeScore(nextHome)
+    const sanitizedAway = sanitizeScore(nextAway)
+
+    // If one side already has a value, treat the missing side as 0 so the game
+    // is considered completed when the user moves on to another match.
+    const normalizedHome = sanitizedHome === null && sanitizedAway !== null ? 0 : sanitizedHome
+    const normalizedAway = sanitizedAway === null && sanitizedHome !== null ? 0 : sanitizedAway
+
     emit('update:modelValue', {
         ...props.modelValue,
-        home: sanitizeScore(nextHome),
-        away: sanitizeScore(nextAway),
+        home: normalizedHome,
+        away: normalizedAway,
     })
     emit('score-changed')
 }
@@ -163,7 +171,7 @@ const hideFlag = (team, slot) => {
                         autocorrect="off"
                         autocomplete="off"
                         spellcheck="false"
-                        placeholder="0"
+                        placeholder="-"
                         class="h-9 w-10 rounded-lg border border-slate-300 bg-white text-center text-xl font-black text-slate-900 focus:border-primary-500 focus:ring-primary-200 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-primary-500 dark:focus:ring-primary-500/20"
                         @input="setScore('home', $event.target.value)"
                         @blur="normalizeIncompleteScore"
@@ -195,7 +203,7 @@ const hideFlag = (team, slot) => {
                         autocorrect="off"
                         autocomplete="off"
                         spellcheck="false"
-                        placeholder="0"
+                        placeholder="-"
                         class="h-9 w-10 rounded-lg border border-slate-300 bg-white text-center text-xl font-black text-slate-900 focus:border-primary-500 focus:ring-primary-200 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:focus:border-primary-500 dark:focus:ring-primary-500/20"
                         @input="setScore('away', $event.target.value)"
                         @blur="normalizeIncompleteScore"
