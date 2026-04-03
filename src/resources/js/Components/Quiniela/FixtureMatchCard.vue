@@ -19,7 +19,7 @@ const statusClass = (status) => {
     return 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
 }
 
-const metaLabel = computed(() => {
+const stageDateTimeLabel = computed(() => {
     const stage = props.match?.stage_label || 'Partido'
     const date = props.match?.match_date_label || '--'
     const time = props.match?.match_time_label || '--:--'
@@ -31,7 +31,21 @@ const metaLabel = computed(() => {
 <template>
     <article class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900/70">
         <div class="relative flex min-h-[22px] items-center justify-center">
-            <p class="text-center text-xs text-slate-500 dark:text-slate-400">{{ metaLabel }}</p>
+            <p class="flex items-center justify-center gap-2 text-center text-xs text-slate-500 dark:text-slate-400">
+                <span>{{ stageDateTimeLabel }}</span>
+                <span aria-hidden="true">·</span>
+                <span class="inline-flex items-center gap-1.5 font-semibold uppercase tracking-[0.16em]">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 384 512"
+                        class="h-3.5 w-3.5 shrink-0 fill-current text-cyan-500 dark:text-cyan-400"
+                        aria-hidden="true"
+                    >
+                        <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z"/>
+                    </svg>
+                    <span class="truncate">{{ match.venue || 'Sede por confirmar' }}</span>
+                </span>
+            </p>
             <span
                 v-if="showStatus"
                 :class="statusClass(match.status)"
@@ -84,5 +98,6 @@ const metaLabel = computed(() => {
                 </span>
             </div>
         </div>
+
     </article>
 </template>
