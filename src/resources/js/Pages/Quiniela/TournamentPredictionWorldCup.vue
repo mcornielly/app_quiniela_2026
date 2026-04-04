@@ -6,6 +6,7 @@ import WorldCupMatchCard from '@/Components/Quiniela/WorldCupMatchCard.vue'
 import PredictionSuccessCard from '@/Components/Quiniela/PredictionSuccessCard.vue'
 import FlowbiteModal from '@/Components/UI/FlowbiteModal.vue'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
+import { notifyWarning } from '@/Utils/notify'
 import { ElMessageBox } from 'element-plus'
 
 const props = defineProps({
@@ -200,6 +201,8 @@ const showNameStepModal = ref(false)
 const showGroupResultsModal = ref(false)
 const hasConfirmedPoolName = ref(false)
 const groupTopNavRef = ref(null)
+const stageMatchesTopRef = ref(null)
+const hasShownKnockoutDrawWarning = ref(false)
 
 const stageDefinitions = [
     { key: 'group', label: 'Grupos' },
@@ -804,6 +807,20 @@ const scrollToCurrentGroupMatches = async () => {
     })
 }
 
+const scrollToCurrentStageMatches = async () => {
+    await nextTick()
+    if (!stageMatchesTopRef.value) {
+        return
+    }
+
+    const topOffset = 240
+    const targetTop = stageMatchesTopRef.value.getBoundingClientRect().top + window.scrollY - topOffset
+    window.scrollTo({
+        top: Math.max(0, targetTop),
+        behavior: 'smooth',
+    })
+}
+
 const goToPreviousGroup = () => {
     if (currentGroupIndex.value > 0) {
         currentGroupIndex.value -= 1
@@ -819,6 +836,7 @@ const advanceToNextGroup = async () => {
 
     if (currentStageStatus.value?.isComplete && nextUnlockedStage.value) {
         currentStage.value = nextUnlockedStage.value.key
+        await scrollToCurrentStageMatches()
     }
 }
 
@@ -841,9 +859,10 @@ const goToNextGroup = async () => {
     await advanceToNextGroup()
 }
 
-const goToNextStage = () => {
+const goToNextStage = async () => {
     if (nextUnlockedStage.value) {
         currentStage.value = nextUnlockedStage.value.key
+        await scrollToCurrentStageMatches()
     }
 }
 
@@ -919,6 +938,24 @@ watch(
 
         const firstIncompleteIndex = groupProgress.value.findIndex((group) => !group.isComplete)
         currentGroupIndex.value = firstIncompleteIndex >= 0 ? firstIncompleteIndex : 0
+    },
+    { immediate: true },
+)
+
+watch(
+    hasInvalidKnockoutDraws,
+    (hasInvalid) => {
+        if (!hasInvalid) {
+            hasShownKnockoutDrawWarning.value = false
+            return
+        }
+
+        if (hasShownKnockoutDrawWarning.value) {
+            return
+        }
+
+        notifyWarning('En fases eliminatorias no se permiten empates en la quiniela. Define un ganador para que el bracket pueda avanzar correctamente.')
+        hasShownKnockoutDrawWarning.value = true
     },
     { immediate: true },
 )
@@ -1002,9 +1039,6 @@ watch(
                     La participacion de quinielas esta cerrada desde el {{ props.participationRules?.closeAtLabel ?? 'limite configurado' }}.
                 </div>
 
-                <div v-if="hasInvalidKnockoutDraws" class="mt-4 rounded-xl border border-amber-300/40 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100">
-                    En fases eliminatorias no se permiten empates en la quiniela. Define un ganador para que el bracket pueda avanzar correctamente.
-                </div>
             </section>
 
             <section class="mt-6">
@@ -1155,18 +1189,7 @@ watch(
             </section>
 
             <section v-else class="space-y-6">
-                <div class="flex items-center justify-end">
-                    <button
-                        v-if="currentStageStatus?.isComplete && nextUnlockedStage"
-                        type="button"
-                        @click="goToNextStage"
-                        class="inline-flex items-center justify-center rounded-xl border border-cyan-300/50 bg-cyan-50 px-5 py-3 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200 dark:hover:bg-cyan-400/20"
-                    >
-                        Continuar a {{ nextUnlockedStage.label }}
-                    </button>
-                </div>
-
-                <div class="space-y-3">
+                <div ref="stageMatchesTopRef" class="space-y-3">
                     <WorldCupMatchCard
                         v-for="match in visibleStageMatches"
                         :key="match.id"

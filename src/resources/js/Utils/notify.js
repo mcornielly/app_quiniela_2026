@@ -40,6 +40,18 @@ export function notifyInfo(message) {
 
 }
 
+export function notifyWarning(message, options = {}) {
+
+    ElMessage({
+        message,
+        type: 'warning',
+        showClose: true,
+        grouping: true,
+        ...options,
+    })
+
+}
+
 export function confirmDelete(message) {
 
     return ElMessageBox.confirm(
