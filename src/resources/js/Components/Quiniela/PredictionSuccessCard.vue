@@ -14,6 +14,7 @@ defineProps({
 const statusLabel = (status) => {
     const labels = {
         complete: 'Completado',
+        draft: 'Draft',
     }
 
     return labels[status] ?? status
@@ -51,10 +52,10 @@ onBeforeUnmount(() => {
 
             <div class="text-center">
                 <p class="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-700 dark:text-cyan-200/90">
-                    Quiniela registrada
+                    Tu quiniela ya fue registrada
                 </p>
                 <h2 class="mt-4 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl dark:text-white">
-                    Tu quiniela ya quedo lista
+                    {{ poolEntry.name || 'Quiniela' }}
                 </h2>
                 <p class="mt-3 text-sm leading-6 text-slate-600 sm:text-base dark:text-slate-300">
                     Registro <span class="font-semibold text-slate-700 dark:text-slate-300">{{ formatRegistrationNumber(poolEntry.registrationNumber) }}</span>
@@ -62,16 +63,16 @@ onBeforeUnmount(() => {
                 </p>
             </div>
 
-            <div class="mt-8 grid gap-4 rounded-3xl border border-cyan-300/35 bg-white/70 p-5 sm:grid-cols-3 dark:border-white/10 dark:bg-white/5">
-                <div class="rounded-2xl border border-cyan-200/60 bg-white/90 p-4 text-center dark:border-white/10 dark:bg-slate-950/60">
+            <div class="mt-8 grid gap-4 sm:grid-cols-3">
+                <div class="rounded-2xl border border-cyan-200/60 bg-white/90 p-4 text-center shadow-sm shadow-cyan-200/40 dark:border-white/10 dark:bg-slate-950/60 dark:shadow-none">
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Numero unico</p>
                     <p class="mt-2 text-2xl font-semibold text-slate-800 dark:text-slate-300">{{ formatRegistrationNumber(poolEntry.registrationNumber) }}</p>
                 </div>
-                <div class="rounded-2xl border border-cyan-200/60 bg-white/90 p-4 text-center dark:border-white/10 dark:bg-slate-950/60">
+                <div class="rounded-2xl border border-cyan-200/60 bg-white/90 p-4 text-center shadow-sm shadow-cyan-200/40 dark:border-white/10 dark:bg-slate-950/60 dark:shadow-none">
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Estado</p>
                     <p class="mt-2 text-2xl font-black text-emerald-500 dark:text-emerald-300">{{ statusLabel(poolEntry.status) }}</p>
                 </div>
-                <div class="rounded-2xl border border-cyan-200/60 bg-white/90 p-4 text-center dark:border-white/10 dark:bg-slate-950/60">
+                <div class="rounded-2xl border border-cyan-200/60 bg-white/90 p-4 text-center shadow-sm shadow-cyan-200/40 dark:border-white/10 dark:bg-slate-950/60 dark:shadow-none">
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Completado</p>
                     <p class="mt-2 text-2xl font-black text-cyan-600 dark:text-cyan-300">{{ poolEntry.completionPercent }}%</p>
                 </div>
@@ -83,7 +84,7 @@ onBeforeUnmount(() => {
                     {{ poolEntry.predictedChampionName || 'Por definirse en la final de tu quiniela' }}
                 </p>
                 <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                    Guarda este numero de registro para identificar esta quiniela entre todas tus participaciones.
+                    Encontraras tu quiniela en la seccion Mis quinielas, donde podras editarla antes de pagar. Una vez cancelada, quedara bloqueada.
                 </p>
             </div>
 
