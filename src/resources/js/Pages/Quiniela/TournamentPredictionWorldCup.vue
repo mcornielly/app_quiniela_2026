@@ -201,6 +201,7 @@ const showNameStepModal = ref(false)
 const showGroupResultsModal = ref(false)
 const hasConfirmedPoolName = ref(false)
 const groupTopNavRef = ref(null)
+const groupMatchesTopRef = ref(null)
 const stageMatchesTopRef = ref(null)
 const hasShownKnockoutDrawWarning = ref(false)
 
@@ -793,37 +794,58 @@ const closeGroupResultsModal = () => {
     showGroupResultsModal.value = false
 }
 
-const scrollToCurrentGroupMatches = async () => {
-    await nextTick()
-    if (!groupTopNavRef.value) {
-        return
-    }
+const waitForMilliseconds = (milliseconds) => new Promise((resolve) => {
+    window.setTimeout(resolve, milliseconds)
+})
 
-    const topOffset = 406
-    const targetTop = groupTopNavRef.value.getBoundingClientRect().top + window.scrollY - topOffset
-    window.scrollTo({
-        top: Math.max(0, targetTop),
-        behavior: 'smooth',
-    })
+const waitForAnimationFrame = () => new Promise((resolve) => {
+    window.requestAnimationFrame(() => resolve())
+})
+
+const scrollToCurrentGroupMatches = async () => {
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+        await nextTick()
+        await waitForAnimationFrame()
+
+        const targetElement = groupMatchesTopRef.value || groupTopNavRef.value
+
+        if (targetElement) {
+            const topOffset = 406
+            const targetTop = targetElement.getBoundingClientRect().top + window.scrollY - topOffset
+            window.scrollTo({
+                top: Math.max(0, targetTop),
+                behavior: 'smooth',
+            })
+            return
+        }
+
+        await waitForMilliseconds(70)
+    }
 }
 
 const scrollToCurrentStageMatches = async () => {
-    await nextTick()
-    if (!stageMatchesTopRef.value) {
-        return
-    }
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+        await nextTick()
+        await waitForAnimationFrame()
 
-    const topOffset = 240
-    const targetTop = stageMatchesTopRef.value.getBoundingClientRect().top + window.scrollY - topOffset
-    window.scrollTo({
-        top: Math.max(0, targetTop),
-        behavior: 'smooth',
-    })
+        if (stageMatchesTopRef.value) {
+            const topOffset = 240
+            const targetTop = stageMatchesTopRef.value.getBoundingClientRect().top + window.scrollY - topOffset
+            window.scrollTo({
+                top: Math.max(0, targetTop),
+                behavior: 'smooth',
+            })
+            return
+        }
+
+        await waitForMilliseconds(70)
+    }
 }
 
-const goToPreviousGroup = () => {
+const goToPreviousGroup = async () => {
     if (currentGroupIndex.value > 0) {
         currentGroupIndex.value -= 1
+        await scrollToCurrentGroupMatches()
     }
 }
 
@@ -1078,137 +1100,147 @@ watch(
                 </div>
             </section>
 
-            <section v-if="currentStage === 'group' && currentGroup" class="space-y-6">
-                <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-                    <div :class="themedGroupPanelClass" class="rounded-2xl border p-4">
-                        <div class="flex items-center justify-between gap-4">
-                            <div>
-                                <p :class="themedGroupEyebrowClass" class="text-xs font-semibold uppercase tracking-[0.2em]">Progreso por grupos</p>
-                                <h2 :class="themedGroupTitleClass" class="mt-2 text-2xl font-bold">Fase de grupos guiada</h2>
-                                <p :class="themedGroupBodyClass" class="mt-1 text-sm">
-                                    Completa un grupo a la vez.
-                                </p>
+            <Transition
+                mode="out-in"
+                enter-active-class="transition-all duration-300 ease-out"
+                enter-from-class="opacity-0 translate-y-2"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition-all duration-200 ease-in"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 -translate-y-1"
+            >
+                <section v-if="currentStage === 'group' && currentGroup" :key="`group-stage-${currentGroupIndex}`" class="space-y-6">
+                    <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+                        <div :class="themedGroupPanelClass" class="rounded-2xl border p-4">
+                            <div class="flex items-center justify-between gap-4">
+                                <div>
+                                    <p :class="themedGroupEyebrowClass" class="text-xs font-semibold uppercase tracking-[0.2em]">Progreso por grupos</p>
+                                    <h2 :class="themedGroupTitleClass" class="mt-2 text-2xl font-bold">Fase de grupos guiada</h2>
+                                    <p :class="themedGroupBodyClass" class="mt-1 text-sm">
+                                        Completa un grupo a la vez.
+                                    </p>
+                                </div>
+                                <div :class="themedCurrentGroupBadgeClass" :style="themedCurrentGroupBadgeStyle" class="flex h-20 min-w-[5.75rem] items-center justify-center rounded-2xl border px-3 py-2">
+                                    <p :class="themedCurrentGroupValueClass" :style="themedCurrentGroupValueStyle" class="block -translate-y-1 text-6xl font-black leading-[0.9]">
+                                        {{ currentGroup.name }}
+                                    </p>
+                                </div>
                             </div>
-                            <div :class="themedCurrentGroupBadgeClass" :style="themedCurrentGroupBadgeStyle" class="flex h-20 min-w-[5.75rem] items-center justify-center rounded-2xl border px-3 py-2">
-                                <p :class="themedCurrentGroupValueClass" :style="themedCurrentGroupValueStyle" class="block -translate-y-1 text-6xl font-black leading-[0.9]">
-                                    {{ currentGroup.name }}
-                                </p>
+
+                            <div class="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 xl:grid-cols-6">
+                                <button
+                                    v-for="group in groupProgress"
+                                    :key="group.id"
+                                    type="button"
+                                    @click="selectGroup(group.index)"
+                                    :class="[
+                                        currentGroupIndex === group.index
+                                            ? themedActiveGroupCardClass
+                                            : themedInactiveGroupCardClass,
+                                    ]"
+                                    :style="currentGroupIndex === group.index ? themedActiveGroupCardStyle : undefined"
+                                    class="flex min-h-[84px] flex-col rounded-2xl border px-3.5 py-2 text-left transition"
+                                >
+                                    <p class="text-xs font-semibold uppercase tracking-[0.2em]">
+                                        Grupo {{ group.name }}
+                                    </p>
+                                    <p class="mt-auto self-end text-2xl font-black leading-none">
+                                        {{ group.completed }}/{{ group.total }}
+                                    </p>
+                                </button>
                             </div>
+
                         </div>
 
-                        <div class="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 xl:grid-cols-6">
-                            <button
-                                v-for="group in groupProgress"
-                                :key="group.id"
-                                type="button"
-                                @click="selectGroup(group.index)"
-                                :class="[
-                                    currentGroupIndex === group.index
-                                        ? themedActiveGroupCardClass
-                                        : themedInactiveGroupCardClass,
-                                ]"
-                                :style="currentGroupIndex === group.index ? themedActiveGroupCardStyle : undefined"
-                                class="flex min-h-[84px] flex-col rounded-2xl border px-3.5 py-2 text-left transition"
-                            >
-                                <p class="text-xs font-semibold uppercase tracking-[0.2em]">
-                                    Grupo {{ group.name }}
-                                </p>
-                                <p class="mt-auto self-end text-2xl font-black leading-none">
-                                    {{ group.completed }}/{{ group.total }}
-                                </p>
-                            </button>
-                        </div>
-
+                        <StandingWidget
+                            class="self-start"
+                            :group-name="currentGroup.name"
+                            :standings="standingsByGroup[currentGroup.name] || []"
+                        />
                     </div>
 
-                    <StandingWidget
-                        class="self-start"
-                        :group-name="currentGroup.name"
-                        :standings="standingsByGroup[currentGroup.name] || []"
-                    />
-                </div>
+                    <div ref="groupTopNavRef" class="flex items-center justify-between gap-3">
+                        <button
+                            type="button"
+                            :class="[
+                                themedSecondaryButtonClass,
+                                'inline-flex min-w-[170px] items-center justify-center rounded-2xl border px-6 py-3 text-sm font-semibold transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+                            ]"
+                            :disabled="currentGroupIndex === 0"
+                            @click="goToPreviousGroup"
+                        >
+                            Anterior
+                        </button>
+                        <button
+                            type="button"
+                            :class="[
+                                themedPrimaryButtonClass,
+                                'inline-flex min-w-[170px] items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold shadow-sm transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+                            ]"
+                            :disabled="!canClickNextGroup"
+                            @click="goToNextGroup"
+                        >
+                            {{ currentGroupIndex >= groupProgress.length - 1 && currentStageStatus?.isComplete && nextUnlockedStage ? `Continuar a ${nextUnlockedStage.label}` : 'Siguiente' }}
+                        </button>
+                    </div>
 
-                <div ref="groupTopNavRef" class="flex items-center justify-between gap-3">
-                    <button
-                        type="button"
-                        :class="[
-                            themedSecondaryButtonClass,
-                            'inline-flex min-w-[170px] items-center justify-center rounded-2xl border px-6 py-3 text-sm font-semibold transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
-                        ]"
-                        :disabled="currentGroupIndex === 0"
-                        @click="goToPreviousGroup"
-                    >
-                        Anterior
-                    </button>
-                    <button
-                        type="button"
-                        :class="[
-                            themedPrimaryButtonClass,
-                            'inline-flex min-w-[170px] items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold shadow-sm transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
-                        ]"
-                        :disabled="!canClickNextGroup"
-                        @click="goToNextGroup"
-                    >
-                        {{ currentGroupIndex >= groupProgress.length - 1 && currentStageStatus?.isComplete && nextUnlockedStage ? `Continuar a ${nextUnlockedStage.label}` : 'Siguiente' }}
-                    </button>
-                </div>
+                    <div ref="groupMatchesTopRef" class="space-y-3">
+                        <WorldCupMatchCard
+                            v-for="match in currentGroupMatches"
+                            :key="match.id"
+                            v-model="predictions[match.id]"
+                            :match="match"
+                        />
+                    </div>
 
-                <div class="space-y-3">
-                    <WorldCupMatchCard
-                        v-for="match in currentGroupMatches"
-                        :key="match.id"
-                        v-model="predictions[match.id]"
-                        :match="match"
-                    />
-                </div>
+                    <div class="flex items-center justify-between gap-3 pt-2">
+                        <button
+                            type="button"
+                            :class="[
+                                themedSecondaryButtonClass,
+                                'inline-flex min-w-[170px] items-center justify-center rounded-2xl border px-6 py-3 text-sm font-semibold transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+                            ]"
+                            :disabled="currentGroupIndex === 0"
+                            @click="goToPreviousGroup"
+                        >
+                            Anterior
+                        </button>
+                        <button
+                            type="button"
+                            :class="[
+                                themedPrimaryButtonClass,
+                                'inline-flex min-w-[170px] items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold shadow-sm transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+                            ]"
+                            :disabled="!canClickNextGroup"
+                            @click="goToNextGroup"
+                        >
+                            {{ currentGroupIndex >= groupProgress.length - 1 && currentStageStatus?.isComplete && nextUnlockedStage ? `Continuar a ${nextUnlockedStage.label}` : 'Siguiente' }}
+                        </button>
+                    </div>
+                </section>
 
-                <div class="flex items-center justify-between gap-3 pt-2">
-                    <button
-                        type="button"
-                        :class="[
-                            themedSecondaryButtonClass,
-                            'inline-flex min-w-[170px] items-center justify-center rounded-2xl border px-6 py-3 text-sm font-semibold transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
-                        ]"
-                        :disabled="currentGroupIndex === 0"
-                        @click="goToPreviousGroup"
-                    >
-                        Anterior
-                    </button>
-                    <button
-                        type="button"
-                        :class="[
-                            themedPrimaryButtonClass,
-                            'inline-flex min-w-[170px] items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold shadow-sm transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
-                        ]"
-                        :disabled="!canClickNextGroup"
-                        @click="goToNextGroup"
-                    >
-                        {{ currentGroupIndex >= groupProgress.length - 1 && currentStageStatus?.isComplete && nextUnlockedStage ? `Continuar a ${nextUnlockedStage.label}` : 'Siguiente' }}
-                    </button>
-                </div>
-            </section>
+                <section v-else :key="`knockout-${currentStage}`" class="space-y-6">
+                    <div ref="stageMatchesTopRef" class="space-y-3">
+                        <WorldCupMatchCard
+                            v-for="match in visibleStageMatches"
+                            :key="match.id"
+                            v-model="predictions[match.id]"
+                            :match="match"
+                        />
+                    </div>
 
-            <section v-else class="space-y-6">
-                <div ref="stageMatchesTopRef" class="space-y-3">
-                    <WorldCupMatchCard
-                        v-for="match in visibleStageMatches"
-                        :key="match.id"
-                        v-model="predictions[match.id]"
-                        :match="match"
-                    />
-                </div>
-
-                <div class="flex items-center justify-end">
-                    <button
-                        v-if="currentStageStatus?.isComplete && nextUnlockedStage"
-                        type="button"
-                        @click="goToNextStage"
-                        class="inline-flex items-center justify-center rounded-xl border border-cyan-300/50 bg-cyan-50 px-5 py-3 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200 dark:hover:bg-cyan-400/20"
-                    >
-                        Continuar a {{ nextUnlockedStage.label }}
-                    </button>
-                </div>
-            </section>
+                    <div class="flex items-center justify-end">
+                        <button
+                            v-if="currentStageStatus?.isComplete && nextUnlockedStage"
+                            type="button"
+                            @click="goToNextStage"
+                            class="inline-flex items-center justify-center rounded-xl border border-cyan-300/50 bg-cyan-50 px-5 py-3 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200 dark:hover:bg-cyan-400/20"
+                        >
+                            Continuar a {{ nextUnlockedStage.label }}
+                        </button>
+                    </div>
+                </section>
+            </Transition>
         </div>
 
         <FlowbiteModal
