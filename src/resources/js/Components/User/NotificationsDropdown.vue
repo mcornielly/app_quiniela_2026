@@ -90,6 +90,41 @@ const awayScoreClass = (item) => {
     return 'text-slate-900 dark:text-white'
 }
 
+const isQualification = (item) => item.type === 'qualification'
+const isResult = (item) => item.type === 'result'
+
+const itemToneClass = (item) => {
+    if (isResult(item)) {
+        return 'text-emerald-700 dark:text-emerald-400'
+    }
+
+    if (isQualification(item)) {
+        return 'text-amber-700 dark:text-amber-400'
+    }
+
+    if (item.type === 'update') {
+        return 'text-amber-700 dark:text-amber-400'
+    }
+
+    return 'text-rose-700 dark:text-rose-400'
+}
+
+const itemTypeLabel = (item) => {
+    if (isResult(item)) {
+        return 'Resultado final'
+    }
+
+    if (isQualification(item)) {
+        return 'Clasificados confirmados'
+    }
+
+    if (item.type === 'update') {
+        return 'Clasificacion proxima ronda'
+    }
+
+    return 'Partido en vivo'
+}
+
 const removeNotification = (id) => {
     props.onRemove?.(id)
 }
@@ -125,10 +160,10 @@ const clearAll = () => {
             >
                 <div class="flex items-center justify-between gap-3">
                     <p
-                        :class="item.type === 'result' ? 'text-emerald-700 dark:text-emerald-400' : (item.type === 'update' ? 'text-amber-700 dark:text-amber-400' : 'text-rose-700 dark:text-rose-400')"
+                        :class="itemToneClass(item)"
                         class="text-[11px] font-semibold uppercase tracking-[0.14em]"
                     >
-                        {{ item.type === 'result' ? 'Resultado final' : (item.type === 'update' ? 'Clasificacion proxima ronda' : 'Partido en vivo') }}
+                        {{ itemTypeLabel(item) }}
                     </p>
                     <p class="whitespace-nowrap text-[11px] text-gray-500 dark:text-gray-300">
                         {{ item.stageLabel || 'Mundial 2026' }}
@@ -147,9 +182,14 @@ const clearAll = () => {
                     </span>
 
                     <span class="inline-flex min-w-[72px] items-center justify-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-center text-sm font-bold dark:bg-slate-800">
-                        <span :class="homeScoreClass(item)">{{ item.homeScore }}</span>
-                        <span class="text-slate-400 dark:text-slate-500">-</span>
-                        <span :class="awayScoreClass(item)">{{ item.awayScore }}</span>
+                        <template v-if="isResult(item)">
+                            <span :class="homeScoreClass(item)">{{ item.homeScore }}</span>
+                            <span class="text-slate-400 dark:text-slate-500">-</span>
+                            <span :class="awayScoreClass(item)">{{ item.awayScore }}</span>
+                        </template>
+                        <template v-else>
+                            <span class="text-slate-500 dark:text-slate-300">vs</span>
+                        </template>
                     </span>
 
                     <span class="inline-flex min-w-0 items-center justify-start gap-2">
@@ -163,7 +203,7 @@ const clearAll = () => {
                     </span>
                 </div>
 
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-300">
+                <p class="mt-1 text-center text-xs text-gray-500 dark:text-gray-300">
                     {{ item.matchDate || '--/--/----' }} - {{ item.matchTime || '--:--' }}
                     <span v-if="item.venue"> | {{ item.venue }}</span>
                 </p>
@@ -205,4 +245,3 @@ const clearAll = () => {
         </div>
     </div>
 </template>
-

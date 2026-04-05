@@ -42,7 +42,7 @@ export function notifyError(message) {
 }
 
 export function notifyInfo(message) {
-    notificationQueue.push({ title: 'Info', message, type: 'info' })
+    notificationQueue.push({ title: 'Primary', message, type: 'primary' })
     processQueue()
 }
 

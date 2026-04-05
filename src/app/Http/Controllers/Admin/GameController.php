@@ -109,6 +109,7 @@ class GameController extends Controller
         $this->normalizeGamePayload($request);
 
         $validated = $this->validateGame($request, $game);
+        $validated = $this->applyFinalStatusFromScores($validated, $game->status);
 
         if (! isset($validated['stage'])) {
             $validated['stage'] = $game->stage ?? 'group';
@@ -199,5 +200,19 @@ class GameController extends Controller
                 $request->merge([$field => null]);
             }
         }
+    }
+
+    private function applyFinalStatusFromScores(array $validated, ?string $currentStatus = null): array
+    {
+        $hasHomeScore = array_key_exists('home_score', $validated) && $validated['home_score'] !== null;
+        $hasAwayScore = array_key_exists('away_score', $validated) && $validated['away_score'] !== null;
+
+        if ($hasHomeScore && $hasAwayScore) {
+            $validated['status'] = 'finished';
+        } elseif (! array_key_exists('status', $validated) && $currentStatus) {
+            $validated['status'] = $currentStatus;
+        }
+
+        return $validated;
     }
 }

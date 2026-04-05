@@ -171,6 +171,10 @@
     color: rgb(51 65 85) !important;
 }
 
+.app-notify .el-notification__content {
+    white-space: pre-line !important;
+}
+
 .app-notify.app-notify--dark {
     background-color: rgb(15 23 42) !important;
     border-color: rgb(51 65 85) !important;

@@ -2,9 +2,15 @@
 
 namespace App\Services\Tournament;
 
+use App\Events\GameStatusUpdated;
 use App\Models\Game;
 use App\Models\GroupStanding;
 use App\Models\Tournament;
+use App\Models\User;
+use App\Notifications\UserGameStatusNotification;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Collection;
 
 class OfficialBracketResolverService
@@ -42,6 +48,8 @@ class OfficialBracketResolverService
         $resolvedGamesByMatchNumber = [];
 
         foreach ($games as $game) {
+            $previousHomeTeamId = $game->home_team_id;
+            $previousAwayTeamId = $game->away_team_id;
             $homeTeam = $game->stage === 'group'
                 ? $game->homeTeam
                 : $this->resolveSlotTeam($game, 'home', $groupStandings, $thirdPlaceAssignments, $resolvedGamesByMatchNumber);
@@ -60,6 +68,8 @@ class OfficialBracketResolverService
                 // Avoid duplicate user notifications triggered by GameObserver.
                 $game->saveQuietly();
             }
+
+            $this->notifyIfKnockoutPairResolved($game, $previousHomeTeamId, $previousAwayTeamId);
 
             $winnerTeam = $this->resolveWinnerTeam($game, $homeTeam, $awayTeam);
             $runnerUpTeam = $this->resolveRunnerUpTeam($game, $homeTeam, $awayTeam, $winnerTeam);
@@ -222,5 +232,42 @@ class OfficialBracketResolverService
     private function bracketKey(Tournament $tournament): string
     {
         return sprintf('%s_%s', $tournament->type, $tournament->year);
+    }
+
+    private function notifyIfKnockoutPairResolved(Game $game, ?int $previousHomeTeamId, ?int $previousAwayTeamId): void
+    {
+        if ($game->stage === 'group') {
+            return;
+        }
+
+        $hasClosedPair = !is_null($game->home_team_id) && !is_null($game->away_team_id);
+        $wasClosedPair = !is_null($previousHomeTeamId) && !is_null($previousAwayTeamId);
+
+        if (! $hasClosedPair || $wasClosedPair) {
+            return;
+        }
+
+        $cacheKey = sprintf(
+            'qualification_notification:%s:%s:%s',
+            $game->id,
+            $game->home_team_id,
+            $game->away_team_id
+        );
+
+        if (! Cache::add($cacheKey, true, now()->addDays(7))) {
+            return;
+        }
+
+        DB::afterCommit(function () use ($game): void {
+            $event = GameStatusUpdated::fromGame($game->fresh(['homeTeam.country', 'awayTeam.country']), 'qualification');
+            broadcast($event);
+
+            User::query()
+                ->where('is_admin', false)
+                ->select('id')
+                ->chunkById(200, function ($users) use ($event): void {
+                    Notification::send($users, new UserGameStatusNotification($event->payload));
+                });
+        });
     }
 }

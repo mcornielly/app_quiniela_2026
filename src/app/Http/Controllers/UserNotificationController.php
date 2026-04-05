@@ -25,6 +25,12 @@ class UserNotificationController extends Controller
             ->get();
 
         $items = $notifications
+            ->filter(function ($notification) {
+                $data = $notification->data ?? [];
+
+                return ($data['status'] ?? null) === 'finished'
+                    || in_array(($data['type'] ?? null), ['result', 'qualification'], true);
+            })
             ->map(function ($notification) {
                 $data = $notification->data ?? [];
 
@@ -56,8 +62,8 @@ class UserNotificationController extends Controller
 
         return response()->json([
             'notifications' => $items,
-            'unread' => $notifications->whereNull('read_at')->count(),
-            'total' => $notifications->count(),
+            'unread' => $items->where('read', false)->count(),
+            'total' => $items->count(),
         ]);
     }
 

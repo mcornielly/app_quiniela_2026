@@ -29,7 +29,7 @@ class GameStatusUpdated implements ShouldBroadcastNow
         $awayTeam = self::transformTeam($game->awayTeam, $game->away_slot);
         $stageLabel = self::stageLabel((string) $game->stage);
 
-        $resolvedType = in_array($type, ['result', 'start', 'update'], true)
+        $resolvedType = in_array($type, ['result', 'start', 'update', 'qualification'], true)
             ? $type
             : ($game->status === 'finished' ? 'result' : ($game->status === 'in_progress' ? 'start' : 'update'));
 
@@ -39,6 +39,7 @@ class GameStatusUpdated implements ShouldBroadcastNow
         $message = match ($resolvedType) {
             'result' => sprintf('Resultado final: %s %d - %d %s', $homeTeam['name'], $homeScore, $awayScore, $awayTeam['name']),
             'start' => sprintf('En directo: %s vs %s (%s)', $homeTeam['name'], $awayTeam['name'], $stageLabel),
+            'qualification' => sprintf('Llave confirmada: %s vs %s (%s)', $homeTeam['name'], $awayTeam['name'], $stageLabel),
             default => sprintf('Partido actualizado: %s vs %s (%s)', $homeTeam['name'], $awayTeam['name'], $stageLabel),
         };
 

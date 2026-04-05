@@ -94,11 +94,15 @@ const buildLiveInfoMessage = (payload) => {
     const type = payload?.type
 
     if (type === 'result') {
-        return `Partido finalizado: ${homeTeam} vs ${awayTeam}.`
+        return `Partido finalizado:\n${homeTeam} vs ${awayTeam}.`
     }
 
     if (type === 'update') {
         return `Resultados actualizados: ${homeTeam} vs ${awayTeam}.`
+    }
+
+    if (type === 'qualification') {
+        return `Llave confirmada: ${homeTeam} vs ${awayTeam}.`
     }
 
     if (type === 'start') {
