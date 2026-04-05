@@ -160,11 +160,20 @@ const markNotificationRead = (notificationId) => {
     axios.post(route('admin.notifications.read', notificationId)).catch(() => {})
 }
 
-const clearNotifications = () => {
-    notificationItems.value = notificationItems.value.map((item) => ({ ...item, read: true }))
+const removeNotification = (notificationId) => {
+    notificationItems.value = notificationItems.value.filter((item) => item.id !== notificationId)
+    totalNotifications.value = notificationItems.value.length
     persist()
 
-    axios.post(route('admin.notifications.read-all')).catch(() => {})
+    axios.delete(route('admin.notifications.destroy', notificationId)).catch(() => {})
+}
+
+const clearNotifications = () => {
+    notificationItems.value = []
+    totalNotifications.value = 0
+    persist()
+
+    axios.delete(route('admin.notifications.clear')).catch(() => {})
 }
 
 const initAdminNotifications = ({ canListen } = {}) => {
@@ -262,6 +271,7 @@ export const useAdminNotifications = () => ({
     totalNotifications,
     markNotificationsRead,
     markNotificationRead,
+    removeNotification,
     clearNotifications,
     initAdminNotifications,
 })

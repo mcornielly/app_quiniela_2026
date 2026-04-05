@@ -15,7 +15,7 @@ const props = defineProps({
         type: Number,
         default: 0,
     },
-    onMarkRead: {
+    onRemove: {
         type: Function,
         default: null,
     },
@@ -86,8 +86,8 @@ const registrationLabel = (item) => {
 const visibleNotifications = computed(() => props.notifications)
 const visibleCount = computed(() => visibleNotifications.value.length)
 
-const markRead = (id) => {
-    props.onMarkRead?.(id)
+const removeNotification = (id) => {
+    props.onRemove?.(id)
 }
 
 const clearAll = () => {
@@ -142,10 +142,10 @@ const clearAll = () => {
                 </div>
                 <button
                     type="button"
-                    @click.stop="markRead(item.id)"
+                    @click.stop="removeNotification(item.id)"
                     class="absolute right-3 top-3 inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-300 bg-transparent text-slate-400 transition hover:border-red-300 hover:bg-red-100 hover:text-red-600 dark:border-slate-500 dark:text-slate-300 dark:hover:border-red-500/40 dark:hover:bg-red-900/30 dark:hover:text-red-400"
-                    title="Marcar como leida"
-                    aria-label="Marcar como leida"
+                    title="Eliminar notificacion"
+                    aria-label="Eliminar notificacion"
                 >
                     <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fill-rule="evenodd" d="M4.22 4.22a.75.75 0 0 1 1.06 0L10 8.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L11.06 10l4.72 4.72a.75.75 0 1 1-1.06 1.06L10 11.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L8.94 10 4.22 5.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
@@ -176,4 +176,3 @@ const clearAll = () => {
         </div>
     </div>
 </template>
-

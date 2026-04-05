@@ -153,6 +153,8 @@ Route::middleware(['auth', 'verified', 'admin'])
         ->name('notifications.read-all');
     Route::post('/notifications/{notificationId}/read', [AdminNotificationController::class, 'markRead'])
         ->name('notifications.read');
+    Route::delete('/notifications/{notificationId}', [AdminNotificationController::class, 'destroy'])
+        ->name('notifications.destroy');
     Route::delete('/notifications', [AdminNotificationController::class, 'clearAll'])
         ->name('notifications.clear');
 

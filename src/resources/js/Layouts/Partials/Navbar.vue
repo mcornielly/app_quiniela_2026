@@ -11,7 +11,7 @@ const {
     notificationItems,
     unreadNotifications,
     markNotificationsRead,
-    markNotificationRead,
+    removeNotification,
     clearNotifications,
     initAdminNotifications,
 } = useAdminNotifications()
@@ -193,7 +193,7 @@ onBeforeUnmount(() => {
                         :notifications="notificationItems"
                         :view-all-href="route('admin.notifications.audit')"
                         :total-count="unreadNotifications"
-                        :on-mark-read="markNotificationRead"
+                        :on-remove="removeNotification"
                         :on-clear-all="clearNotifications"
                     />
                 </template>
