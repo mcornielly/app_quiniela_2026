@@ -88,6 +88,36 @@ class Game extends Model
         return $this->hasMany(Prediction::class);
     }
 
+    public function scopeSearch($query, $search)
+    {
+        if (!$search) return $query;
+
+        return $query->where(function ($q) use ($search) {
+            // If it's a single character, assume it's a group-specific filter (e.g., 'B')
+            if (strlen($search) === 1) {
+                $search = strtoupper($search);
+                $q->whereHas('homeTeam.group', function ($g) use ($search) {
+                    $g->where('name', $search);
+                })->orWhereHas('awayTeam.group', function ($g) use ($search) {
+                    $g->where('name', $search);
+                });
+            } else {
+                // Broad search
+                $q->where('match_number', 'like', "%{$search}%")
+                  ->orWhere('venue', 'like', "%{$search}%")
+                  ->orWhereHas('homeTeam', function ($t) use ($search) {
+                      $t->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('awayTeam', function ($t) use ($search) {
+                      $t->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('tournament', function ($t) use ($search) {
+                      $t->where('name', 'like', "%{$search}%");
+                  });
+            }
+        });
+    }
+
     /*
     |--------------------------------------------------------------------------
     | HELPERS

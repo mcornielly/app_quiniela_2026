@@ -25,9 +25,7 @@ class GameController extends Controller
                     'homeTeam.group',
                     'awayTeam.group'
                 ])
-                ->when($search, function ($query) use ($search) {
-                    $query->where('venue', 'like', "%{$search}%");
-                })
+                ->search($search)
                 ->orderBy('match_number')
                 ->paginate(10)
                 ->through(function ($game) {
@@ -59,9 +57,7 @@ class GameController extends Controller
                     'homeTeam.group',
                     'awayTeam.group'
                 ])
-                ->when($search, function ($query) use ($search) {
-                    $query->where('venue', 'like', "%{$search}%");
-                })
+                ->search($search)
                 ->orderBy('match_number')
                 ->paginate(10)
                 ->through(function ($game) {

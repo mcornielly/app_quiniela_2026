@@ -29,5 +29,17 @@ class Rule extends Model
     {
         return $this->belongsTo(Tournament::class);
     }
+
+    public function scopeSearch($query, $search)
+    {
+        if (!$search) return $query;
+
+        return $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+              ->orWhereHas('tournament', function ($t) use ($search) {
+                  $t->where('name', 'like', "%{$search}%");
+              });
+        });
+    }
 }
 

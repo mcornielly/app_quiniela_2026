@@ -16,30 +16,7 @@ class TeamController extends Controller
         $search = request('search');
 
         $teams = Team::with('group')
-            ->when($search, function ($query) use ($search) {
-
-                // si es una sola letra → buscar por grupo
-                if (strlen($search) === 1) {
-
-                    $query->whereHas('group', function ($g) use ($search) {
-                        $g->where('name', strtoupper($search));
-                    });
-
-                } else {
-
-                    // búsqueda normal
-                    $query->where(function ($q) use ($search) {
-
-                        $q->where('name', 'like', "%{$search}%")
-                        ->orWhereHas('group', function ($g) use ($search) {
-                            $g->where('name', 'like', "%{$search}%");
-                        });
-
-                    });
-
-                }
-
-            })
+            ->search($search)
             ->orderBy('name')
             ->paginate(10)
             ->withQueryString();

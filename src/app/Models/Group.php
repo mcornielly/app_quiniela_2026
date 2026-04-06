@@ -21,4 +21,15 @@ class Group extends Model
     {
         return $this->hasMany(Team::class);
     }
+
+    public function scopeSearch($query, $search)
+    {
+        if (!$search) return $query;
+
+        if (strlen($search) === 1) {
+            return $query->where('name', strtoupper($search));
+        }
+
+        return $query->where('name', 'like', "%" . strtoupper($search) . "%");
+    }
 }

@@ -20,13 +20,7 @@ class StadiumController extends Controller
         $search = request('search');
 
         $stadiums = Stadium::query()
-            ->when($search, function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('city', 'like', "%{$search}%")
-                        ->orWhere('country', 'like', "%{$search}%");
-                });
-            })
+            ->search($search)
             ->orderBy('name')
             ->paginate(10)
             ->withQueryString();

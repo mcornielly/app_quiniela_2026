@@ -26,4 +26,15 @@ class Stadium extends Model
     {
         return $this->hasMany(Game::class);
     }
+
+    public function scopeSearch($query, $search)
+    {
+        if (!$search) return $query;
+
+        return $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+              ->orWhere('city', 'like', "%{$search}%")
+              ->orWhere('country', 'like', "%{$search}%");
+        });
+    }
 }

@@ -18,8 +18,10 @@ class UserController extends Controller
             $perPage = 15;
         }
 
+        $search = $request->input('search');
         $users = User::query()
             ->select(['id', 'name', 'email', 'is_admin', 'created_at'])
+            ->search($search)
             ->orderByDesc('id')
             ->paginate($perPage)
             ->withQueryString();
@@ -28,6 +30,7 @@ class UserController extends Controller
             'users' => $users,
             'filters' => [
                 'per_page' => $perPage,
+                'search' => $search,
             ],
         ]);
     }

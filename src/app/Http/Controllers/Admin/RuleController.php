@@ -19,15 +19,7 @@ class RuleController extends Controller
 
         $rules = Rule::query()
             ->with(['tournament'])
-            ->when($search, function ($query) use ($search) {
-
-                $query->where(function ($q) use ($search) {
-
-                    $q->where('name', 'like', "%{$search}%");
-
-                });
-
-            })
+            ->search($search)
             ->orderBy('name')
             ->paginate(10)
             ->withQueryString();
