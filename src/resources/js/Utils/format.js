@@ -86,3 +86,11 @@ export function formatCurrency(value) {
         currency: 'USD',
     }).format(value)
 }
+
+export function formatGoalDiff(value) {
+    if (value > 0) {
+        return `+${value}`
+    }
+
+    return `${value}`
+}
