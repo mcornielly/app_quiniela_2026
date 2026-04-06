@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class UserNotificationController extends Controller
 {
@@ -11,12 +12,13 @@ class UserNotificationController extends Controller
     {
         $user = $request->user();
         $since = now()->subDay();
+        $visibleNotificationsQuery = $user->notifications()
+            ->when(
+                Schema::hasColumn('notifications', 'hidden_at'),
+                fn ($query) => $query->whereNull('hidden_at')
+            );
 
-        $user->notifications()
-            ->where('created_at', '<', $since)
-            ->delete();
-
-        $notifications = $user->notifications()
+        $notifications = (clone $visibleNotificationsQuery)
             ->where('created_at', '>=', $since)
             ->latest()
             ->limit(50)
@@ -61,7 +63,15 @@ class UserNotificationController extends Controller
 
     public function markAllRead(Request $request): JsonResponse
     {
-        $request->user()->unreadNotifications()->update([
+        $query = $request->user()
+            ->notifications()
+            ->whereNull('read_at');
+
+        if (Schema::hasColumn('notifications', 'hidden_at')) {
+            $query->whereNull('hidden_at');
+        }
+
+        $query->update([
             'read_at' => now(),
         ]);
 
@@ -72,10 +82,15 @@ class UserNotificationController extends Controller
 
     public function markRead(Request $request, string $notificationId): JsonResponse
     {
-        $notification = $request->user()
+        $query = $request->user()
             ->notifications()
-            ->where('id', $notificationId)
-            ->first();
+            ->where('id', $notificationId);
+
+        if (Schema::hasColumn('notifications', 'hidden_at')) {
+            $query->whereNull('hidden_at');
+        }
+
+        $notification = $query->first();
 
         if ($notification && is_null($notification->read_at)) {
             $notification->markAsRead();
@@ -88,10 +103,18 @@ class UserNotificationController extends Controller
 
     public function destroy(Request $request, string $notificationId): JsonResponse
     {
-        $request->user()
+        $query = $request->user()
             ->notifications()
-            ->where('id', $notificationId)
-            ->delete();
+            ->where('id', $notificationId);
+
+        if (Schema::hasColumn('notifications', 'hidden_at')) {
+            $query->whereNull('hidden_at')->update([
+                'hidden_at' => now(),
+                'read_at' => now(),
+            ]);
+        } else {
+            $query->delete();
+        }
 
         return response()->json([
             'ok' => true,
@@ -100,7 +123,16 @@ class UserNotificationController extends Controller
 
     public function clearAll(Request $request): JsonResponse
     {
-        $request->user()->notifications()->delete();
+        $query = $request->user()->notifications();
+
+        if (Schema::hasColumn('notifications', 'hidden_at')) {
+            $query->whereNull('hidden_at')->update([
+                'hidden_at' => now(),
+                'read_at' => now(),
+            ]);
+        } else {
+            $query->delete();
+        }
 
         return response()->json([
             'ok' => true,

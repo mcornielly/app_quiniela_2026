@@ -191,7 +191,7 @@ onBeforeUnmount(() => {
                 <template #content>
                     <AdminNotificationsDropdown
                         :notifications="notificationItems"
-                        :view-all-href="route('admin.pools.index')"
+                        :view-all-href="route('admin.notifications.audit')"
                         :total-count="unreadNotifications"
                         :on-mark-read="markNotificationRead"
                         :on-clear-all="clearNotifications"

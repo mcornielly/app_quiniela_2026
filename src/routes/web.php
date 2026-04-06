@@ -147,6 +147,8 @@ Route::middleware(['auth', 'verified', 'admin'])
 
     Route::get('/notifications', [AdminNotificationController::class, 'index'])
         ->name('notifications.index');
+    Route::get('/notifications/audit', [AdminNotificationController::class, 'audit'])
+        ->name('notifications.audit');
     Route::post('/notifications/read-all', [AdminNotificationController::class, 'markAllRead'])
         ->name('notifications.read-all');
     Route::post('/notifications/{notificationId}/read', [AdminNotificationController::class, 'markRead'])
