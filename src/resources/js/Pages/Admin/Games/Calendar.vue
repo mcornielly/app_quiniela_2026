@@ -3,8 +3,7 @@ import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
 import { confirmDelete, notifySuccess, notifyError } from '@/Utils/notify'
-import { formatDate } from '@/Utils/format'
-import { singular } from '@/Utils/format'
+import { formatStage, formatDate, formatTime, singular } from '@/Utils/format'
 import DeleteDrawer from '@/Components/Admin/Drawer/DeleteDrawer.vue'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import Header from '@/Layouts/Partials/Header.vue'
@@ -30,7 +29,7 @@ const columns = [
     // { key: 'tournament', label: 'Tournament' },
     { key: 'match_number', label: 'Match Number' },
     { key: 'group_name', label: 'Group' },
-    { key: 'stage', label: 'Stage' },
+    { key: 'stage', label: 'Phase', format: formatStage },
     { key: 'home_team', label: 'Home Team' },
     { key: 'away_team', label: 'Away Team' },
     // { key: 'home_slot', label: 'Home Slot' },
@@ -40,7 +39,7 @@ const columns = [
     // { key: 'winner_team_id', label: 'Winner Team Id' },
     { key: 'venue', label: 'Venue' },
     { key: 'match_date', label: 'Match Date', format: formatDate },
-    { key: 'match_time', label: 'Match Time' },
+    { key: 'match_time', label: 'Match Time', format: formatTime },
 
 ]
 

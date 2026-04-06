@@ -56,3 +56,26 @@ export function formatRegistrationNumber(value, digits = 5) {
 
     return `# ${String(numericValue).padStart(digits, '0')}`
 }
+
+export function formatStage(stage) {
+    if (!stage) return '—'
+
+    const labels = {
+        'group': 'Group',
+        'round_32': 'Round of 32',
+        'round_16': 'Round of 16',
+        'quarter': 'Quarter-finals',
+        'semi': 'Semi-finals',
+        'third_place': 'Third Place',
+        'final': 'Final'
+    }
+
+    return labels[stage] || capitalize(stage.replace('_', ' '))
+}
+
+export function formatTime(time) {
+    if (!time) return '—'
+    
+    // Remove seconds if present (HH:mm:ss -> HH:mm)
+    return time.split(':').slice(0, 2).join(':')
+}

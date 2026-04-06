@@ -105,6 +105,7 @@ class Game extends Model
                 // Broad search
                 $q->where('match_number', 'like', "%{$search}%")
                   ->orWhere('venue', 'like', "%{$search}%")
+                  ->orWhere('stage', 'like', "%{$search}%")
                   ->orWhereHas('homeTeam', function ($t) use ($search) {
                       $t->where('name', 'like', "%{$search}%");
                   })
@@ -250,6 +251,10 @@ class Game extends Model
 
     public function getGroupNameAttribute()
     {
+        if ($this->stage !== 'group') {
+            return '-';
+        }
+
         return $this->homeTeam?->group?->name;
     }
 }
