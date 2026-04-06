@@ -145,7 +145,7 @@ class AdminDashboardController extends Controller
 
         $ranking = $tournament
             ? $rankingService->getRanking($tournament->id, 15)
-                ->map(function (PoolEntry $poolEntry) {
+                ->map(function (PoolEntry $poolEntry, $index) {
                     return [
                         'id' => $poolEntry->id,
                         'name' => $poolEntry->name,
@@ -153,10 +153,19 @@ class AdminDashboardController extends Controller
                         'correctResults' => $poolEntry->correct_results,
                         'totalPoints' => $poolEntry->total_points,
                         'updatedAt' => $poolEntry->updated_at?->format('d/m/Y H:i'),
+                        'position' => $index + 1,
                     ];
                 })
                 ->values()
             : collect();
+
+        // Calculate Pool Metrics
+        $poolStats = [
+            'total' => PoolEntry::count(),
+            'paid' => PoolEntry::where('is_paid', true)->count(),
+            'pending' => PoolEntry::where('is_paid', false)->count(),
+            'revenue' => PoolEntry::where('is_paid', true)->count() * 10, // Assuming $10 per entry
+        ];
 
         return Inertia::render('Admin/Dashboard', [
             'todayLabel' => $today->format('d/m/Y'),
@@ -168,6 +177,7 @@ class AdminDashboardController extends Controller
             'groups' => $groups,
             'standingsByGroup' => $standingsByGroup,
             'ranking' => $ranking,
+            'poolStats' => $poolStats,
             'tournament' => $tournament
                 ? [
                     'id' => $tournament->id,

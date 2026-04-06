@@ -79,3 +79,10 @@ export function formatTime(time) {
     // Remove seconds if present (HH:mm:ss -> HH:mm)
     return time.split(':').slice(0, 2).join(':')
 }
+
+export function formatCurrency(value) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+    }).format(value)
+}

@@ -7,6 +7,7 @@ import AdminResultCard from '@/Components/Admin/Dashboard/AdminResultCard.vue'
 import AdminGroupMatchesTable from '@/Components/Admin/Dashboard/AdminGroupMatchesTable.vue'
 import AdminTableSection from '@/Components/Admin/Dashboard/AdminTableSection.vue'
 import { imageUrl } from '@/Utils/image'
+import { formatGoalDiff, formatCurrency } from '@/Utils/format'
 
 const title = 'Dashboard'
 
@@ -46,6 +47,15 @@ const props = defineProps({
     ranking: {
         type: Array,
         default: () => [],
+    },
+    poolStats: {
+        type: Object,
+        default: () => ({
+            total: 0,
+            paid: 0,
+            pending: 0,
+            revenue: 0
+        }),
     },
     tournament: {
         type: Object,
@@ -131,45 +141,71 @@ const hideFlag = (team) => {
         [teamKey(team)]: true,
     }
 }
-
-const formatGoalDiff = (value) => {
-    if (value > 0) {
-        return `+${value}`
-    }
-
-    return `${value}`
-}
 </script>
 
 <template>
     <AdminLayout :title="title">
-        <div class="min-h-screen bg-gray-50 dark:bg-gray-900" style="will-change: auto">
+        <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
             <div class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
                 <div class="w-full px-4 py-5 sm:px-6 lg:px-8 2xl:px-10">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h1 class="text-xl font-semibold text-gray-900 dark:text-white">
-                                Dashboard - Quiniela Mundial 2026
+                                Dashboard Administración
                             </h1>
                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                                 {{ tournament?.name }} - {{ tournament?.year }}
                             </p>
                         </div>
+                    </div>
+                </div>
+            </div>
 
-                        <div class="flex flex-wrap items-center gap-2">
-                            <Link
-                                :href="route('admin.calendar.index')"
-                                class="inline-flex items-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-700"
-                            >
-                                Ver calendario
-                            </Link>
-
-                            <Link
-                                :href="route('predictions.worldcup')"
-                                class="inline-flex items-center rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                            >
-                                Ir a mi quiniela
-                            </Link>
+            <!-- Pool Metrics -->
+            <div class="w-full px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                        <div class="flex items-center gap-4">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Quinielas</p>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ poolStats.total }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                        <div class="flex items-center gap-4">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Pagadas</p>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ poolStats.paid }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                        <div class="flex items-center gap-4">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Pendientes</p>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ poolStats.pending }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                        <div class="flex items-center gap-4">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12V8a2 2 0 00-2-2H6a2 2 0 00-2 2v4m16 0l-4 4m4-4l-4-4m-12 12l4-4m-4 4l4 4"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Ingresos (Aproximado)</p>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ formatCurrency(poolStats.revenue) }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -177,38 +213,16 @@ const formatGoalDiff = (value) => {
 
             <div class="grid w-full grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-12 lg:px-8 2xl:px-10">
                 <div class="space-y-6 lg:col-span-7 xl:col-span-8">
+                    <!-- Resultados del Dia -->
                     <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                         <div class="mb-4 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                             <div>
-                                <h2 class="text-base font-semibold text-gray-900 dark:text-white">Resultados del dia</h2>
-                                <span class="text-xs text-gray-500 dark:text-gray-400">Fecha seleccionada: {{ selectedDateLabel }}</span>
+                                <h2 class="text-base font-semibold text-gray-900 dark:text-white">Resultados del día</h2>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Fecha: {{ selectedDateLabel }}</span>
                             </div>
 
                             <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
                                 <AppDatePicker v-model="selectedDate" placeholder="Seleccionar fecha" />
-                                <Link
-                                    :href="route('admin.calendar.index')"
-                                    class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-700"
-                                >
-                                    <svg
-                                        class="h-4 w-4"
-                                        aria-hidden="true"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="24"
-                                        height="24"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            stroke="currentColor"
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Z"
-                                        />
-                                    </svg>
-                                    Ver calendario
-                                </Link>
                             </div>
                         </div>
 
@@ -226,187 +240,101 @@ const formatGoalDiff = (value) => {
                         </div>
                     </div>
 
+                    <!-- Proximos Juegos -->
                     <AdminTableSection
-                        title="Proximos juegos"
-                        description="Consulta los siguientes encuentros programados y navega rapido a resultados o calendario."
+                        title="Próximos Juegos"
+                        description="Lista de los siguientes encuentros programados."
                     >
-                        <template #actions>
-                            <Link :href="route('admin.calendar.index')" class="text-sm font-medium text-blue-700 hover:underline dark:text-blue-400">
-                                Ver todos
-                            </Link>
-                        </template>
-
                         <table class="w-full text-left text-sm text-gray-600 dark:text-gray-300">
                             <thead class="border-b border-t border-gray-200 bg-gray-50 text-xs uppercase text-gray-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-300">
                                 <tr>
-                                    <th class="px-6 py-3 font-medium">Fecha</th>
+                                    <th class="px-6 py-3 font-medium">Fecha/Hora</th>
                                     <th class="px-6 py-3 text-center font-medium">Partidos</th>
-                                    <th class="px-6 py-3 font-medium">Grupo</th>
                                     <th class="px-6 py-3 font-medium">Sede</th>
-                                    <th class="px-6 py-3 text-right font-medium">Accion</th>
+                                    <th class="px-6 py-3 text-right font-medium">Acción</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="game in upcomingGames" :key="game.id" class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-                                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                    <td class="px-6 py-4">
                                         <div class="font-medium">{{ game.date }}</div>
+                                        <div class="text-xs text-gray-500">{{ formatMatchTime(game.time) }}</div>
                                     </td>
-                                    <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                        <div class="grid grid-cols-[minmax(0,1fr)_88px_minmax(0,1fr)] items-center gap-4">
-                                            <div class="flex min-w-0 items-center justify-end gap-2 pe-2 text-right">
+                                    <td class="px-6 py-4 text-sm font-medium">
+                                        <div class="grid grid-cols-[minmax(0,1fr)_40px_minmax(0,1fr)] items-center gap-2">
+                                            <div class="flex items-center justify-end gap-2 text-right">
                                                 <span class="truncate">{{ game.homeTeam?.name }}</span>
-                                                <img v-if="game.homeTeam?.flag_url" :src="game.homeTeam.flag_url" :alt="game.homeTeam.name" class="h-5 w-7 shrink-0 rounded object-cover">
-                                                <span v-else class="text-xs font-semibold uppercase text-gray-400">{{ game.homeTeam?.code }}</span>
+                                                <img v-if="game.homeTeam?.flag_url" :src="game.homeTeam.flag_url" class="h-4 w-6 rounded shadow-sm">
                                             </div>
-                                            <div class="text-center text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-                                                {{ formatMatchTime(game.time) }}
-                                            </div>
-                                            <div class="flex min-w-0 items-center gap-2 ps-2">
-                                                <img v-if="game.awayTeam?.flag_url" :src="game.awayTeam.flag_url" :alt="game.awayTeam.name" class="h-5 w-7 shrink-0 rounded object-cover">
-                                                <span v-else class="text-xs font-semibold uppercase text-gray-400">{{ game.awayTeam?.code }}</span>
+                                            <div class="text-center font-bold">vs</div>
+                                            <div class="flex items-center gap-2">
+                                                <img v-if="game.awayTeam?.flag_url" :src="game.awayTeam.flag_url" class="h-4 w-6 rounded shadow-sm">
                                                 <span class="truncate">{{ game.awayTeam?.name }}</span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4">Grupo {{ game.groupName || '-' }}</td>
-                                    <td class="px-6 py-4">{{ game.venue || 'Sede por confirmar' }}</td>
+                                    <td class="px-6 py-4">{{ game.venue }}</td>
                                     <td class="px-6 py-4 text-right">
-                                        <Link :href="upcomingActionHref(game)" class="font-medium text-blue-700 hover:underline dark:text-blue-400">
-                                            {{ game.actionLabel }}
-                                        </Link>
+                                        <Link :href="upcomingActionHref(game)" class="text-blue-600 hover:underline">Gestionar</Link>
                                     </td>
                                 </tr>
-                                <tr v-if="!upcomingGames.length" class="bg-white dark:bg-gray-800">
-                                    <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">No hay juegos programados.</td>
+                                <tr v-if="!upcomingGames.length">
+                                    <td colspan="4" class="px-6 py-10 text-center text-gray-400">Sin juegos próximos</td>
                                 </tr>
                             </tbody>
                         </table>
                     </AdminTableSection>
-
-                    <AdminGroupMatchesTable
-                        :title="`Partidos - ${selectedGroupData?.label ?? 'Grupo'}`"
-                        :groups="groups"
-                        :selected-group="selectedGroup"
-                        :matches="groupMatches"
-                        @update:selected-group="selectedGroup = $event"
-                    />
                 </div>
 
+                <!-- Lado Derecho: Ranking y Grupos -->
                 <div class="space-y-6 lg:col-span-5 xl:col-span-4">
+                    <!-- Top Quiniela -->
                     <AdminTableSection
-                        title="Tabla de grupos"
-                        description="Posiciones actuales del grupo seleccionado con sus estadisticas principales."
+                        title="Ranking Quiniela - Top 15"
+                        :description="`Ranking actual de punteros. Actualizado: ${rankingUpdatedAt}`"
                     >
-                        <template #actions>
-                            <Link :href="route('admin.groups.index')" class="text-sm font-medium text-blue-700 hover:underline dark:text-blue-400">
-                                Ver todas
-                            </Link>
-                        </template>
-
-                        <table class="w-full text-left text-sm text-gray-600 dark:text-gray-300">
-                            <thead class="border-b border-t border-gray-200 bg-gray-50 text-xs uppercase text-gray-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                                <tr>
-                                    <th class="px-6 py-3 font-medium">#</th>
-                                    <th class="px-6 py-3 font-medium">Equipo</th>
-                                    <th class="px-6 py-3 text-right font-medium">PJ</th>
-                                    <th class="px-6 py-3 text-right font-medium">GF</th>
-                                    <th class="px-6 py-3 text-right font-medium">GC</th>
-                                    <th class="px-6 py-3 text-right font-medium">DG</th>
-                                    <th class="px-6 py-3 text-right font-medium">Pts</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(row, index) in currentStandings" :key="row.teamId || row.team?.id || index" class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-                                    <td class="px-6 py-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{{ index + 1 }}</td>
-                                    <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                        <div class="flex items-center gap-2">
-                                            <img
-                                                v-if="shouldShowFlag(row.team)"
-                                                :src="getFlagSrc(row.team)"
-                                                :alt="row.team?.name || row.team?.code"
-                                                class="h-5 w-7 rounded object-cover"
-                                                @error="hideFlag(row.team)"
-                                            >
-                                            <span v-else class="text-xs font-semibold uppercase text-gray-400">{{ row.team?.code }}</span>
-                                            <span>{{ row.team?.name || row.team?.code }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 text-right">{{ row.played }}</td>
-                                    <td class="px-6 py-4 text-right">{{ row.gf }}</td>
-                                    <td class="px-6 py-4 text-right">{{ row.ga }}</td>
-                                    <td class="px-6 py-4 text-right" :class="row.gd > 0 ? 'text-emerald-600 dark:text-emerald-400' : row.gd < 0 ? 'text-red-600 dark:text-red-400' : ''">{{ formatGoalDiff(row.gd) }}</td>
-                                    <td class="px-6 py-4 text-right font-semibold text-gray-900 dark:text-white">{{ row.points }}</td>
-                                </tr>
-                                <tr v-if="!currentStandings.length" class="bg-white dark:bg-gray-800">
-                                    <td colspan="7" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">No hay posiciones disponibles.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </AdminTableSection>
-
-                    <AdminTableSection
-                        title="Quiniela 2026 - Top 15"
-                        :description="`Ranking por puntos - Actualizado: ${rankingUpdatedAt}`"
-                    >
-                        <template #actions>
-                            <Link :href="route('admin.pools.index')" class="text-sm font-medium text-blue-700 hover:underline dark:text-blue-400">
-                                Ver lista completa
-                            </Link>
-                        </template>
-
                         <table class="w-full text-left text-sm text-gray-600 dark:text-gray-300">
                             <thead class="border-b border-t border-gray-200 bg-gray-50 text-xs uppercase text-gray-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-300">
                                 <tr>
                                     <th class="px-6 py-3 font-medium">Pos</th>
                                     <th class="px-6 py-3 font-medium">Usuario</th>
-                                    <th class="px-6 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">Exactos</th>
-                                    <th class="px-6 py-3 text-right font-medium text-sky-600 dark:text-sky-400">Aciertos</th>
-                                    <th class="px-6 py-3 text-right font-medium">Total</th>
+                                    <th class="px-6 py-3 text-right font-medium">Pts</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="(entry, index) in ranking" :key="entry.id" class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-                                    <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">{{ index + 1 }}</td>
-                                    <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ entry.name }}</td>
-                                    <td class="px-6 py-4 text-right font-semibold" :class="entry.exactHits === 0 ? 'text-gray-400 dark:text-gray-500' : 'text-emerald-600 dark:text-emerald-400'">{{ entry.exactHits }}</td>
-                                    <td class="px-6 py-4 text-right font-semibold" :class="entry.correctResults === 0 ? 'text-gray-400 dark:text-gray-500' : 'text-sky-600 dark:text-sky-400'">{{ entry.correctResults }}</td>
-                                    <td class="px-6 py-4 text-right font-semibold text-gray-900 dark:text-white">{{ entry.totalPoints }}</td>
-                                </tr>
-                                <tr v-if="!ranking.length" class="bg-white dark:bg-gray-800">
-                                    <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">No hay entradas en el ranking.</td>
+                                <tr v-for="(entry, index) in ranking" :key="entry.id" :class="[
+                                    'border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800',
+                                    index === 0 ? 'bg-yellow-50/50 dark:bg-yellow-900/10' : '',
+                                    index === 1 ? 'bg-slate-50/50 dark:bg-slate-900/10' : '',
+                                    index === 2 ? 'bg-orange-50/50 dark:bg-orange-900/10' : ''
+                                ]">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <span v-if="index === 0" class="flex h-5 w-5 items-center justify-center rounded-full bg-yellow-400 text-[10px] font-bold text-yellow-900">1º</span>
+                                            <span v-else-if="index === 1" class="flex h-5 w-5 items-center justify-center rounded-full bg-slate-300 text-[10px] font-bold text-slate-900">2º</span>
+                                            <span v-else-if="index === 2" class="flex h-5 w-5 items-center justify-center rounded-full bg-orange-400 text-[10px] font-bold text-orange-900">3º</span>
+                                            <span v-else>{{ index + 1 }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ entry.name }}</td>
+                                    <td class="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">{{ entry.totalPoints }}</td>
                                 </tr>
                             </tbody>
                         </table>
                     </AdminTableSection>
 
+                    <!-- Grupos Quick View -->
                     <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                        <div class="mb-4 flex items-center justify-between">
-                            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Equipos por grupo</h2>
-                            <Link :href="route('admin.groups.index')" class="text-sm font-medium text-blue-700 hover:underline dark:text-blue-400">
-                                Administrar torneo
-                            </Link>
-                        </div>
-
-                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <h2 class="mb-4 text-base font-semibold text-gray-900 dark:text-white">Equipos por grupo</h2>
+                        <div class="grid grid-cols-2 gap-2">
                             <button
                                 v-for="group in groups"
                                 :key="group.id"
-                                type="button"
                                 @click="selectedGroup = String(group.id)"
-                                class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-left hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-100 dark:border-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:focus:ring-gray-700"
-                                :class="selectedGroup === String(group.id) ? 'ring-2 ring-blue-300 dark:ring-blue-800' : ''"
+                                class="rounded-lg border border-gray-200 bg-gray-50 p-2 text-left text-xs hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600"
+                                :class="selectedGroup === String(group.id) ? 'ring-2 ring-blue-500' : ''"
                             >
-                                <div class="flex items-center justify-between">
-                                    <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ group.label }}</div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-300">Ver</div>
-                                </div>
-                                <div class="mt-2 space-y-2 text-xs text-gray-600 dark:text-gray-200">
-                                    <div v-for="team in group.teams" :key="team.id" class="flex items-center gap-2 truncate">
-                                        <img v-if="team.flag_url" :src="team.flag_url" :alt="team.name" class="h-4 w-6 rounded object-cover">
-                                        <span v-else class="text-[10px] font-semibold uppercase text-gray-400">{{ team.code }}</span>
-                                        <span class="truncate">{{ team.name }}</span>
-                                    </div>
-                                </div>
+                                <span class="font-bold text-gray-800 dark:text-white">{{ group.label }}</span>
                             </button>
                         </div>
                     </div>
@@ -415,7 +343,3 @@ const formatGoalDiff = (value) => {
         </div>
     </AdminLayout>
 </template>
-
-
-
-
