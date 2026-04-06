@@ -62,19 +62,26 @@ const selectedGroupData = computed(() => {
 })
 
 const filteredResultMatches = computed(() => {
-    if (!selectedDate.value) {
-        return props.resultMatches
+    let matches = props.resultMatches
+
+    if (selectedDate.value) {
+        matches = props.resultMatches.filter((match) => match.matchDateIso === selectedDate.value)
     }
 
-    return props.resultMatches.filter((match) => match.matchDateIso === selectedDate.value)
+    // Sort by time descending (most recent first)
+    return [...matches].sort((a, b) => {
+        const timeA = a.matchTimeIso || '00:00:00'
+        const timeB = b.matchTimeIso || '00:00:00'
+        return timeB.localeCompare(timeA)
+    })
 })
 
 const displayedResults = computed(() => {
     if (filteredResultMatches.value.length) {
-        return filteredResultMatches.value.slice(0, 2)
+        return filteredResultMatches.value
     }
 
-    return props.featuredResults.slice(0, 2)
+    return props.featuredResults
 })
 
 const groupMatches = computed(() => {
@@ -205,7 +212,7 @@ const formatGoalDiff = (value) => {
                             </div>
                         </div>
 
-                        <div v-if="displayedResults.length" class="grid gap-4 2xl:grid-cols-2">
+                        <div v-if="displayedResults.length" class="flex flex-col gap-4">
                             <AdminResultCard
                                 v-for="match in displayedResults"
                                 :key="match.id"
