@@ -7,37 +7,43 @@ const notificationClass = () => {
     return isDark ? 'app-notify app-notify--dark' : 'app-notify app-notify--light'
 }
 
+const notificationQueue = []
+let isProcessingQueue = false
+
+const processQueue = async () => {
+    if (isProcessingQueue || notificationQueue.length === 0) return
+    isProcessingQueue = true
+
+    while (notificationQueue.length > 0) {
+        const { title, message, type } = notificationQueue.shift()
+
+        ElNotification({
+            title,
+            message,
+            type,
+            customClass: notificationClass(),
+        })
+
+        // delay for next notification to avoid overlap/simultaneous pop
+        await new Promise(resolve => setTimeout(resolve, 300))
+    }
+
+    isProcessingQueue = false
+}
+
 export function notifySuccess(message) {
-
-    ElNotification({
-        title: 'Success',
-        message: message,
-        type: 'success',
-        customClass: notificationClass(),
-    })
-
+    notificationQueue.push({ title: 'Success', message, type: 'success' })
+    processQueue()
 }
 
 export function notifyError(message) {
-
-    ElNotification({
-        title: 'Error',
-        message: message,
-        type: 'error',
-        customClass: notificationClass(),
-    })
-
+    notificationQueue.push({ title: 'Error', message, type: 'error' })
+    processQueue()
 }
 
 export function notifyInfo(message) {
-
-    ElNotification({
-        title: 'Info',
-        message: message,
-        type: 'info',
-        customClass: notificationClass(),
-    })
-
+    notificationQueue.push({ title: 'Info', message, type: 'info' })
+    processQueue()
 }
 
 export function notifyWarning(message, options = {}) {

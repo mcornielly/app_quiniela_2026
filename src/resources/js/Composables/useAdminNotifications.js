@@ -6,7 +6,7 @@ import { notifyInfo } from '@/Utils/notify'
 const STORAGE_KEY = 'admin.notifications.v1'
 const MAX_ITEMS = 50
 const adminActivityChannelName = 'admin.activity'
-const ADMIN_NOTIFICATIONS_POLLING_MS = 60000
+const ADMIN_NOTIFICATIONS_POLLING_MS = 10000
 
 const notificationItems = ref([])
 const unreadNotifications = computed(() => notificationItems.value.filter((item) => !item.read).length)
