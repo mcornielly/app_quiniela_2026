@@ -8,6 +8,7 @@ use App\Models\Game;
 use App\Models\Team;
 use App\Models\Tournament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
@@ -17,6 +18,7 @@ class GameStatusBroadcastTest extends TestCase
 
     public function test_it_broadcasts_result_notification_when_score_and_status_change(): void
     {
+        Cache::flush();
         Event::fake([GameStatusUpdated::class]);
 
         $game = $this->createGame();
@@ -34,8 +36,9 @@ class GameStatusBroadcastTest extends TestCase
         });
     }
 
-    public function test_it_broadcasts_update_notification_when_metadata_changes_without_status_change(): void
+    public function test_it_does_not_broadcast_notification_when_only_metadata_changes(): void
     {
+        Cache::flush();
         Event::fake([GameStatusUpdated::class]);
 
         $game = $this->createGame();
@@ -45,12 +48,7 @@ class GameStatusBroadcastTest extends TestCase
             'match_time' => '21:30',
         ]);
 
-        Event::assertDispatched(GameStatusUpdated::class, function (GameStatusUpdated $event) use ($game) {
-            return ($event->payload['gameId'] ?? null) === $game->id
-                && ($event->payload['type'] ?? null) === 'update'
-                && ($event->payload['status'] ?? null) === 'scheduled'
-                && ($event->payload['venue'] ?? null) === 'Updated Venue';
-        });
+        Event::assertNotDispatched(GameStatusUpdated::class);
     }
 
     private function createGame(): Game
@@ -112,4 +110,3 @@ class GameStatusBroadcastTest extends TestCase
         ]);
     }
 }
-

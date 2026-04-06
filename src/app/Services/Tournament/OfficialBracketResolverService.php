@@ -31,6 +31,7 @@ class OfficialBracketResolverService
             ])
             ->orderBy('match_number')
             ->get();
+        $gamesByMatchNumber = $games->keyBy(fn (Game $game) => (string) $game->match_number);
 
         $groupStandings = $this->loadGroupStandings($tournament);
 
@@ -69,7 +70,7 @@ class OfficialBracketResolverService
                 $game->saveQuietly();
             }
 
-            $this->notifyIfKnockoutPairResolved($game, $previousHomeTeamId, $previousAwayTeamId);
+            $this->notifyIfKnockoutPairResolved($game, $previousHomeTeamId, $previousAwayTeamId, $games, $gamesByMatchNumber);
 
             $winnerTeam = $this->resolveWinnerTeam($game, $homeTeam, $awayTeam);
             $runnerUpTeam = $this->resolveRunnerUpTeam($game, $homeTeam, $awayTeam, $winnerTeam);
@@ -234,7 +235,13 @@ class OfficialBracketResolverService
         return sprintf('%s_%s', $tournament->type, $tournament->year);
     }
 
-    private function notifyIfKnockoutPairResolved(Game $game, ?int $previousHomeTeamId, ?int $previousAwayTeamId): void
+    private function notifyIfKnockoutPairResolved(
+        Game $game,
+        ?int $previousHomeTeamId,
+        ?int $previousAwayTeamId,
+        Collection $allTournamentGames,
+        Collection $gamesByMatchNumber
+    ): void
     {
         if ($game->stage === 'group') {
             return;
@@ -244,6 +251,10 @@ class OfficialBracketResolverService
         $wasClosedPair = !is_null($previousHomeTeamId) && !is_null($previousAwayTeamId);
 
         if (! $hasClosedPair || $wasClosedPair) {
+            return;
+        }
+
+        if (! $this->isKnockoutPairDefinitive($game, $allTournamentGames, $gamesByMatchNumber)) {
             return;
         }
 
@@ -269,5 +280,76 @@ class OfficialBracketResolverService
                     Notification::send($users, new UserGameStatusNotification($event->payload));
                 });
         });
+    }
+
+    private function isKnockoutPairDefinitive(Game $game, Collection $allTournamentGames, Collection $gamesByMatchNumber): bool
+    {
+        $game->loadMissing(['homeTeam.country', 'awayTeam.country']);
+
+        if (! $this->isDefinitiveTeam($game->homeTeam) || ! $this->isDefinitiveTeam($game->awayTeam)) {
+            return false;
+        }
+
+        return $this->isSlotDefinitive($game->home_slot, $allTournamentGames, $gamesByMatchNumber)
+            && $this->isSlotDefinitive($game->away_slot, $allTournamentGames, $gamesByMatchNumber);
+    }
+
+    private function isDefinitiveTeam($team): bool
+    {
+        if (! $team) {
+            return false;
+        }
+
+        if (empty($team->country_id)) {
+            return false;
+        }
+
+        // Guard against placeholder labels like "ITA/NIR/WAL/BIH".
+        return !str_contains((string) $team->name, '/');
+    }
+
+    private function isSlotDefinitive(?string $slot, Collection $allTournamentGames, Collection $gamesByMatchNumber): bool
+    {
+        if (! $slot) {
+            return true;
+        }
+
+        if (preg_match('/^([123])([A-Z])$/', $slot, $matches)) {
+            $groupLetter = $matches[2];
+
+            return $allTournamentGames
+                ->where('stage', 'group')
+                ->where(fn (Game $game) => $game->homeTeam?->group?->name === $groupLetter || $game->awayTeam?->group?->name === $groupLetter)
+                ->every(fn (Game $game) => $game->status === 'finished' && $game->home_score !== null && $game->away_score !== null);
+        }
+
+        if (preg_match('/^3\-([A-Z]+)$/', $slot)) {
+            // Best-third assignments become stable only once all group matches are final.
+            return $allTournamentGames
+                ->where('stage', 'group')
+                ->every(fn (Game $game) => $game->status === 'finished' && $game->home_score !== null && $game->away_score !== null);
+        }
+
+        if (preg_match('/^W(\d+)$/', $slot, $matches)) {
+            $source = $gamesByMatchNumber->get($matches[1]);
+
+            return $source
+                && $source->status === 'finished'
+                && $source->home_score !== null
+                && $source->away_score !== null
+                && $source->home_score !== $source->away_score;
+        }
+
+        if (preg_match('/^RU(\d+)$/', $slot, $matches)) {
+            $source = $gamesByMatchNumber->get($matches[1]);
+
+            return $source
+                && $source->status === 'finished'
+                && $source->home_score !== null
+                && $source->away_score !== null
+                && $source->home_score !== $source->away_score;
+        }
+
+        return false;
     }
 }
