@@ -20,7 +20,7 @@ class AdminPoolActivityBroadcast implements ShouldBroadcastNow
     {
     }
 
-    public static function fromPoolEntryAction(PoolEntry $poolEntry, User $actor, string $action): self
+    public static function fromPoolEntryAction(PoolEntry $poolEntry, User $actor, string $action, ?string $notificationKey = null): self
     {
         $poolName = $poolEntry->name ?: ("Quiniela #{$poolEntry->id}");
         $poolReference = sprintf('#%05d', (int) $poolEntry->id);
@@ -33,6 +33,7 @@ class AdminPoolActivityBroadcast implements ShouldBroadcastNow
         $messageSuffix = sprintf('%s la quiniela "%s".', $actionLabel, $poolName);
 
         return new self([
+            'notificationKey' => $notificationKey,
             'type' => 'pool_activity',
             'action' => $action,
             'userId' => $actor->id,

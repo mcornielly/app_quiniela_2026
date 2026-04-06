@@ -17,6 +17,7 @@ let isListening = false
 let echoRetryTimer = null
 let pollingTimer = null
 let hasFetchedOnce = false
+let adminActivityChannel = null
 const emittedToastKeys = new Set()
 
 const hydrate = () => {
@@ -83,24 +84,29 @@ const buildAdminInfoMessage = (payload) => {
 }
 
 const buildToastKey = (payload) => {
-    const action = payload?.action ?? 'updated'
-    const userName = payload?.userName ?? 'usuario'
-    const poolEntryId = payload?.poolEntryId ?? 'pool'
-    const occurredAt = payload?.occurredAt ?? ''
+    if (payload?.notificationKey) {
+        return `k:${payload.notificationKey}`
+    }
 
-    return `${action}|${userName}|${poolEntryId}|${occurredAt}`
+    if (payload?.id) {
+        return `id:${payload.id}`
+    }
+
+    return null
 }
 
 const emitInfoToast = (payload) => {
     const key = buildToastKey(payload)
-    if (emittedToastKeys.has(key)) {
-        return
-    }
+    if (key) {
+        if (emittedToastKeys.has(key)) {
+            return
+        }
 
-    emittedToastKeys.add(key)
-    if (emittedToastKeys.size > 400) {
-        const firstKey = emittedToastKeys.values().next().value
-        emittedToastKeys.delete(firstKey)
+        emittedToastKeys.add(key)
+        if (emittedToastKeys.size > 400) {
+            const firstKey = emittedToastKeys.values().next().value
+            emittedToastKeys.delete(firstKey)
+        }
     }
 
     notifyInfo(buildAdminInfoMessage(payload))
@@ -108,6 +114,7 @@ const emitInfoToast = (payload) => {
 
 const normalizeNotificationItem = (payload) => ({
     id: payload?.id ?? `${payload?.poolEntryId ?? 'pool'}-${payload?.occurredAt ?? Date.now()}`,
+    notificationKey: payload?.notificationKey ?? null,
     action: payload?.action ?? 'updated',
     userName: payload?.userName ?? 'Usuario',
     userEmail: payload?.userEmail ?? '',
@@ -206,12 +213,34 @@ const initAdminNotifications = ({ canListen } = {}) => {
             return
         }
 
-        window.Echo.private(adminActivityChannelName)
-            .listen('.admin.pool.activity', (payload) => {
-                pushNotification(payload)
-            })
+        adminActivityChannel = window.Echo.private(adminActivityChannelName)
+        adminActivityChannel.listen('.admin.pool.activity', (payload) => {
+            pushNotification(payload)
+        })
 
-        isListening = true
+        // Mark as listening only after subscription succeeds.
+        if (typeof adminActivityChannel.subscribed === 'function') {
+            adminActivityChannel.subscribed(() => {
+                isListening = true
+            })
+        } else {
+            isListening = true
+        }
+
+        // If private channel auth/socket fails, retry instead of staying stale.
+        if (typeof adminActivityChannel.error === 'function') {
+            adminActivityChannel.error(() => {
+                isListening = false
+                adminActivityChannel = null
+
+                if (!echoRetryTimer) {
+                    echoRetryTimer = window.setTimeout(() => {
+                        echoRetryTimer = null
+                        tryAttachListener()
+                    }, 1200)
+                }
+            })
+        }
 
         if (echoRetryTimer) {
             window.clearTimeout(echoRetryTimer)

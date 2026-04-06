@@ -15,6 +15,7 @@ use App\Services\Tournament\PredictionBracketResolverService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -571,11 +572,31 @@ class PoolEntryController extends Controller
 
     private function notifyAdminPoolActivity(PoolEntry $poolEntry, User $actor, string $action): void
     {
+        $baseKey = sprintf('admin_pool_activity:%d:%d', (int) $poolEntry->id, (int) $actor->id);
+        $actionLockKey = sprintf('%s:%s:lock', $baseKey, $action);
+        $oppositeAction = match ($action) {
+            'inactivated' => 'reactivated',
+            'reactivated' => 'inactivated',
+            default => null,
+        };
+
+        // Ignore duplicated consecutive notifications for the same action/pool/user
+        // fired almost at the same time (double submit/race).
+        if (! Cache::add($actionLockKey, true, now()->addSeconds(2))) {
+            return;
+        }
+
+        if ($oppositeAction) {
+            Cache::forget(sprintf('%s:%s:lock', $baseKey, $oppositeAction));
+        }
+
+        $notificationKey = (string) Str::uuid();
+
         try {
             $admins = User::query()->where('is_admin', true)->get();
 
             if ($admins->isNotEmpty()) {
-                Notification::send($admins, new AdminPoolActivityNotification($poolEntry, $actor, $action));
+                Notification::send($admins, new AdminPoolActivityNotification($poolEntry, $actor, $action, $notificationKey));
             }
         } catch (Throwable $exception) {
             report($exception);
@@ -585,7 +606,8 @@ class PoolEntryController extends Controller
             broadcast(AdminPoolActivityBroadcast::fromPoolEntryAction(
                 $poolEntry,
                 $actor,
-                $action
+                $action,
+                $notificationKey
             ));
         } catch (Throwable $exception) {
             report($exception);

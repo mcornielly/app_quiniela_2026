@@ -15,6 +15,7 @@ class AdminPoolActivityNotification extends Notification
         private readonly PoolEntry $poolEntry,
         private readonly User $actor,
         private readonly string $action,
+        private readonly ?string $notificationKey = null,
     ) {
     }
 
@@ -35,6 +36,7 @@ class AdminPoolActivityNotification extends Notification
         };
 
         return [
+            'notificationKey' => $this->notificationKey,
             'action' => $this->action,
             'userId' => $this->actor->id,
             'userName' => $this->actor->name,
