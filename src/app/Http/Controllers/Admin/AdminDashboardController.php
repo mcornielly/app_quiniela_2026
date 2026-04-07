@@ -162,9 +162,9 @@ class AdminDashboardController extends Controller
         // Calculate Pool Metrics
         $poolStats = [
             'total' => PoolEntry::count(),
-            'paid' => PoolEntry::where('is_paid', true)->count(),
-            'pending' => PoolEntry::where('is_paid', false)->count(),
-            'revenue' => PoolEntry::where('is_paid', true)->count() * 10, // Assuming $10 per entry
+            'paid' => PoolEntry::whereNotNull('paid_at')->count(),
+            'pending' => PoolEntry::whereNull('paid_at')->count(),
+            'revenue' => PoolEntry::whereNotNull('paid_at')->count() * 10, // Assuming $10 per entry
         ];
 
         return Inertia::render('Admin/Dashboard', [

@@ -8,7 +8,10 @@ x-app-base: &app-base
     - ./src:/var/www/html
     - ./.env.docker:/var/www/html/.env:ro
   depends_on:
-    - redis
+    redis:
+      condition: service_started
+    mysql:
+      condition: service_healthy
 
 x-common-env: &common-env
   APP_ENV: local
@@ -81,6 +84,11 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   mysql_data:

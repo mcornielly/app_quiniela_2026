@@ -10,8 +10,7 @@ class Country extends Model
         'name',
         'code',
         'flag_path',
-        'api_name',
-        'api_flag_url'
+        'api_flag_url',
     ];
 
     public function teams()

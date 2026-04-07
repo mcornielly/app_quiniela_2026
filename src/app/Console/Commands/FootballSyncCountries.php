@@ -69,7 +69,7 @@ class FootballSyncCountries extends Command
 
                 if ($country) {
                     $country->update([
-                        'api_name' => $name,
+                        'name' => $name, // <-- Aquí sobreescribimos el 'AR' por 'Argentina'
                         'api_flag_url' => $flag,
                     ]);
                     $updatedCount++;
@@ -78,7 +78,6 @@ class FootballSyncCountries extends Command
                     Country::create([
                         'name' => $name,
                         'code' => $code,
-                        'api_name' => $name,
                         'api_flag_url' => $flag,
                         'flag_path' => $flag, // Use API flag as fallback for NOT NULL
                     ]);

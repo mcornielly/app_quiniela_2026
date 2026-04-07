@@ -12,10 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('countries', function (Blueprint $table) {
-            $table->string('api_name')->nullable()->after('name');
             $table->string('api_flag_url')->nullable()->after('flag_path');
-            
-            $table->index('api_name');
         });
     }
 
@@ -25,8 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('countries', function (Blueprint $table) {
-            $table->dropIndex(['api_name']);
-            $table->dropColumn(['api_name', 'api_flag_url']);
+            $table->dropColumn('api_flag_url');
         });
     }
 };
