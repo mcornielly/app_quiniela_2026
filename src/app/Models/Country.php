@@ -9,7 +9,9 @@ class Country extends Model
     protected $fillable = [
         'name',
         'code',
-        'flag_path'
+        'flag_path',
+        'api_name',
+        'api_flag_url'
     ];
 
     public function teams()
