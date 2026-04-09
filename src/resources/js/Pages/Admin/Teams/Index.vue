@@ -21,7 +21,8 @@ const props = defineProps({
     filters: Object,
     teams: Object,
     groups: Array,
-    types: Array
+    types: Array,
+    countries: { type: Array, default: () => [] }
 })
 
 // Definir columnas de la tabla
@@ -188,6 +189,7 @@ const handleCreate = () => {
                     <TeamForm
                         :groups="groups"
                         :types="types"
+                        :countries="countries"
                         @saved="handleCreate"
                         @close="showCreateDrawer = false"
                     />
@@ -203,6 +205,7 @@ const handleCreate = () => {
                         :team="selectedTeam"
                         :groups="groups"
                         :types="types"
+                        :countries="countries"
                         @close="selectedTeam = null"
                     />
                 </FormDrawer>

@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             NormalizeWorldCupSpecialSlotsSeeder::class,
             BackfillTeamCountryIdsSeeder::class,
             TeamShieldsSeeder::class,
+            TournamentStadiumSyncSeeder::class,
             WorldCupTournamentMetricsSeeder::class,
             PoolEntriesSeeder::class,
             PredictionsSeeder::class,

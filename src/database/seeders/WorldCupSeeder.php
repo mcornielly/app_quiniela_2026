@@ -216,7 +216,27 @@ class WorldCupSeeder extends Seeder
 
     private function resolveTeam($teamName, $slot, $tournamentId, $stage, &$groupsCache)
     {
-        if (!$slot) {
+        $teamName = $this->normalizeScheduleTeamName($teamName);
+
+        if (!$slot && $stage !== 'group') {
+            return [null, null];
+        }
+
+        if (!$slot && $stage === 'group') {
+            $existingTeam = Team::query()
+                ->where('type', 'international')
+                ->where('name', $teamName)
+                ->first();
+
+            if ($existingTeam) {
+                DB::table('tournament_team')->updateOrInsert([
+                    'tournament_id' => $tournamentId,
+                    'team_id' => $existingTeam->id,
+                ]);
+
+                return [$existingTeam->id, null];
+            }
+
             return [null, null];
         }
 
@@ -318,6 +338,22 @@ class WorldCupSeeder extends Seeder
         return Country::where('code', $code)->value('id');
     }
 
+    private function normalizeScheduleTeamName(?string $teamName): ?string
+    {
+        if (!$teamName) {
+            return null;
+        }
+
+        $normalized = strtolower(trim($teamName));
+
+        return match ($normalized) {
+            'cape verde' => 'Cape Verde Islands',
+            'republic of korea' => 'Rep. of Korea',
+            'south korea' => 'Rep. of Korea',
+            default => $teamName,
+        };
+    }
+
     private function resolveCountryCodeFromTeamName(?string $teamName): ?string
     {
         if (!$teamName) {
@@ -334,6 +370,9 @@ class WorldCupSeeder extends Seeder
             'canada' => 'ca',
             'cape verde' => 'cv',
             'colombia' => 'co',
+            'congo dr' => 'cd',
+            'dr congo' => 'cd',
+            'democratic republic of congo' => 'cd',
             'croatia' => 'hr',
             'curacao' => 'cw',
             'curaçao' => 'cw',

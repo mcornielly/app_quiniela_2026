@@ -131,6 +131,8 @@ class MatchesController extends Controller
             'awayCode' => $this->teamCode($game->awayTeam?->country?->code, $game->away_slot),
             'homeFlagUrl' => $this->flagUrl($game->homeTeam?->country?->flag_path),
             'awayFlagUrl' => $this->flagUrl($game->awayTeam?->country?->flag_path),
+            'homeShieldUrl' => $this->shieldUrl($game->homeTeam?->shield_path, $game->homeTeam?->api_team_logo_url),
+            'awayShieldUrl' => $this->shieldUrl($game->awayTeam?->shield_path, $game->awayTeam?->api_team_logo_url),
             'homeScore' => is_numeric($game->home_score) ? (int) $game->home_score : null,
             'awayScore' => is_numeric($game->away_score) ? (int) $game->away_score : null,
         ];
@@ -212,5 +214,22 @@ class MatchesController extends Controller
         }
 
         return Storage::url($flagPath);
+    }
+
+    private function shieldUrl(?string $shieldPath, ?string $apiShieldUrl = null): ?string
+    {
+        if ($shieldPath) {
+            if (Str::startsWith($shieldPath, ['http://', 'https://', '/storage/'])) {
+                return $shieldPath;
+            }
+
+            return Storage::url($shieldPath);
+        }
+
+        if ($apiShieldUrl && Str::startsWith($apiShieldUrl, ['http://', 'https://'])) {
+            return $apiShieldUrl;
+        }
+
+        return null;
     }
 }

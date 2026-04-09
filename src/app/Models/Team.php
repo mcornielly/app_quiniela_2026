@@ -15,6 +15,8 @@ class Team extends Model
         'shield_path',
         'api_team_id',
         'api_team_logo_url',
+        'coach_name',
+        'coach_photo',
     ];
 
     public static function types(): array
@@ -41,6 +43,11 @@ class Team extends Model
     public function tournamentEntries()
     {
         return $this->hasMany(TournamentTeam::class);
+    }
+
+    public function players()
+    {
+        return $this->hasMany(Player::class);
     }
 
     public function scopeSearch($query, $search)

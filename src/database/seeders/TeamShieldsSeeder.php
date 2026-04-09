@@ -90,9 +90,26 @@ class TeamShieldsSeeder extends Seeder
             ->with('country')
             ->whereNotNull('country_id')
             ->get()
-            ->each(function (Team $team) use ($existingFiles, &$updated) {
-                $countryCode = strtolower((string) $team->country?->code);
-                $shieldPath = $existingFiles[$countryCode] ?? null;
+            ->each(function (Team $team) use ($existingFiles, $slugToIso, $countryNameToIso, $teamNameToIso, &$updated) {
+                $normalizedCountryName = $this->normalize((string) $team->country?->name);
+                $normalizedTeamName = $this->normalize((string) $team->name);
+
+                $candidateIsos = array_values(array_filter(array_unique([
+                    strtolower((string) $team->country?->code),
+                    $slugToIso[$normalizedCountryName] ?? null,
+                    $slugToIso[$normalizedTeamName] ?? null,
+                    $countryNameToIso[$normalizedCountryName] ?? null,
+                    $teamNameToIso[$normalizedTeamName] ?? null,
+                ])));
+
+                $shieldPath = null;
+
+                foreach ($candidateIsos as $iso) {
+                    if (isset($existingFiles[$iso])) {
+                        $shieldPath = $existingFiles[$iso];
+                        break;
+                    }
+                }
 
                 if (!$shieldPath) {
                     return;

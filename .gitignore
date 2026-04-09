@@ -17,6 +17,8 @@ src/public_html/hot
 
 src/storage/*.key
 src/.env
+src/.env.*
+!src/.env.example
 .env.docker
 Homestead.yaml
 Homestead.json

@@ -65,7 +65,7 @@ const submit = () => {
     if (isScoreUpdate) {
 
         router.post(
-            route('admin.games.result.update', props.game.id),
+            route('admin.games.score', props.game.id),
             {
                 winner_team_id: form.value.winner_team_id,
                 home_score: form.value.home_score,

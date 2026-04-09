@@ -14,8 +14,6 @@ use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\GameResultController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CalendarController;
-use App\Http\Controllers\Admin\MatchController;
-use App\Http\Controllers\Admin\PoolEntriesController;
 use App\Http\Controllers\Admin\PoolEntryController as AdminPoolEntryController;
 use App\Http\Controllers\Admin\RuleController;
 use App\Http\Controllers\Admin\StadiumController;
@@ -102,9 +100,6 @@ Route::middleware(['auth', 'verified', 'admin'])
     Route::delete('games/bulk-delete', [GameController::class, 'bulkDelete'])
         ->name('games.bulkDelete');
 
-            Route::post('/games/{game}/score', [GameResultController::class, 'updateScore'])
-                        ->name('games.result.update');
-
     Route::resource('games', GameController::class)->only(['index','store','update','destroy']);
 
     Route::get('/calendar', [GameController::class, 'calendar'])->name('calendar.index');
@@ -133,7 +128,7 @@ Route::middleware(['auth', 'verified', 'admin'])
     Route::get('/games/{id}', [GameResultController::class, 'show'])
         ->name('games.show');
 
-    Route::post('/games/{id}/score', [GameResultController::class, 'updateScore'])
+    Route::post('/games/{game}/score', [GameResultController::class, 'updateScore'])
         ->name('games.score');
 
     /*
