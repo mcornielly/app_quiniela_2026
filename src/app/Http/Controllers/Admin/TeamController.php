@@ -25,7 +25,8 @@ class TeamController extends Controller
             'filters' => request()->only('search'),
             'teams' => $teams,
             'groups' => Group::orderBy('name')->get(),
-            'types' => Team::types()
+            'types' => Team::types(),
+            'countries' => \App\Models\Country::orderBy('name')->get(['id', 'name', 'code', 'flag_path', 'api_flag_url'])
         ]);
     }
     
@@ -35,9 +36,10 @@ class TeamController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required','string','max:255'],
-            'group_id' => ['nullable','exists:groups,id'],
-            'type' => ['required','in:international,national,club'],
+            'name'           => ['required','string','max:255'],
+            'country_id'     => ['nullable','exists:countries,id'],
+            'group_id'       => ['nullable','exists:groups,id'],
+            'type'           => ['required','in:international,national,club'],
             'group_position' => ['required','integer','min:1','max:4']
         ]);
 
@@ -52,9 +54,10 @@ class TeamController extends Controller
     public function update(Request $request, Team $team)
     {
         $validated = $request->validate([
-            'name' => ['required','string','max:255'],
-            'group_id' => ['nullable','exists:groups,id'],
-            'type' => ['required','in:international,national,club'],
+            'name'           => ['required','string','max:255'],
+            'country_id'     => ['nullable','exists:countries,id'],
+            'group_id'       => ['nullable','exists:groups,id'],
+            'type'           => ['required','in:international,national,club'],
             'group_position' => ['required','integer','min:1','max:4']
         ]);
 

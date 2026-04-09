@@ -65,7 +65,17 @@ class FootballSyncAll extends Command
                 '--all-pages' => true,
                 '--dry-run' => $dryRun,
             ], $this->output);
+
+            // Sync Squads
+            if (!($config['sync_players'] ?? false)) {
+                $this->info("  - Syncing Squads for {$config['name']}...");
+                Artisan::call('football:sync:squads' . $dryRunFlag, [], $this->output);
+            }
         }
+
+        // 4. Localize Shields
+        $this->info('Step 4: Localizing Team Shields...');
+        Artisan::call('football:sync:shields' . $dryRunFlag, [], $this->output);
 
         $this->info('Master Synchronization complete!');
 

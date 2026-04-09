@@ -80,7 +80,7 @@ services:
       MYSQL_DATABASE: db_quiniela_2026
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "3306:3306"
+      - "33067:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro

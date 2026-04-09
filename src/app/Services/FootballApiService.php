@@ -285,4 +285,22 @@ class FootballApiService
             fn () => $this->get('standings', ['league' => $leagueId, 'season' => $season])
         );
     }
+
+    public function getCoach(int $teamId): array
+    {
+        return $this->cached(
+            "football.coach.{$teamId}",
+            (int) config('services.football_api.cache.teams', self::CACHE_TTL_STATIC),
+            fn () => $this->get('coachs', ['team' => $teamId])
+        );
+    }
+
+    public function getSquad(int $teamId): array
+    {
+        return $this->cached(
+            "football.squad.{$teamId}",
+            (int) config('services.football_api.cache.teams', self::CACHE_TTL_STATIC),
+            fn () => $this->get('players/squads', ['team' => $teamId])
+        );
+    }
 }
