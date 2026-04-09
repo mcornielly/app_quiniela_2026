@@ -30,6 +30,7 @@ const activeTickerTheme = computed(() => ({
 const isDraw = (match) => Number(match.homeScore) === Number(match.awayScore)
 const isHomeWinner = (match) => Number(match.homeScore) > Number(match.awayScore)
 const isAwayWinner = (match) => Number(match.awayScore) > Number(match.homeScore)
+const crestSrc = (src) => src || null
 </script>
 
 <template>
@@ -90,13 +91,22 @@ const isAwayWinner = (match) => Number(match.awayScore) > Number(match.homeScore
                                 <span class="truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ match.venue || 'Sede por confirmar' }}</span>
                             </div>
 
-                            <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
-                                <div class="flex items-center justify-end gap-2 text-right">
-                                    <span class="truncate text-lg font-semibold text-slate-900 dark:text-white">{{ match.homeTeam }}</span>
-                                    <span class="text-base font-semibold uppercase text-slate-500 dark:text-slate-400">{{ match.homeCode }}</span>
+                            <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 md:gap-8 xl:gap-14">
+                                <div class="flex items-center justify-end gap-3 pr-2 text-right md:pr-4 xl:pr-8">
+                                    <img
+                                        v-if="crestSrc(match.homeShieldUrl)"
+                                        :src="crestSrc(match.homeShieldUrl)"
+                                        :alt="match.homeTeam"
+                                        class="h-11 w-11 shrink-0 object-contain md:h-14 md:w-14"
+                                        loading="lazy"
+                                    />
+                                    <div class="min-w-0">
+                                        <span class="block truncate text-base font-semibold text-slate-900 dark:text-white md:text-[1.1rem]">{{ match.homeTeam }}</span>
+                                        <span class="block text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ match.homeCode }}</span>
+                                    </div>
                                 </div>
 
-                                <div class="inline-flex min-w-[92px] items-center justify-center gap-3 rounded-xl bg-slate-100 px-3 py-2 text-2xl font-black dark:bg-slate-800">
+                                <div class="inline-flex min-w-[92px] items-center justify-center gap-3 rounded-xl bg-slate-100 px-3 py-2 text-2xl font-black dark:bg-slate-800 md:min-w-[110px]">
                                     <span :class="(isHomeWinner(match) || isDraw(match)) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
                                         {{ match.homeScore ?? 0 }}
                                     </span>
@@ -106,9 +116,18 @@ const isAwayWinner = (match) => Number(match.awayScore) > Number(match.homeScore
                                     </span>
                                 </div>
 
-                                <div class="flex items-center gap-2">
-                                    <span class="text-base font-semibold uppercase text-slate-500 dark:text-slate-400">{{ match.awayCode }}</span>
-                                    <span class="truncate text-lg font-semibold text-slate-900 dark:text-white">{{ match.awayTeam }}</span>
+                                <div class="flex items-center justify-start gap-3 pl-2 text-left md:pl-4 xl:pl-8">
+                                    <div class="min-w-0">
+                                        <span class="block truncate text-base font-semibold text-slate-900 dark:text-white md:text-[1.1rem]">{{ match.awayTeam }}</span>
+                                        <span class="block text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ match.awayCode }}</span>
+                                    </div>
+                                    <img
+                                        v-if="crestSrc(match.awayShieldUrl)"
+                                        :src="crestSrc(match.awayShieldUrl)"
+                                        :alt="match.awayTeam"
+                                        class="h-11 w-11 shrink-0 object-contain md:h-14 md:w-14"
+                                        loading="lazy"
+                                    />
                                 </div>
                             </div>
                         </div>
