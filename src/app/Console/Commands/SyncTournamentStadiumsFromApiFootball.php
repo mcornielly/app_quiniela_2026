@@ -7,21 +7,24 @@ use App\Models\Stadium;
 use App\Models\Tournament;
 use App\Services\FootballApiService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use RuntimeException;
 
 class SyncTournamentStadiumsFromApiFootball extends Command
 {
     protected $signature = 'football:sync:tournament-stadiums
         {--tournament-year=2026 : Local tournament year}
+        {--refresh-cache : Forget country venue cache and fetch again}
         {--dry-run : Print actions without persisting changes}';
 
-    protected $description = 'Sync only stadiums used by tournament games (cross local venues with API-FOOTBALL venues)';
+    protected $description = 'Sync stadiums used by tournament games using host-country cached API-FOOTBALL venues';
 
     public function handle(FootballApiService $footballApi): int
     {
         $tournamentYear = (int) $this->option('tournament-year');
+        $refreshCache = (bool) $this->option('refresh-cache');
         $dryRun = (bool) $this->option('dry-run');
 
         $tournament = Tournament::query()
@@ -39,6 +42,35 @@ class SyncTournamentStadiumsFromApiFootball extends Command
             return self::FAILURE;
         }
 
+        $hostCountries = $this->resolveHostCountries($tournament);
+        if (empty($hostCountries)) {
+            $this->error('Tournament host_countries is empty. Update the tournament hosts first.');
+            return self::FAILURE;
+        }
+
+        [$validCountries, $invalidCountries] = $this->validateCountriesAgainstApi($footballApi, $hostCountries);
+
+        if (! empty($invalidCountries)) {
+            $this->warn('Unrecognized host countries (will be ignored): '.implode(', ', $invalidCountries));
+        }
+
+        if (empty($validCountries)) {
+            $this->error('No valid host countries after validation. Nothing to sync.');
+            return self::FAILURE;
+        }
+
+        $hostVenues = $this->loadHostCountryVenuesFromCache(
+            api: $footballApi,
+            tournament: $tournament,
+            countries: $validCountries,
+            refreshCache: $refreshCache
+        );
+
+        if ($hostVenues->isEmpty()) {
+            $this->warn('No venues returned for validated host countries.');
+            return self::SUCCESS;
+        }
+
         $venueLabels = Game::query()
             ->where('tournament_id', $tournament->id)
             ->whereNotNull('venue')
@@ -54,6 +86,10 @@ class SyncTournamentStadiumsFromApiFootball extends Command
         }
 
         $stats = [
+            'countries_in_tournament' => count($hostCountries),
+            'countries_valid' => count($validCountries),
+            'countries_invalid' => count($invalidCountries),
+            'cached_country_venues' => $hostVenues->count(),
             'labels_total' => $venueLabels->count(),
             'labels_matched' => 0,
             'labels_unmatched' => 0,
@@ -63,7 +99,7 @@ class SyncTournamentStadiumsFromApiFootball extends Command
         ];
 
         foreach ($venueLabels as $label) {
-            $candidate = $this->resolveVenueCandidate($footballApi, $label);
+            $candidate = $this->resolveVenueCandidateFromCachedVenues($label, $hostVenues);
 
             if (! $candidate) {
                 $stats['labels_unmatched']++;
@@ -88,6 +124,10 @@ class SyncTournamentStadiumsFromApiFootball extends Command
 
         $this->line('');
         $this->info($dryRun ? 'Dry-run stadium sync summary:' : 'Stadium sync summary:');
+        $this->line("- Host countries in tournament: {$stats['countries_in_tournament']}");
+        $this->line("- Host countries validated: {$stats['countries_valid']}");
+        $this->line("- Host countries invalid: {$stats['countries_invalid']}");
+        $this->line("- Cached venues from host countries: {$stats['cached_country_venues']}");
         $this->line("- Venue labels processed: {$stats['labels_total']}");
         $this->line("- Labels matched: {$stats['labels_matched']}");
         $this->line("- Labels unmatched: {$stats['labels_unmatched']}");
@@ -98,78 +138,239 @@ class SyncTournamentStadiumsFromApiFootball extends Command
         return self::SUCCESS;
     }
 
-    private function resolveVenueCandidate(FootballApiService $footballApi, string $label): ?array
+    private function resolveHostCountries(Tournament $tournament): array
     {
-        $attempts = $this->buildVenueAttempts($label);
+        $countries = $tournament->host_countries;
 
+        if (is_string($countries)) {
+            $countries = json_decode($countries, true);
+        }
+
+        if (! is_array($countries)) {
+            return [];
+        }
+
+        return collect($countries)
+            ->map(fn ($value) => trim((string) $value))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function validateCountriesAgainstApi(FootballApiService $footballApi, array $countries): array
+    {
+        $payload = $footballApi->getCountries();
+        $apiCountries = collect($payload['response'] ?? []);
+
+        $known = [];
+        foreach ($apiCountries as $country) {
+            $name = $this->normalize((string) ($country['name'] ?? ''));
+            $code = $this->normalize((string) ($country['code'] ?? ''));
+
+            if ($name !== '') {
+                $known[$name] = true;
+            }
+            if ($code !== '') {
+                $known[$code] = true;
+            }
+        }
+
+        $valid = [];
+        $invalid = [];
+
+        foreach ($countries as $country) {
+            $apiCountry = $this->mapTournamentCountryForApi($country);
+            $normalized = $this->normalize($apiCountry);
+
+            if ($normalized !== '' && isset($known[$normalized])) {
+                $valid[] = $country;
+                continue;
+            }
+
+            $invalid[] = $country;
+        }
+
+        return [array_values(array_unique($valid)), array_values(array_unique($invalid))];
+    }
+
+    private function loadHostCountryVenuesFromCache(
+        FootballApiService $api,
+        Tournament $tournament,
+        array $countries,
+        bool $refreshCache
+    ): Collection {
+        $ttl = max(60, (int) config('services.football_api.cache.venues', 86400));
+
+        $rows = collect();
+
+        foreach ($countries as $country) {
+            $apiCountry = $this->mapTournamentCountryForApi($country);
+            $cacheKey = $this->countryVenueCacheKey((int) $tournament->id, (string) $tournament->year, $apiCountry);
+
+            if ($refreshCache) {
+                Cache::forget($cacheKey);
+            }
+
+            $countryRows = Cache::remember($cacheKey, now()->addSeconds($ttl), function () use ($api, $apiCountry) {
+                $payload = $api->getVenues(['country' => $apiCountry]);
+
+                return $payload['response'] ?? [];
+            });
+
+            $rows = $rows->concat(collect($countryRows)->map(fn ($row) => (array) $row));
+        }
+
+        return $rows
+            ->filter(fn ($row) => is_array($row))
+            ->unique(function (array $row) {
+                $id = data_get($row, 'id', data_get($row, 'venue.id'));
+                if (is_numeric($id)) {
+                    return 'id:'.(string) $id;
+                }
+
+                $name = $this->normalize((string) data_get($row, 'name', data_get($row, 'venue.name', '')));
+                $city = $this->normalize((string) data_get($row, 'city', data_get($row, 'venue.city', '')));
+
+                return 'name_city:'.$name.'|'.$city;
+            })
+            ->values();
+    }
+
+    private function countryVenueCacheKey(int $tournamentId, string $year, string $country): string
+    {
+        return 'football.tournament.venues.'
+            .$tournamentId.'.'
+            .$year.'.'
+            .Str::slug($country ?: 'unknown-country');
+    }
+
+    private function mapTournamentCountryForApi(string $country): string
+    {
+        $normalized = $this->normalize($country);
+
+        return match ($normalized) {
+            'united states', 'united states of america', 'us' => 'USA',
+            default => $country,
+        };
+    }
+
+    private function resolveVenueCandidateFromCachedVenues(string $label, Collection $venues): ?array
+    {
         $best = null;
         $bestScore = -1;
 
-        foreach ($attempts as $params) {
-            $params = array_filter($params, fn ($value) => trim((string) $value) !== '');
-            if (empty($params)) {
-                continue;
-            }
+        foreach ($venues as $venue) {
+            $row = (array) $venue;
+            $score = $this->scoreVenueCandidate($label, $row);
 
-            try {
-                $payload = $footballApi->getVenuesFresh($params);
-            } catch (\Throwable $e) {
-                if (str_contains(Str::lower($e->getMessage()), 'request limit')) {
-                    throw new RuntimeException('API request limit reached while syncing stadiums. Try again tomorrow or upgrade the plan.', 0, $e);
-                }
-                // Ignore invalid query combos and continue with next strategy.
-                continue;
-            }
-            $rows = collect($payload['response'] ?? []);
-            if (isset($params['id']) && $rows->isNotEmpty()) {
-                return (array) $rows->first();
-            }
-
-            foreach ($rows as $row) {
-                $score = $this->scoreVenueCandidate($label, (array) $row);
-                if ($score > $bestScore) {
-                    $bestScore = $score;
-                    $best = (array) $row;
-                }
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $best = $row;
             }
         }
 
-        // avoid weak/accidental match
-        if ($bestScore < 40) {
-            return null;
-        }
-
-        return $best;
+        return $bestScore >= 40 ? $best : null;
     }
 
     private function scoreVenueCandidate(string $label, array $venue): int
     {
         $labelNorm = $this->normalize($label);
+        $labelAliases = $this->venueLabelAliases($labelNorm);
+        $hints = $this->worldCup2026VenueHints()[$labelNorm] ?? null;
         $name = (string) data_get($venue, 'name', data_get($venue, 'venue.name', ''));
         $city = (string) data_get($venue, 'city', data_get($venue, 'venue.city', ''));
         $country = (string) data_get($venue, 'country', data_get($venue, 'venue.country', ''));
 
         $nameNorm = $this->normalize($name);
         $cityNorm = $this->normalize($city);
+        $countryNorm = $this->normalize($country);
 
         $score = 0;
-        if ($labelNorm !== '' && $labelNorm === $nameNorm) {
-            $score += 100;
+        foreach ($labelAliases as $candidate) {
+            if ($candidate === '') {
+                continue;
+            }
+
+            if ($candidate === $nameNorm) {
+                $score = max($score, 100);
+            }
+            if ($candidate === $cityNorm) {
+                $score = max($score, 80);
+            }
+            if (str_contains($nameNorm, $candidate) || str_contains($candidate, $nameNorm)) {
+                $score = max($score, 35);
+            }
+            if (str_contains($cityNorm, $candidate) || str_contains($candidate, $cityNorm)) {
+                $score = max($score, 30);
+            }
         }
-        if ($labelNorm !== '' && $labelNorm === $cityNorm) {
-            $score += 80;
+
+        if (is_array($hints)) {
+            $hintCity = $this->normalize((string) ($hints['city'] ?? ''));
+            $hintCountry = $this->normalize((string) ($hints['country'] ?? ''));
+            $hintNameTokens = collect($hints['name_tokens'] ?? [])->map(fn ($token) => $this->normalize((string) $token))->filter()->all();
+
+            if ($hintCity !== '' && ($hintCity === $cityNorm || str_contains($cityNorm, $hintCity) || str_contains($hintCity, $cityNorm))) {
+                $score = max($score, 90);
+            }
+
+            if ($hintCountry !== '' && ($hintCountry === $countryNorm || str_contains($countryNorm, $hintCountry) || str_contains($hintCountry, $countryNorm))) {
+                $score += 10;
+            }
+
+            $matchedTokens = 0;
+            foreach ($hintNameTokens as $token) {
+                if ($token !== '' && (str_contains($nameNorm, $token) || str_contains($token, $nameNorm))) {
+                    $matchedTokens++;
+                }
+            }
+            if ($matchedTokens > 0) {
+                $score += min(20, $matchedTokens * 10);
+            }
         }
-        if ($labelNorm !== '' && str_contains($nameNorm, $labelNorm)) {
-            $score += 35;
-        }
-        if ($labelNorm !== '' && str_contains($cityNorm, $labelNorm)) {
-            $score += 30;
-        }
+
         if ($country !== '') {
             $score += 5;
         }
 
         return $score;
+    }
+
+    private function venueLabelAliases(string $label): array
+    {
+        $aliases = [$label];
+
+        if ($label === 'mexico city') {
+            $aliases[] = 'df';
+            $aliases[] = 'd f';
+            $aliases[] = 'ciudad de mexico';
+            $aliases[] = 'mexico df';
+        }
+
+        return array_values(array_unique(array_filter($aliases)));
+    }
+
+    private function worldCup2026VenueHints(): array
+    {
+        return [
+            'toronto' => ['city' => 'toronto', 'country' => 'canada', 'name_tokens' => ['toronto']],
+            'vancouver' => ['city' => 'vancouver', 'country' => 'canada', 'name_tokens' => ['bc place']],
+            'mexico city' => ['city' => 'd f', 'country' => 'mexico', 'name_tokens' => ['azteca', 'ciudad de mexico']],
+            'guadalajara' => ['city' => 'zapopan', 'country' => 'mexico', 'name_tokens' => ['akron', 'guadalajara']],
+            'monterrey' => ['city' => 'guadalupe', 'country' => 'mexico', 'name_tokens' => ['bbva', 'monterrey']],
+            'atlanta' => ['city' => 'atlanta', 'country' => 'usa', 'name_tokens' => ['mercedes', 'benz']],
+            'boston' => ['city' => 'foxborough', 'country' => 'usa', 'name_tokens' => ['gillette']],
+            'dallas' => ['city' => 'arlington', 'country' => 'usa', 'name_tokens' => ['at t', 'cowboys']],
+            'houston' => ['city' => 'houston', 'country' => 'usa', 'name_tokens' => ['nrg']],
+            'kansas city' => ['city' => 'kansas city', 'country' => 'usa', 'name_tokens' => ['arrowhead', 'geha']],
+            'los angeles' => ['city' => 'inglewood', 'country' => 'usa', 'name_tokens' => ['sofi']],
+            'miami' => ['city' => 'miami gardens', 'country' => 'usa', 'name_tokens' => ['hard rock']],
+            'new york new jersey' => ['city' => 'east rutherford', 'country' => 'usa', 'name_tokens' => ['metlife']],
+            'philadelphia' => ['city' => 'philadelphia', 'country' => 'usa', 'name_tokens' => ['lincoln financial']],
+            'san francisco bay area' => ['city' => 'santa clara', 'country' => 'usa', 'name_tokens' => ['levi s', 'levis']],
+            'seattle' => ['city' => 'seattle', 'country' => 'usa', 'name_tokens' => ['lumen']],
+        ];
     }
 
     private function upsertStadiumFromVenue(array $venue, bool $dryRun, array &$stats): ?Stadium
@@ -246,118 +447,5 @@ class SyncTournamentStadiumsFromApiFootball extends Command
     {
         $string = trim((string) $value);
         return $string === '' ? null : $string;
-    }
-
-    private function normalizeForApiSearch(string $value): string
-    {
-        return Str::of($value)
-            ->ascii()
-            ->replaceMatches('/[^A-Za-z0-9 ]+/', ' ')
-            ->replaceMatches('/\s+/', ' ')
-            ->trim()
-            ->value();
-    }
-
-    private function extractSearchTerms(string $label): array
-    {
-        $terms = [];
-        $normalizedFull = $this->normalizeForApiSearch($label);
-        if ($normalizedFull !== '') {
-            $terms[] = $normalizedFull;
-        }
-
-        $parts = preg_split('/[\/|,-]+/', $label) ?: [];
-        foreach ($parts as $part) {
-            $term = $this->normalizeForApiSearch((string) $part);
-            if ($term !== '') {
-                $terms[] = $term;
-            }
-        }
-
-        return array_values(array_unique($terms));
-    }
-
-    private function buildVenueAttempts(string $label): array
-    {
-        $map = $this->worldCup2026VenueMap();
-        $labelNorm = $this->normalize($label);
-
-        $attempts = [];
-        $isCurated = isset($map[$labelNorm]);
-
-        if ($isCurated) {
-            $entry = $map[$labelNorm];
-            if (! empty($entry['id'])) {
-                $attempts[] = ['id' => (string) $entry['id']];
-            }
-            if (! empty($entry['name']) && ! empty($entry['country'])) {
-                $attempts[] = ['name' => $entry['name'], 'country' => $entry['country']];
-                $attempts[] = ['search' => $entry['name']];
-            }
-            if (! empty($entry['city'])) {
-                $attempts[] = ['city' => $entry['city'], 'country' => $entry['country'] ?? null];
-            }
-        }
-
-        // For curated hosts, do not fallback to broad generic city search to avoid false matches.
-        if (! $isCurated) {
-            $terms = $this->extractSearchTerms($label);
-            foreach ($terms as $term) {
-                $attempts[] = ['search' => $term];
-                $attempts[] = ['city' => $term];
-                $attempts[] = ['name' => $term];
-            }
-        }
-
-        // normalize + remove empty/null values
-        $normalized = [];
-        foreach ($attempts as $params) {
-            $clean = [];
-            foreach ($params as $key => $value) {
-                $safe = $this->normalizeForApiSearch((string) $value);
-                if ($safe !== '') {
-                    $clean[$key] = $safe;
-                }
-            }
-            if (! empty($clean)) {
-                $normalized[] = $clean;
-            }
-        }
-
-        // deduplicate attempts
-        $unique = [];
-        $seen = [];
-        foreach ($normalized as $item) {
-            ksort($item);
-            $hash = md5(json_encode($item));
-            if (! isset($seen[$hash])) {
-                $seen[$hash] = true;
-                $unique[] = $item;
-            }
-        }
-
-        return $unique;
-    }
-
-    private function worldCup2026VenueMap(): array
-    {
-        return [
-            'mexico city' => ['id' => 1069, 'name' => 'Estadio Azteca', 'country' => 'Mexico', 'city' => 'D F'],
-            'guadalajara' => ['id' => 1076, 'name' => 'Estadio AKRON', 'country' => 'Mexico', 'city' => 'Zapopan'],
-            'monterrey' => ['id' => 11905, 'name' => 'Estadio BBVA', 'country' => 'Mexico', 'city' => 'Guadalupe'],
-            'toronto' => ['id' => 312, 'name' => 'BMO Field', 'country' => 'Canada', 'city' => 'Toronto'],
-            'vancouver' => ['id' => 19445, 'name' => 'BC Place', 'country' => 'Canada', 'city' => 'Vancouver'],
-            'seattle' => ['id' => 11534, 'name' => 'Lumen Field', 'country' => 'USA', 'city' => 'Seattle'],
-            'san francisco bay area' => ['name' => 'Levi S Stadium', 'country' => 'USA', 'city' => 'Santa Clara'],
-            'los angeles' => ['name' => 'SoFi Stadium', 'country' => 'USA', 'city' => 'Inglewood'],
-            'kansas city' => ['name' => 'Arrowhead Stadium', 'country' => 'USA', 'city' => 'Kansas City'],
-            'dallas' => ['name' => 'AT T Stadium', 'country' => 'USA', 'city' => 'Arlington'],
-            'houston' => ['name' => 'NRG Stadium', 'country' => 'USA', 'city' => 'Houston'],
-            'atlanta' => ['id' => 1898, 'name' => 'Mercedes-Benz Stadium', 'country' => 'USA', 'city' => 'Atlanta'],
-            'miami' => ['name' => 'Hard Rock Stadium', 'country' => 'USA', 'city' => 'Miami Gardens'],
-            'boston' => ['id' => 1618, 'name' => 'Gillette Stadium', 'country' => 'USA', 'city' => 'Foxborough'],
-            'philadelphia' => ['name' => 'Lincoln Financial Field', 'country' => 'USA', 'city' => 'Philadelphia'],
-            'new york new jersey' => ['name' => 'MetLife Stadium', 'country' => 'USA', 'city' => 'East Rutherford'],
-        ];
     }
 }

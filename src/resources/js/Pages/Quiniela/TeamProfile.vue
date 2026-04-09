@@ -109,5 +109,66 @@ const props = defineProps({
                 </p>
             </div>
         </div>
+
+        <!-- Squad Section -->
+        <div v-if="selectedTeam?.squad?.length" class="mt-8">
+            <div class="mb-6 flex items-end justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
+                <div>
+                    <h3 class="text-xl font-black text-slate-900 dark:text-white">Plantilla Oficial</h3>
+                    <p class="text-xs text-slate-500 uppercase tracking-widest">{{ selectedTeam.name }} 2026</p>
+                </div>
+                <div v-if="selectedTeam.coach?.name" class="flex items-center gap-3 bg-slate-100 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <img v-if="selectedTeam.coach.photo" :src="selectedTeam.coach.photo" class="h-10 w-10 rounded-lg object-cover bg-white" />
+                    <div class="pr-2">
+                        <p class="text-[10px] uppercase text-slate-500 font-bold">Director Técnico</p>
+                        <p class="text-sm font-black dark:text-white">{{ selectedTeam.coach.name }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-8">
+                <div v-for="pos in ['goalkeeper', 'defender', 'midfielder', 'attacker']" :key="pos">
+                    <h4 class="mb-4 text-xs font-bold uppercase tracking-[0.3em] text-slate-400 border-l-4 border-emerald-500 pl-3">
+                        {{ pos === 'goalkeeper' ? 'Porteros' : (pos === 'defender' ? 'Defensas' : (pos === 'midfielder' ? 'Mediocampistas' : 'Delanteros')) }}
+                    </h4>
+                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6">
+                        <div 
+                            v-for="player in selectedTeam.squad.filter(p => p.position === pos)" 
+                            :key="player.id"
+                            class="group relative aspect-[11/16] overflow-hidden rounded-2xl border-[6px] border-white bg-white p-1.5 shadow-[0_8px_24px_rgba(15,23,42,0.12)] transition-all hover:-translate-y-1 hover:shadow-[0_14px_30px_rgba(15,23,42,0.18)] dark:border-white/90 dark:bg-slate-800"
+                        >
+                            <!-- Card Background Pattern -->
+                            <div class="absolute inset-0 opacity-[0.03] dark:opacity-[0.07] pointer-events-none bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                            
+                            <!-- Player Photo -->
+                            <div class="h-full w-full overflow-hidden rounded-[calc(theme(borderRadius.2xl)-10px)] bg-slate-50 dark:bg-slate-900/50">
+                                <img 
+                                    :src="player.photo" 
+                                    :alt="player.name"
+                                    class="h-full w-full object-cover object-top filter grayscale-[0.2] transition-all group-hover:grayscale-0 group-hover:scale-105"
+                                    loading="lazy"
+                                />
+                            </div>
+
+                            <!-- Card Footer/Info -->
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/95 via-slate-900/70 to-transparent p-2 pt-8">
+                                <div class="flex items-end justify-between">
+                                    <div class="min-w-0">
+                                        <p class="text-[10px] font-bold text-emerald-300 uppercase tracking-[0.18em]">{{ player.position === 'goalkeeper' ? 'GK' : (player.position === 'defender' ? 'DEF' : (player.position === 'midfielder' ? 'MID' : 'FWD')) }}</p>
+                                        <p class="truncate text-[11px] font-black text-white leading-tight sm:text-xs">{{ player.name }}</p>
+                                    </div>
+                                    <span v-if="player.number" class="text-lg font-black italic text-white/55 transition-colors group-hover:text-emerald-300 sm:text-xl">
+                                        {{ player.number }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Interactive overlay for "click info" -->
+                            <div class="absolute inset-0 cursor-pointer bg-emerald-500/0 transition-colors group-active:bg-emerald-500/10"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>

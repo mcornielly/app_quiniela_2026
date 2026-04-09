@@ -51,6 +51,9 @@ class TournamentInsightsController extends Controller
             ->get();
 
         $selectedTeam = $this->resolveSelectedTeam($teams, $team);
+        if ($selectedTeam) {
+            $selectedTeam->load(['players']);
+        }
         $tournamentGames = $this->resolveTournamentGames($tournament->id);
 
         if (! $selectedTeam) {
@@ -349,7 +352,7 @@ class TournamentInsightsController extends Controller
                     'team_id' => $team->id,
                     'team_name' => $team->name,
                     'team_code' => Str::upper($team->country?->code ?? Str::substr($team->name, 0, 3)),
-                    'flag_url' => $this->resolveFlagUrl($team->country?->flag_path),
+                    'flag_url' => $this->resolveFlagUrl($team->country?->flag_path, $team->country?->api_flag_url),
                     'played' => (int) $row['played'],
                     'wins' => (int) $row['wins'],
                     'draws' => (int) $row['draws'],
@@ -380,7 +383,7 @@ class TournamentInsightsController extends Controller
                     'name' => $team->name,
                     'country_code' => Str::upper($team->country?->code ?? ''),
                     'group_name' => $team->group?->name,
-                    'flag_url' => $this->resolveFlagUrl($team->country?->flag_path),
+                    'flag_url' => $this->resolveFlagUrl($team->country?->flag_path, $team->country?->api_flag_url),
                     'shield_url' => $this->resolveShieldUrl($team),
                 ];
             })
@@ -400,11 +403,22 @@ class TournamentInsightsController extends Controller
             'country_code' => Str::upper($team->country?->code ?? ''),
             'group_name' => $team->group?->name,
             'group_position' => $team->group_position,
-            'flag_url' => $this->resolveFlagUrl($team->country?->flag_path),
+            'flag_url' => $this->resolveFlagUrl($team->country?->flag_path, $team->country?->api_flag_url),
             'shield_url' => $this->resolveShieldUrl($team),
             'fifa_ranking' => $entry?->fifa_ranking,
             'fair_play_points' => $entry?->fair_play_points,
             'group_stats' => $standingRow,
+            'coach' => [
+                'name' => $team->coach_name,
+                'photo' => $this->resolveMediaUrl($team->coach_photo),
+            ],
+            'squad' => $team->players->map(fn($p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'number' => $p->number,
+                'position' => $p->position,
+                'photo' => $this->resolveMediaUrl($p->local_photo_path) ?: $p->photo_url,
+            ]),
         ];
     }
 
@@ -520,15 +534,20 @@ class TournamentInsightsController extends Controller
             'id' => $team?->id,
             'name' => $team?->name ?: $fallbackName,
             'code' => $code ?: 'TBD',
-            'flag_url' => $this->resolveFlagUrl($team?->country?->flag_path),
+            'flag_url' => $this->resolveFlagUrl($team?->country?->flag_path, $team?->country?->api_flag_url),
             'shield_url' => $this->resolveShieldUrl($team),
         ];
     }
 
-    private function resolveFlagUrl(?string $flagPath): ?string
+    private function resolveFlagUrl(?string $flagPath, ?string $apiFlagUrl = null): ?string
     {
-        if (! $flagPath) {
+        if (! $flagPath && ! $apiFlagUrl) {
             return null;
+        }
+
+        // If local path doesn't exist or is not specified, try API flag
+        if (!$flagPath || (!Str::startsWith($flagPath, ['http://', 'https://']) && !Storage::disk('public')->exists($flagPath))) {
+            return $apiFlagUrl ?: null;
         }
 
         if (Str::startsWith($flagPath, ['http://', 'https://', '/storage/'])) {

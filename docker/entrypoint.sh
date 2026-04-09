@@ -31,6 +31,13 @@ fi
 if [ "${RUN_MIGRATIONS:-false}" = "true" ] && [ "$ROLE" = "web" ]; then
   php artisan storage:link --force || true
   php artisan migrate --force
+
+  if [ "${AUTO_SYNC_TOURNAMENT_STADIUMS:-false}" = "true" ]; then
+    echo ">>> [entrypoint] Ejecutando auto-sync de estadios del torneo..."
+    php artisan football:sync:tournament-stadiums \
+      --tournament-year="${AUTO_SYNC_TOURNAMENT_YEAR:-2026}" \
+      --refresh-cache || true
+  fi
 fi
 
 # ✅ Limpia caché de config, rutas, vistas y eventos — corre para TODOS los roles

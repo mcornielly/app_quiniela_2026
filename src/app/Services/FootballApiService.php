@@ -19,6 +19,10 @@ class FootballApiService
 
     private int $retrySleepMs;
 
+    private const MIN_QUOTA_REMAINING = 5;
+    private const CACHE_TTL_STATIC = 604800; // 7 days
+    private const CACHE_TTL_VOLATILE = 300;   // 5 minutes
+
     public function __construct()
     {
         $this->baseUrl = rtrim((string) config('services.football_api.url', 'https://v3.football.api-sports.io'), '/');
@@ -37,7 +41,33 @@ class FootballApiService
             throw new RuntimeException('API_FOOTBALL_KEY is not configured.');
         }
 
+        // Rate limit check from cache (prevent even firing if we are empty)
+        if (Cache::get('football_api_quota_exhausted', false)) {
+            throw new RuntimeException('API Football daily quota practically exhausted. Stopping to preserve last calls.');
+        }
+
         $response = $this->httpClient()->get($endpoint, $params);
+
+        // Update quota status based on headers
+        $remaining = $response->header('x-ratelimit-requests-remaining');
+        $limit = $response->header('x-ratelimit-requests-limit');
+
+        if ($response->successful() && $remaining !== null) {
+            $remainingInt = (int) $remaining;
+            
+            // Only block if we are actually near a limit (e.g. Free plan is 100)
+            // If they have 75,000 requests, 5 is negligible, but it's a safe floor.
+            if ($remainingInt <= self::MIN_QUOTA_REMAINING) {
+                Cache::put('football_api_quota_exhausted', true, now()->endOfDay());
+            }
+
+            // Store current quota for monitoring
+            Cache::put('football_api_last_quota', [
+                'remaining' => $remainingInt,
+                'limit' => (int) $limit,
+                'updated_at' => now()->toDateTimeString(),
+            ], 86400);
+        }
 
         if (! $response->successful()) {
             throw new RuntimeException("API Football HTTP error {$response->status()} on [{$endpoint}]");
@@ -56,6 +86,36 @@ class FootballApiService
         }
 
         return $payload;
+    }
+
+    /**
+     * Fetch all pages for a given endpoint.
+     */
+    public function getAllPages(string $endpoint, array $params = []): array
+    {
+        $allData = [];
+        $currentPage = 1;
+        $totalPages = 1;
+
+        do {
+            $response = $this->get($endpoint, array_merge($params, ['page' => $currentPage]));
+            $data = $response['response'] ?? [];
+            $allData = array_merge($allData, $data);
+
+            $totalPages = (int) ($response['paging']['total'] ?? 1);
+            $currentPage++;
+        } while ($currentPage <= $totalPages);
+
+        return $allData;
+    }
+
+    public function getQuotaStatus(): array
+    {
+        return [
+            'exhausted' => Cache::get('football_api_quota_exhausted', false),
+            'expires_at' => Cache::get('football_api_quota_exhausted') ? now()->endOfDay()->toDateTimeString() : null,
+            'last_check' => Cache::get('football_api_last_quota'),
+        ];
     }
 
     private function httpClient(): PendingRequest
@@ -90,7 +150,7 @@ class FootballApiService
     {
         return $this->cached(
             'football.countries',
-            (int) config('services.football_api.cache.countries', 86400),
+            (int) config('services.football_api.cache.countries', self::CACHE_TTL_STATIC),
             fn () => $this->get('countries')
         );
     }
@@ -101,7 +161,7 @@ class FootballApiService
 
         return $this->cached(
             $cacheKey,
-            (int) config('services.football_api.cache.venues', 86400),
+            (int) config('services.football_api.cache.venues', self::CACHE_TTL_STATIC),
             fn () => $this->get('venues', $params)
         );
     }
@@ -125,7 +185,7 @@ class FootballApiService
 
         return $this->cached(
             $cacheKey,
-            (int) config('services.football_api.cache.teams', 43200),
+            (int) config('services.football_api.cache.teams', self::CACHE_TTL_STATIC),
             fn () => $this->get('teams', $params)
         );
     }
@@ -149,7 +209,7 @@ class FootballApiService
 
         return $this->cached(
             $cacheKey,
-            (int) config('services.football_api.cache.fixtures', 1800),
+            (int) config('services.football_api.cache.fixtures', self::CACHE_TTL_VOLATILE),
             fn () => $this->get('fixtures', $params)
         );
     }
@@ -212,7 +272,7 @@ class FootballApiService
 
         return $this->cached(
             $cacheKey,
-            (int) config('services.football_api.cache.leagues', 86400),
+            (int) config('services.football_api.cache.leagues', self::CACHE_TTL_STATIC),
             fn () => $this->get('leagues', $params)
         );
     }
@@ -223,6 +283,24 @@ class FootballApiService
             "football.standings.{$leagueId}.{$season}",
             (int) config('services.football_api.cache.standings', 3600),
             fn () => $this->get('standings', ['league' => $leagueId, 'season' => $season])
+        );
+    }
+
+    public function getCoach(int $teamId): array
+    {
+        return $this->cached(
+            "football.coach.{$teamId}",
+            (int) config('services.football_api.cache.teams', self::CACHE_TTL_STATIC),
+            fn () => $this->get('coachs', ['team' => $teamId])
+        );
+    }
+
+    public function getSquad(int $teamId): array
+    {
+        return $this->cached(
+            "football.squad.{$teamId}",
+            (int) config('services.football_api.cache.teams', self::CACHE_TTL_STATIC),
+            fn () => $this->get('players/squads', ['team' => $teamId])
         );
     }
 }

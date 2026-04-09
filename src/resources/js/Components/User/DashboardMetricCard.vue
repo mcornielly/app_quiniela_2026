@@ -139,6 +139,28 @@ const isClockSkyBadge = computed(() => props.badgeVariant === 'clockSky')
 const isFlameAmberBadge = computed(() => props.badgeVariant === 'flameAmber')
 const isClockAmberBadge = computed(() => props.badgeVariant === 'clockAmber')
 const isClockRoseBadge = computed(() => props.badgeVariant === 'clockRose')
+const isSignalGreen = computed(() => isLiveBadge.value)
+const isSignalSearching = computed(() => isClockRoseBadge.value)
+const signalPingClass = computed(() => (
+    isSignalGreen.value
+        ? 'bg-emerald-500/45'
+        : 'bg-rose-500/45'
+))
+const signalDotClass = computed(() => (
+    isSignalGreen.value
+        ? 'bg-emerald-500'
+        : 'bg-rose-500'
+))
+const signalPingAnimationClass = computed(() => (
+    isSignalSearching.value
+        ? 'animate-[ping_1.1s_cubic-bezier(0,0,0.2,1)_infinite]'
+        : 'animate-ping'
+))
+const signalDotAnimationClass = computed(() => (
+    isSignalSearching.value
+        ? 'animate-[pulse_0.95s_ease-in-out_infinite]'
+        : 'animate-pulse'
+))
 const badgeClass = computed(() => {
     if (isFlameAmberBadge.value) {
         return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
@@ -198,8 +220,8 @@ const badgeClass = computed(() => {
                     v-if="signal"
                     class="relative ml-1 inline-flex h-2.5 w-2.5 -translate-y-px align-middle"
                 >
-                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500/45" />
-                    <span class="relative inline-flex h-2.5 w-2.5 animate-pulse rounded-full bg-rose-500" />
+                    <span :class="[signalPingClass, signalPingAnimationClass]" class="absolute inline-flex h-full w-full rounded-full" />
+                    <span :class="[signalDotClass, signalDotAnimationClass]" class="relative inline-flex h-2.5 w-2.5 rounded-full" />
                 </span>
             </p>
         </div>
