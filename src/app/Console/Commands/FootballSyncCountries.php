@@ -14,7 +14,7 @@ class FootballSyncCountries extends Command
      *
      * @var string
      */
-    protected $signature = 'football:sync-countries';
+    protected $signature = 'football:sync-countries {--dry-run : Print actions without persisting changes}';
 
     /**
      * The console command description.
@@ -36,6 +36,7 @@ class FootballSyncCountries extends Command
      */
     public function handle(): int
     {
+        $dryRun = $this->option('dry-run');
         $this->info('Fetching countries from API-Football...');
 
         try {
@@ -68,19 +69,22 @@ class FootballSyncCountries extends Command
                     ->first();
 
                 if ($country) {
-                    $country->update([
-                        'name' => $name, // <-- Aquí sobreescribimos el 'AR' por 'Argentina'
-                        'api_flag_url' => $flag,
-                    ]);
+                    if (!$dryRun) {
+                        $country->update([
+                            'name' => $name,
+                            'api_flag_url' => $flag,
+                        ]);
+                    }
                     $updatedCount++;
                 } else {
-                    // Create if not exists with fallback flag_path
-                    Country::create([
-                        'name' => $name,
-                        'code' => $code,
-                        'api_flag_url' => $flag,
-                        'flag_path' => $flag, // Use API flag as fallback for NOT NULL
-                    ]);
+                    if (!$dryRun) {
+                        Country::create([
+                            'name' => $name,
+                            'code' => $code,
+                            'api_flag_url' => $flag,
+                            'flag_path' => $flag,
+                        ]);
+                    }
                     $newCount++;
                 }
             }

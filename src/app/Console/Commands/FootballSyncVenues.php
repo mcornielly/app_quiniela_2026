@@ -19,7 +19,8 @@ class FootballSyncVenues extends Command
     protected $signature = 'football:sync-venues 
                             {--fetch : Download stadium data from API for host countries and cache it}
                             {--match : Attempt to link local stadiums with cached API results}
-                            {--list : List current venues cached}';
+                            {--list : List current venues cached}
+                            {--dry-run : Print actions without persisting changes}';
 
     /**
      * The console command description.
@@ -89,11 +90,12 @@ class FootballSyncVenues extends Command
                 $response = $this->api->getVenuesFresh(['country' => $apiCountry]);
                 $venues = $response['response'] ?? [];
                 
-                // Store using the ORIGINAL name from our DB as key for easy matching
-                $cacheKey = "football.venues_storage." . Str::slug($country);
-                Cache::forever($cacheKey, $venues);
+                if (!$this->option('dry-run')) {
+                    $cacheKey = "football.venues_storage." . Str::slug($country);
+                    Cache::forever($cacheKey, $venues);
+                }
                 
-                $this->info("Successfully cached " . count($venues) . " venues for {$country}.");
+                $this->info("Successfully fetched " . count($venues) . " venues for {$country}.");
             } catch (\Exception $e) {
                 $this->error("Error fetching {$country}: " . $e->getMessage());
             }
@@ -146,7 +148,9 @@ class FootballSyncVenues extends Command
             $foundId = $this->findMatch($stadium, $allApiVenues);
 
             if ($foundId) {
-                $stadium->update(['api_venue_id' => $foundId]);
+                if (!$this->option('dry-run')) {
+                    $stadium->update(['api_venue_id' => $foundId]);
+                }
                 $this->info("Matched: {$stadium->name} -> API ID {$foundId}");
                 $successCount++;
             } else {

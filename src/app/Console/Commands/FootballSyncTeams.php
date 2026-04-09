@@ -2,16 +2,21 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Tournament;
 use App\Models\Team;
 use App\Services\FootballApiService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class FootballSyncTeams extends Command
 {
-    protected $signature = 'football:sync-teams';
+    protected $signature = 'football:sync-teams
+        {--tournament-year=2026 : Tournament year}
+        {--tournament-type=world_cup : Tournament type}
+        {--dry-run : Show matches without persisting}';
 
-    protected $description = 'Sync local teams with API-Football data using a single league call (IDs and Logos)';
+    protected $description = 'Assign API team IDs to tournament participants using API-FOOTBALL teams endpoint only';
 
     // World Cup 2026 league ID in API-Football
     private const WC_LEAGUE_ID = 1;
@@ -27,9 +32,105 @@ class FootballSyncTeams extends Command
 
     public function handle(): int
     {
-        $this->info('Running team sync using country name lookups (cached)...');
-        $this->info('(WC 2026 season not available on free plan - using country-based search)');
-        return $this->fallbackSyncByCountry();
+        $year = (int) $this->option('tournament-year');
+        $type = (string) $this->option('tournament-type');
+        $dryRun = (bool) $this->option('dry-run');
+
+        $tournament = Tournament::query()
+            ->where('year', $year)
+            ->where('type', $type)
+            ->first();
+
+        if (! $tournament) {
+            $this->error("Tournament {$type} {$year} not found.");
+            return self::FAILURE;
+        }
+
+        $teams = Team::query()
+            ->where('type', 'international')
+            ->whereHas('tournamentEntries', fn ($q) => $q->where('tournament_id', $tournament->id))
+            ->with('country')
+            ->get();
+
+        if ($teams->isEmpty()) {
+            $this->warn('No international participant teams found for tournament.');
+            return self::SUCCESS;
+        }
+
+        $this->info("Syncing API team IDs for {$teams->count()} participant teams (endpoint: teams)...");
+
+        $updated = 0;
+        $skipped = 0;
+        $unmatched = [];
+        $usedApiIds = Team::query()
+            ->whereNotNull('api_team_id')
+            ->pluck('api_team_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        foreach ($teams as $team) {
+            if (Str::contains($team->name, '/')) {
+                $skipped++;
+                $this->line("  - <comment>{$team->name}</comment> (playoff placeholder, skipped)");
+                continue;
+            }
+
+            $candidate = $this->findBestApiCandidate($team);
+
+            if (! $candidate) {
+                $unmatched[] = $team->name;
+                $this->line("  ✗ <comment>{$team->name}</comment> (no API match)");
+                continue;
+            }
+
+            $apiId = (int) data_get($candidate, 'team.id', 0);
+            $apiLogo = data_get($candidate, 'team.logo');
+
+            if ($apiId <= 0) {
+                $unmatched[] = $team->name;
+                $this->line("  ✗ <comment>{$team->name}</comment> (API candidate without id)");
+                continue;
+            }
+
+            $alreadyUsedByOther = in_array($apiId, $usedApiIds, true) && (int) ($team->api_team_id ?? 0) !== $apiId;
+            if ($alreadyUsedByOther) {
+                $unmatched[] = $team->name;
+                $this->line("  ✗ <comment>{$team->name}</comment> (API ID {$apiId} already assigned)");
+                continue;
+            }
+
+            $next = [
+                'api_team_id' => $apiId,
+                'api_team_logo_url' => is_string($apiLogo) && $apiLogo !== '' ? $apiLogo : $team->api_team_logo_url,
+            ];
+
+            if (! $dryRun) {
+                $team->update($next);
+            }
+
+            if (! in_array($apiId, $usedApiIds, true)) {
+                $usedApiIds[] = $apiId;
+            }
+
+            $updated++;
+            $this->line("  ✓ <info>{$team->name}</info> → API ID: {$apiId}");
+        }
+
+        $this->newLine();
+        $this->info($dryRun ? 'Dry-run complete.' : 'Sync complete.');
+        $this->line("- Updated: {$updated}");
+        $this->line("- Skipped: {$skipped}");
+        $this->line("- Unmatched: ".count($unmatched));
+
+        if (! empty($unmatched)) {
+            $this->line('Unmatched teams:');
+            foreach ($unmatched as $name) {
+                $this->line("  - {$name}");
+            }
+        }
+
+        return self::SUCCESS;
     }
 
     /**
@@ -70,48 +171,110 @@ class FootballSyncTeams extends Command
         return null;
     }
 
-    /**
-     * Fallback si el Mundial 2026 aún no está disponible como liga en la API:
-     * Busca por país usando los datos de la tabla countries (ya populados con sync-countries).
-     * Todas estas llamadas también van cachadas 7 días.
-     */
-    private function fallbackSyncByCountry(): int
+    private function findBestApiCandidate(Team $team): ?array
     {
-        $this->info('Running fallback: searching by country name (cached)...');
+        $pool = collect();
 
-        $teams = Team::where('type', 'international')
-            ->whereNull('api_team_id')
-            ->with('country')
-            ->get();
-
-        $updatedCount = 0;
-
-        foreach ($teams as $team) {
-            if (Str::contains($team->name, '/') || !$team->country) continue;
-
+        $queries = $this->candidateQueries($team);
+        foreach ($queries as $params) {
             try {
-                $response = $this->api->getTeams(['country' => $team->country->name]);
-                $apiTeams = $response['response'] ?? [];
-
-                $nationalTeam = collect($apiTeams)->first(fn($t) => $t['team']['national'] ?? false)
-                    ?? ($apiTeams[0] ?? null);
-
-                if ($nationalTeam && isset($nationalTeam['team']['id'])) {
-                    $team->update([
-                        'api_team_id'       => $nationalTeam['team']['id'],
-                        'api_team_logo_url'  => $nationalTeam['team']['logo'] ?? null,
-                    ]);
-                    $this->line("  ✓ <info>{$team->name}</info> → API ID: {$nationalTeam['team']['id']}");
-                    $updatedCount++;
-                }
-            } catch (\Exception $e) {
-                $this->line("  ✗ <comment>{$team->name}</comment> — {$e->getMessage()}");
+                $response = $this->api->getTeams($params);
+                $rows = collect($response['response'] ?? [])->map(fn ($row) => (array) $row);
+                $pool = $pool->concat($rows);
+            } catch (\Throwable $e) {
+                // Keep going with other candidate queries.
             }
         }
 
-        $this->newLine();
-        $this->info("Fallback complete! Updated: {$updatedCount}.");
-        return 0;
+        if ($pool->isEmpty()) {
+            return null;
+        }
+
+        $scored = $pool
+            ->unique(function ($row) {
+                $id = (int) data_get($row, 'team.id', 0);
+                return $id > 0 ? "id:{$id}" : md5(json_encode($row));
+            })
+            ->map(function (array $row) use ($team) {
+                return [
+                    'score' => $this->scoreApiTeamCandidate($team, $row),
+                    'row' => $row,
+                ];
+            })
+            ->sortByDesc('score')
+            ->values();
+
+        $best = $scored->first();
+        if (! $best || (int) ($best['score'] ?? 0) < 80) {
+            return null;
+        }
+
+        return $best['row'];
+    }
+
+    private function candidateQueries(Team $team): array
+    {
+        $queries = [];
+
+        $queries[] = ['search' => $team->name];
+
+        $countryName = $this->countryNameForApi($team);
+        if ($countryName !== null) {
+            $queries[] = ['country' => $countryName];
+            $queries[] = ['country' => $countryName, 'search' => $team->name];
+        }
+
+        return collect($queries)
+            ->filter(fn ($q) => ! empty(array_filter($q, fn ($v) => trim((string) $v) !== '')))
+            ->unique(fn ($q) => md5(json_encode($q)))
+            ->values()
+            ->all();
+    }
+
+    private function countryNameForApi(Team $team): ?string
+    {
+        $raw = trim((string) ($team->country?->name ?? ''));
+        if ($raw === '') {
+            return null;
+        }
+
+        $normalized = $this->normalize($raw);
+
+        return match ($normalized) {
+            'unitedstates', 'unitedstatesofamerica', 'usa' => 'USA',
+            'southkorea', 'republicofkorea', 'repofkorea' => 'South Korea',
+            'iran', 'iriran' => 'Iran',
+            default => $raw,
+        };
+    }
+
+    private function scoreApiTeamCandidate(Team $localTeam, array $candidate): int
+    {
+        $score = 0;
+
+        $localName = $this->normalize($localTeam->name);
+        $countryName = $this->normalize((string) ($localTeam->country?->name ?? ''));
+        $apiName = $this->normalize((string) data_get($candidate, 'team.name', ''));
+        $apiCountry = $this->normalize((string) data_get($candidate, 'team.country', ''));
+        $national = (bool) data_get($candidate, 'team.national', false);
+
+        if ($national) {
+            $score += 45;
+        }
+
+        if ($localName !== '' && $apiName === $localName) {
+            $score += 60;
+        } elseif ($localName !== '' && (str_contains($apiName, $localName) || str_contains($localName, $apiName))) {
+            $score += 30;
+        }
+
+        if ($countryName !== '' && $apiCountry === $countryName) {
+            $score += 30;
+        } elseif ($countryName !== '' && (str_contains($apiCountry, $countryName) || str_contains($countryName, $apiCountry))) {
+            $score += 15;
+        }
+
+        return $score;
     }
 
     private function normalize(string $value): string

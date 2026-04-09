@@ -49,10 +49,24 @@ class FootballApiService
         $response = $this->httpClient()->get($endpoint, $params);
 
         // Update quota status based on headers
-        $remaining = (int) $response->header('x-ratelimit-requests-remaining');
-        if ($response->successful() && $remaining <= self::MIN_QUOTA_REMAINING) {
-            // Block for 24 hours (or until end of day) to be safe
-            Cache::put('football_api_quota_exhausted', true, now()->endOfDay());
+        $remaining = $response->header('x-ratelimit-requests-remaining');
+        $limit = $response->header('x-ratelimit-requests-limit');
+
+        if ($response->successful() && $remaining !== null) {
+            $remainingInt = (int) $remaining;
+            
+            // Only block if we are actually near a limit (e.g. Free plan is 100)
+            // If they have 75,000 requests, 5 is negligible, but it's a safe floor.
+            if ($remainingInt <= self::MIN_QUOTA_REMAINING) {
+                Cache::put('football_api_quota_exhausted', true, now()->endOfDay());
+            }
+
+            // Store current quota for monitoring
+            Cache::put('football_api_last_quota', [
+                'remaining' => $remainingInt,
+                'limit' => (int) $limit,
+                'updated_at' => now()->toDateTimeString(),
+            ], 86400);
         }
 
         if (! $response->successful()) {
@@ -74,11 +88,33 @@ class FootballApiService
         return $payload;
     }
 
+    /**
+     * Fetch all pages for a given endpoint.
+     */
+    public function getAllPages(string $endpoint, array $params = []): array
+    {
+        $allData = [];
+        $currentPage = 1;
+        $totalPages = 1;
+
+        do {
+            $response = $this->get($endpoint, array_merge($params, ['page' => $currentPage]));
+            $data = $response['response'] ?? [];
+            $allData = array_merge($allData, $data);
+
+            $totalPages = (int) ($response['paging']['total'] ?? 1);
+            $currentPage++;
+        } while ($currentPage <= $totalPages);
+
+        return $allData;
+    }
+
     public function getQuotaStatus(): array
     {
         return [
             'exhausted' => Cache::get('football_api_quota_exhausted', false),
-            'expires_at' => Cache::get('football_api_quota_exhausted') ? now()->endOfDay()->toDateTimeString() : null
+            'expires_at' => Cache::get('football_api_quota_exhausted') ? now()->endOfDay()->toDateTimeString() : null,
+            'last_check' => Cache::get('football_api_last_quota'),
         ];
     }
 

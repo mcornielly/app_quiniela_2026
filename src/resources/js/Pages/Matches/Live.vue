@@ -76,7 +76,7 @@ const isAwayWinner = (match) => Number(match.awayScore) > Number(match.homeScore
                 <article
                     v-for="match in liveMatches"
                     :key="match.id"
-                    class="rounded-2xl border border-slate-200 bg-white px-5 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/75"
+                    class="live-match-card relative overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/75"
                 >
                     <div class="grid grid-cols-1 items-center gap-3 xl:grid-cols-[170px_1fr_200px]">
                         <div>
@@ -130,3 +130,35 @@ const isAwayWinner = (match) => Number(match.awayScore) > Number(match.homeScore
     </UserDashboardLayout>
 </template>
 
+<style scoped>
+.live-match-card::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -36%;
+    width: 36%;
+    height: 3px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0) 0%, rgba(16, 185, 129, 0.75) 35%, rgba(34, 197, 94, 1) 55%, rgba(52, 211, 153, 0.85) 75%, rgba(16, 185, 129, 0) 100%);
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+    animation: live-scan 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes live-scan {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(390%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .live-match-card::before {
+        animation: none;
+        left: 0;
+        width: 100%;
+        opacity: 0.9;
+    }
+}
+</style>

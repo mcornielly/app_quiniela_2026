@@ -303,7 +303,7 @@ const quickStats = computed(() => [
         badgeVariant: liveGamesCount.value > 0 ? 'live' : 'clockRose',
         iconTone: 'rose',
         icon: metricIcons.transmission,
-        signal: liveGamesCount.value > 0,
+        signal: true,
         description: 'Sigue la Copa en Directo',
         href: route('live.index'),
     },
