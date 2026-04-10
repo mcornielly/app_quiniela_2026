@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
-import { CheckCircleIcon, MapPinIcon } from '@heroicons/vue/24/outline'
+import { CheckCircleIcon, ClockIcon, MapPinIcon } from '@heroicons/vue/24/outline'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
 
 const props = defineProps({
@@ -31,6 +31,17 @@ const isDraw = (match) => Number(match.homeScore) === Number(match.awayScore)
 const isHomeWinner = (match) => Number(match.homeScore) > Number(match.awayScore)
 const isAwayWinner = (match) => Number(match.awayScore) > Number(match.homeScore)
 const crestSrc = (src) => src || null
+
+const matchStatusShort = (match) => String(match?.statusShort || '').trim().toUpperCase()
+const matchStatusLabel = (match) => String(match?.statusLabel || match?.status || '').toLowerCase()
+
+const isMatchFinished = (match) => {
+    if (['FT', 'AET', 'PEN'].includes(matchStatusShort(match))) return true
+    const label = matchStatusLabel(match)
+    return label.includes('finished') || label.includes('finalizado')
+}
+
+const liveBadgeLabel = (match) => (isMatchFinished(match) ? 'Finalizado' : 'En progreso')
 </script>
 
 <template>
@@ -74,35 +85,68 @@ const crestSrc = (src) => src || null
             </div>
 
             <div v-if="liveMatches.length" class="mt-6 space-y-3">
-                <article
+                <Link
                     v-for="match in liveMatches"
                     :key="match.id"
-                    class="live-match-card relative overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/75"
+                    :href="route('live.show', match.id)"
+                    class="live-match-card relative block overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-3 shadow-sm transition hover:border-primary-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/75 dark:hover:border-primary-700"
+                    :class="isMatchFinished(match) ? 'match-finished' : 'match-live'"
                 >
+                    <div class="mb-2 grid grid-cols-[1fr_auto_1fr] items-start gap-2 xl:hidden">
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                            {{ match.groupName || '-' }}
+                        </p>
+
+                        <div class="inline-flex items-center gap-1 text-2xl font-black text-rose-500 dark:text-rose-400">
+                            <ClockIcon class="h-4 w-4" />
+                            <span>{{ match.matchTime }}</span>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <span
+                                class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold tracking-wide"
+                                :class="isMatchFinished(match) ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'"
+                            >
+                                <CheckCircleIcon v-if="isMatchFinished(match)" class="h-3.5 w-3.5" />
+                                <ClockIcon v-else class="h-3.5 w-3.5" />
+                                {{ liveBadgeLabel(match) }}
+                            </span>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 items-center gap-3 xl:grid-cols-[170px_1fr_200px]">
-                        <div>
+                        <div class="hidden xl:block">
                             <p class="text-sm text-slate-500 dark:text-slate-400">{{ match.groupName || '-' }}</p>
                             <p class="text-2xl font-black text-rose-500 dark:text-rose-400">{{ match.matchTime }}</p>
                         </div>
 
-                        <div class="space-y-1.5">
+                        <div class="relative space-y-1.5 px-16 md:px-24">
+                            <img
+                                v-if="crestSrc(match.homeShieldUrl)"
+                                :src="crestSrc(match.homeShieldUrl)"
+                                :alt="match.homeTeam"
+                                :title="match.homeTeam"
+                                class="absolute left-0 top-1/2 h-20 w-20 -translate-y-1/2 object-contain md:h-24 md:w-24"
+                                loading="lazy"
+                            />
+                            <img
+                                v-if="crestSrc(match.awayShieldUrl)"
+                                :src="crestSrc(match.awayShieldUrl)"
+                                :alt="match.awayTeam"
+                                :title="match.awayTeam"
+                                class="absolute right-0 top-1/2 h-20 w-20 -translate-y-1/2 object-contain md:h-24 md:w-24"
+                                loading="lazy"
+                            />
                             <div class="inline-flex w-full items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                                 <MapPinIcon class="h-4 w-4 text-cyan-500 dark:text-cyan-400" />
                                 <span class="truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ match.venue || 'Sede por confirmar' }}</span>
                             </div>
 
                             <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 md:gap-8 xl:gap-14">
-                                <div class="flex items-center justify-end gap-3 pr-2 text-right md:pr-4 xl:pr-8">
-                                    <img
-                                        v-if="crestSrc(match.homeShieldUrl)"
-                                        :src="crestSrc(match.homeShieldUrl)"
-                                        :alt="match.homeTeam"
-                                        class="h-11 w-11 shrink-0 object-contain md:h-14 md:w-14"
-                                        loading="lazy"
-                                    />
+                                <div class="flex items-center justify-end pr-2 text-right md:pr-4 xl:pr-8">
                                     <div class="min-w-0">
-                                        <span class="block truncate text-base font-semibold text-slate-900 dark:text-white md:text-[1.1rem]">{{ match.homeTeam }}</span>
-                                        <span class="block text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ match.homeCode }}</span>
+                                        <span class="team-name hidden truncate text-base font-semibold text-slate-900 dark:text-white sm:block md:text-[1.1rem]">{{ match.homeTeam }}</span>
+                                        <span class="country-code block text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ match.homeCode }}</span>
                                     </div>
                                 </div>
 
@@ -116,30 +160,27 @@ const crestSrc = (src) => src || null
                                     </span>
                                 </div>
 
-                                <div class="flex items-center justify-start gap-3 pl-2 text-left md:pl-4 xl:pl-8">
+                                <div class="flex items-center justify-start pl-2 text-left md:pl-4 xl:pl-8">
                                     <div class="min-w-0">
-                                        <span class="block truncate text-base font-semibold text-slate-900 dark:text-white md:text-[1.1rem]">{{ match.awayTeam }}</span>
-                                        <span class="block text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ match.awayCode }}</span>
+                                        <span class="team-name hidden truncate text-base font-semibold text-slate-900 dark:text-white sm:block md:text-[1.1rem]">{{ match.awayTeam }}</span>
+                                        <span class="country-code block text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ match.awayCode }}</span>
                                     </div>
-                                    <img
-                                        v-if="crestSrc(match.awayShieldUrl)"
-                                        :src="crestSrc(match.awayShieldUrl)"
-                                        :alt="match.awayTeam"
-                                        class="h-11 w-11 shrink-0 object-contain md:h-14 md:w-14"
-                                        loading="lazy"
-                                    />
                                 </div>
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-start xl:justify-end">
-                            <span class="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-1 text-[11px] font-bold tracking-wide text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
-                                <CheckCircleIcon class="h-3.5 w-3.5" />
-                                En Directo
+                        <div class="hidden items-center justify-start xl:flex xl:justify-end">
+                            <span
+                                class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold tracking-wide"
+                                :class="isMatchFinished(match) ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'"
+                            >
+                                <CheckCircleIcon v-if="isMatchFinished(match)" class="h-3.5 w-3.5" />
+                                <ClockIcon v-else class="h-3.5 w-3.5" />
+                                {{ liveBadgeLabel(match) }}
                             </span>
                         </div>
                     </div>
-                </article>
+                </Link>
             </div>
 
             <div v-else class="mt-6 rounded-xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
@@ -158,9 +199,20 @@ const crestSrc = (src) => src || null
     width: 36%;
     height: 3px;
     border-radius: 9999px;
+}
+
+.match-live.live-match-card::before {
     background: linear-gradient(90deg, rgba(16, 185, 129, 0) 0%, rgba(16, 185, 129, 0.75) 35%, rgba(34, 197, 94, 1) 55%, rgba(52, 211, 153, 0.85) 75%, rgba(16, 185, 129, 0) 100%);
     box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
     animation: live-scan 2.2s ease-in-out infinite alternate;
+}
+
+.match-finished.live-match-card::before {
+    left: 0;
+    width: 100%;
+    background: linear-gradient(90deg, rgba(244, 63, 94, 0.1) 0%, rgba(251, 113, 133, 0.45) 50%, rgba(244, 63, 94, 0.1) 100%);
+    box-shadow: 0 0 12px rgba(244, 63, 94, 0.35);
+    animation: finished-pulse 2.1s ease-in-out infinite;
 }
 
 @keyframes live-scan {
@@ -172,12 +224,31 @@ const crestSrc = (src) => src || null
     }
 }
 
+@keyframes finished-pulse {
+    0%, 100% {
+        opacity: 0.55;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .live-match-card::before {
         animation: none;
         left: 0;
         width: 100%;
         opacity: 0.9;
+    }
+}
+
+@media (max-width: 640px) {
+    .team-name {
+        display: none;
+    }
+
+    .country-code {
+        display: none;
     }
 }
 </style>

@@ -266,6 +266,29 @@ class FootballApiService
         );
     }
 
+    public function getFixturePlayers(int $fixtureId): array
+    {
+        return $this->cached(
+            "football.fixture.players.{$fixtureId}",
+            (int) config('services.football_api.cache.statistics', 300),
+            fn () => $this->get('fixtures/players', ['fixture' => $fixtureId])
+        );
+    }
+
+    public function getHeadToHead(int $homeTeamApiId, int $awayTeamApiId, int $last = 5): array
+    {
+        $h2h = "{$homeTeamApiId}-{$awayTeamApiId}";
+
+        return $this->cached(
+            "football.h2h.{$h2h}.{$last}",
+            (int) config('services.football_api.cache.statistics', 300),
+            fn () => $this->get('fixtures/headtohead', [
+                'h2h' => $h2h,
+                'last' => $last,
+            ])
+        );
+    }
+
     public function getLeagues(array $params = []): array
     {
         $cacheKey = $this->normalizedCacheKey('football.leagues', $params);

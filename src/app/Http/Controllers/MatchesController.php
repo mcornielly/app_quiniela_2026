@@ -4,14 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Models\Game;
 use App\Models\Tournament;
+use App\Services\FootballApiService;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class MatchesController extends Controller
 {
+    public function __construct(
+        private readonly FootballApiService $footballApi
+    ) {
+    }
+
     public function index(): Response
     {
         return $this->calendar();
@@ -111,10 +120,130 @@ class MatchesController extends Controller
         ]);
     }
 
+    public function liveShow(Game $game): Response
+    {
+        $tournament = $this->resolveTournament();
+
+        if (! $tournament || (int) $game->tournament_id !== (int) $tournament->id) {
+            abort(404);
+        }
+
+        $game->load(['homeTeam.country', 'awayTeam.country', 'homeTeam.group', 'awayTeam.group']);
+
+        return Inertia::render('Matches/LiveShow', [
+            'tournament' => $this->transformTournament($tournament),
+            'match' => $this->transformGame($game),
+        ]);
+    }
+
+    public function liveFeed(Game $game): JsonResponse
+    {
+        $tournament = $this->resolveTournament();
+
+        if (! $tournament || (int) $game->tournament_id !== (int) $tournament->id) {
+            abort(404);
+        }
+
+        $fixtureId = (int) ($game->api_fixture_id ?? 0);
+        $ttlSeconds = $game->status === 'in_progress' ? 15 : 90;
+        $cacheKey = "matches.live_feed.{$game->id}.fixture.{$fixtureId}.status.{$game->status}";
+
+        $payload = Cache::remember($cacheKey, now()->addSeconds($ttlSeconds), function () use ($game) {
+            return $this->buildLiveFeed($game);
+        });
+
+        return response()->json($payload);
+    }
+
+    private function buildLiveFeed(Game $game): array
+    {
+        $game->load(['homeTeam.country', 'awayTeam.country', 'homeTeam.group', 'awayTeam.group']);
+
+        $match = $this->transformGame($game);
+        $fixtureId = (int) ($game->api_fixture_id ?? 0);
+        $homeApiTeamId = (int) ($game->homeTeam?->api_team_id ?? 0);
+        $awayApiTeamId = (int) ($game->awayTeam?->api_team_id ?? 0);
+
+        $feed = [
+            'ok' => true,
+            'match' => $match,
+            'fixture' => null,
+            'headToHead' => [],
+            'events' => [],
+            'lineups' => [],
+            'statistics' => [],
+            'players' => [],
+            'errors' => [],
+        ];
+
+        if ($fixtureId <= 0) {
+            $feed['errors'][] = 'missing_fixture_id';
+
+            return $feed;
+        }
+
+        try {
+            $fixture = $this->footballApi->getFixtureById($fixtureId);
+            $feed['fixture'] = data_get($fixture, 'response.0', null);
+            $homeApiTeamId = $homeApiTeamId > 0 ? $homeApiTeamId : (int) data_get($feed['fixture'], 'teams.home.id', 0);
+            $awayApiTeamId = $awayApiTeamId > 0 ? $awayApiTeamId : (int) data_get($feed['fixture'], 'teams.away.id', 0);
+        } catch (Throwable $exception) {
+            report($exception);
+            $feed['errors'][] = 'fixture_unavailable';
+        }
+
+        try {
+            $events = $this->footballApi->getFixtureEvents($fixtureId);
+            $feed['events'] = data_get($events, 'response', []);
+        } catch (Throwable $exception) {
+            report($exception);
+            $feed['errors'][] = 'events_unavailable';
+        }
+
+        try {
+            $lineups = $this->footballApi->getFixtureLineups($fixtureId);
+            $feed['lineups'] = data_get($lineups, 'response', []);
+        } catch (Throwable $exception) {
+            report($exception);
+            $feed['errors'][] = 'lineups_unavailable';
+        }
+
+        try {
+            $statistics = $this->footballApi->getFixtureStatistics($fixtureId);
+            $feed['statistics'] = data_get($statistics, 'response', []);
+        } catch (Throwable $exception) {
+            report($exception);
+            $feed['errors'][] = 'statistics_unavailable';
+        }
+
+        try {
+            $players = $this->footballApi->getFixturePlayers($fixtureId);
+            $feed['players'] = data_get($players, 'response', []);
+        } catch (Throwable $exception) {
+            report($exception);
+            $feed['errors'][] = 'players_unavailable';
+        }
+
+        if ($homeApiTeamId > 0 && $awayApiTeamId > 0) {
+            try {
+                $h2h = $this->footballApi->getHeadToHead($homeApiTeamId, $awayApiTeamId, 5);
+                $feed['headToHead'] = data_get($h2h, 'response', []);
+            } catch (Throwable $exception) {
+                report($exception);
+                $feed['errors'][] = 'h2h_unavailable';
+            }
+        } else {
+            $feed['errors'][] = 'missing_team_api_ids';
+        }
+
+        return $feed;
+    }
+
     private function transformGame(Game $game): array
     {
         return [
             'id' => $game->id,
+            'apiFixtureId' => $game->api_fixture_id ? (int) $game->api_fixture_id : null,
             'groupName' => $game->group_name ? "Grupo {$game->group_name}" : null,
             'stageLabel' => $this->stageLabel($game->stage),
             'stage' => $game->stage,
@@ -129,6 +258,8 @@ class MatchesController extends Controller
             'awayTeam' => $this->teamName($game->awayTeam?->name, $game->away_slot),
             'homeCode' => $this->teamCode($game->homeTeam?->country?->code, $game->home_slot),
             'awayCode' => $this->teamCode($game->awayTeam?->country?->code, $game->away_slot),
+            'homeApiTeamId' => $game->homeTeam?->api_team_id ? (int) $game->homeTeam->api_team_id : null,
+            'awayApiTeamId' => $game->awayTeam?->api_team_id ? (int) $game->awayTeam->api_team_id : null,
             'homeFlagUrl' => $this->flagUrl($game->homeTeam?->country?->flag_path),
             'awayFlagUrl' => $this->flagUrl($game->awayTeam?->country?->flag_path),
             'homeShieldUrl' => $this->shieldUrl($game->homeTeam?->shield_path, $game->homeTeam?->api_team_logo_url),
