@@ -166,6 +166,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/quiniela/calendar', [MatchesController::class, 'calendar'])->name('calendar.index');
     Route::get('/quiniela/results', [MatchesController::class, 'results'])->name('results.index');
     Route::get('/quiniela/live', [MatchesController::class, 'live'])->name('live.index');
+    Route::get('/quiniela/live/feed', [MatchesController::class, 'liveCardsFeed'])->name('live.cards.feed');
     Route::get('/quiniela/live/{game}', [MatchesController::class, 'liveShow'])->whereNumber('game')->name('live.show');
     Route::get('/quiniela/live/{game}/feed', [MatchesController::class, 'liveFeed'])->whereNumber('game')->name('live.feed');
     Route::get('/quiniela/groups', [TournamentInsightsController::class, 'roadmap'])->name('groups.index');

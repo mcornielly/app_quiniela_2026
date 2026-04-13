@@ -120,6 +120,29 @@ class MatchesController extends Controller
         ]);
     }
 
+    public function liveCardsFeed(): JsonResponse
+    {
+        $tournament = $this->resolveTournament();
+
+        if (! $tournament) {
+            return response()->json([
+                'matches' => [],
+            ]);
+        }
+
+        $matches = $this->baseGamesQuery($tournament->id)
+            ->where('status', 'in_progress')
+            ->get()
+            ->map(fn (Game $game) => $this->buildLiveCard($game))
+            ->values()
+            ->all();
+
+        return response()->json([
+            'matches' => $matches,
+            'polledAt' => now()->toIso8601String(),
+        ]);
+    }
+
     public function liveShow(Game $game): Response
     {
         $tournament = $this->resolveTournament();
@@ -243,6 +266,80 @@ class MatchesController extends Controller
         return $feed;
     }
 
+    private function buildLiveCard(Game $game): array
+    {
+        $game->load(['homeTeam.country', 'awayTeam.country', 'homeTeam.group', 'awayTeam.group']);
+
+        $base = $this->transformGame($game);
+        $fixtureId = (int) ($game->api_fixture_id ?? 0);
+
+        if ($fixtureId <= 0) {
+            return array_merge($base, [
+                'statusShort' => null,
+                'homePossession' => null,
+                'awayPossession' => null,
+                'homeGoalsFeed' => [],
+                'awayGoalsFeed' => [],
+            ]);
+        }
+
+        $cacheKey = "matches.live_cards.{$game->id}.fixture.{$fixtureId}.status.{$game->status}";
+        $ttlSeconds = $game->status === 'in_progress' ? 15 : 90;
+
+        return Cache::remember($cacheKey, now()->addSeconds($ttlSeconds), function () use ($game, $base, $fixtureId) {
+            $payload = $base;
+
+            try {
+                $fixture = $this->footballApi->getFixtureById($fixtureId);
+                $fixtureData = data_get($fixture, 'response.0', []);
+
+                $payload['homeScore'] = data_get($fixtureData, 'goals.home', $payload['homeScore']);
+                $payload['awayScore'] = data_get($fixtureData, 'goals.away', $payload['awayScore']);
+                $payload['venue'] = data_get($fixtureData, 'fixture.venue.name', $payload['venue']);
+                $payload['matchTime'] = data_get($fixtureData, 'fixture.status.elapsed')
+                    ? data_get($fixtureData, 'fixture.status.elapsed')."'"
+                    : $payload['matchTime'];
+                $payload['statusShort'] = data_get($fixtureData, 'fixture.status.short');
+                $payload['statusLabel'] = data_get($fixtureData, 'fixture.status.long', $payload['statusLabel']);
+                $payload['status'] = $this->normalizeFixtureStatus(
+                    data_get($fixtureData, 'fixture.status.short'),
+                    $payload['status']
+                );
+            } catch (Throwable $exception) {
+                report($exception);
+                $payload['statusShort'] = $payload['statusShort'] ?? null;
+            }
+
+            try {
+                $statistics = $this->footballApi->getFixtureStatistics($fixtureId);
+                $possession = $this->extractPossessionPair(data_get($statistics, 'response', []));
+                $payload['homePossession'] = $possession['home'];
+                $payload['awayPossession'] = $possession['away'];
+            } catch (Throwable $exception) {
+                report($exception);
+                $payload['homePossession'] = null;
+                $payload['awayPossession'] = null;
+            }
+
+            try {
+                $events = $this->footballApi->getFixtureEvents($fixtureId);
+                $goals = $this->extractGoalFeed(
+                    data_get($events, 'response', []),
+                    (int) ($payload['homeApiTeamId'] ?? 0),
+                    (int) ($payload['awayApiTeamId'] ?? 0)
+                );
+                $payload['homeGoalsFeed'] = $goals['home'];
+                $payload['awayGoalsFeed'] = $goals['away'];
+            } catch (Throwable $exception) {
+                report($exception);
+                $payload['homeGoalsFeed'] = [];
+                $payload['awayGoalsFeed'] = [];
+            }
+
+            return $payload;
+        });
+    }
+
     private function transformGame(Game $game): array
     {
         return [
@@ -253,6 +350,7 @@ class MatchesController extends Controller
             'stage' => $game->stage,
             'status' => $game->status,
             'statusLabel' => $game->status === 'finished' ? 'Final' : ($game->status === 'in_progress' ? 'Live' : 'Upcoming'),
+            'statusShort' => null,
             'matchDateIso' => $game->match_date?->format('Y-m-d'),
             'matchDate' => $game->match_date?->format('d/m/Y'),
             'calendarDateLabel' => $this->calendarDateLabel($game->match_date),
@@ -270,6 +368,83 @@ class MatchesController extends Controller
             'awayShieldUrl' => $this->shieldUrl($game->awayTeam?->shield_path, $game->awayTeam?->api_team_logo_url),
             'homeScore' => is_numeric($game->home_score) ? (int) $game->home_score : null,
             'awayScore' => is_numeric($game->away_score) ? (int) $game->away_score : null,
+            'homePossession' => null,
+            'awayPossession' => null,
+            'homeGoalsFeed' => [],
+            'awayGoalsFeed' => [],
+        ];
+    }
+
+    private function extractPossessionPair(array $statistics): array
+    {
+        $home = $this->extractPossessionValue($statistics[0]['statistics'] ?? []);
+        $away = $this->extractPossessionValue($statistics[1]['statistics'] ?? []);
+
+        return [
+            'home' => $home,
+            'away' => $away,
+        ];
+    }
+
+    private function extractPossessionValue(array $stats): ?int
+    {
+        $value = collect($stats)
+            ->first(fn ($item) => data_get($item, 'type') === 'Ball Possession');
+
+        $raw = (string) data_get($value, 'value', '');
+        $normalized = trim(str_replace('%', '', $raw));
+
+        return is_numeric($normalized) ? (int) round((float) $normalized) : null;
+    }
+
+    private function normalizeFixtureStatus(?string $statusShort, string $fallback): string
+    {
+        $value = Str::upper((string) $statusShort);
+
+        return match (true) {
+            in_array($value, ['FT', 'AET', 'PEN'], true) => 'finished',
+            $value !== '' => 'in_progress',
+            default => $fallback,
+        };
+    }
+
+    private function extractGoalFeed(array $events, int $homeTeamId, int $awayTeamId): array
+    {
+        $grouped = [
+            'home' => [],
+            'away' => [],
+        ];
+
+        foreach ($events as $event) {
+            $type = Str::lower((string) data_get($event, 'type'));
+            $detail = Str::lower((string) data_get($event, 'detail'));
+
+            if ($type !== 'goal' && ! str_contains($detail, 'goal')) {
+                continue;
+            }
+
+            $teamId = (int) data_get($event, 'team.id', 0);
+            $side = $teamId === $homeTeamId ? 'home' : ($teamId === $awayTeamId ? 'away' : null);
+
+            if (! $side) {
+                continue;
+            }
+
+            $minute = (int) data_get($event, 'time.elapsed', 0);
+            $extra = (int) data_get($event, 'time.extra', 0);
+            $minuteLabel = $minute > 0
+                ? ($extra > 0 ? "{$minute}+{$extra}'" : "{$minute}'")
+                : "90'";
+
+            $grouped[$side][] = [
+                'playerName' => data_get($event, 'player.name') ?: 'Jugador por confirmar',
+                'minute' => $minuteLabel,
+            ];
+        }
+
+        return [
+            'home' => array_slice($grouped['home'], 0, 5),
+            'away' => array_slice($grouped['away'], 0, 5),
         ];
     }
 

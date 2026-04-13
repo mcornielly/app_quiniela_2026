@@ -1,5 +1,6 @@
 <script setup>
-import { computed } from 'vue'
+import axios from 'axios'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import LiveMatchCard from '@/Components/Live/LiveMatchCard.vue'
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue'
@@ -26,6 +27,9 @@ const activeTickerTheme = computed(() => ({
     ...tickerThemes.neutral,
     ...(favoriteTeamTheme.value ?? {}),
 }))
+const liveMatchesState = ref(Array.isArray(props.liveMatches) ? props.liveMatches : [])
+const pollIntervalMs = 20000
+let pollTimer = null
 
 const matchStatusShort = (match) => String(match?.statusShort || '').trim().toUpperCase()
 const matchStatusLabel = (match) => String(match?.statusLabel || match?.status || '').toLowerCase()
@@ -37,6 +41,30 @@ const isMatchFinished = (match) => {
 }
 
 const liveBadgeLabel = (match) => (isMatchFinished(match) ? 'Finalizado' : 'En progreso')
+const fetchLiveMatches = async () => {
+    try {
+        const { data } = await axios.get(route('live.cards.feed'))
+        liveMatchesState.value = Array.isArray(data?.matches) ? data.matches : []
+    } catch {
+        // Keep the last successful snapshot on screen if polling fails.
+    }
+}
+
+const startPolling = () => {
+    if (pollTimer) clearInterval(pollTimer)
+    pollTimer = window.setInterval(() => {
+        fetchLiveMatches()
+    }, pollIntervalMs)
+}
+
+onMounted(async () => {
+    await fetchLiveMatches()
+    startPolling()
+})
+
+onBeforeUnmount(() => {
+    if (pollTimer) clearInterval(pollTimer)
+})
 </script>
 
 <template>
@@ -75,13 +103,13 @@ const liveBadgeLabel = (match) => (isMatchFinished(match) ? 'Finalizado' : 'En p
             </div>
 
             <div class="mt-10">
-                <p class="text-sm leading-tight text-slate-500 dark:text-slate-400">{{ liveMatches.length }} juego(s) en vivo</p>
+                <p class="text-sm leading-tight text-slate-500 dark:text-slate-400">{{ liveMatchesState.length }} juego(s) en vivo</p>
                 <div class="mt-[6px] border-b border-slate-300 dark:border-slate-700" />
             </div>
 
-            <div v-if="liveMatches.length" class="mt-6 space-y-3">
+            <div v-if="liveMatchesState.length" class="mt-6 space-y-3">
                 <Link
-                    v-for="match in liveMatches"
+                    v-for="match in liveMatchesState"
                     :key="match.id"
                     :href="route('live.show', match.id)"
                     class="block"

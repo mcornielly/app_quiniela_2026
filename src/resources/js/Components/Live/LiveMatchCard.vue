@@ -1,6 +1,8 @@
 <script setup>
 import { computed } from 'vue'
 import { CheckCircleIcon, ClockIcon, MapPinIcon } from '@heroicons/vue/24/outline'
+import AppTooltip from '@/Components/UI/AppTooltip.vue'
+import { resolveMatchTeamColors } from '@/Components/Live/teamColors'
 
 const props = defineProps({
     match: {
@@ -29,10 +31,10 @@ const props = defineProps({
     },
 })
 
+const crestSrc = (src) => src || null
 const isDraw = (match) => Number(match?.homeScore) === Number(match?.awayScore)
 const isHomeWinner = (match) => Number(match?.homeScore) > Number(match?.awayScore)
 const isAwayWinner = (match) => Number(match?.awayScore) > Number(match?.homeScore)
-const crestSrc = (src) => src || null
 
 const normalizedStatusShort = computed(() => String(props.statusShort || '').trim().toUpperCase())
 const normalizedLabel = computed(() => String(props.statusLabel || '').toLowerCase())
@@ -44,11 +46,37 @@ const isFinished = computed(() => {
 })
 
 const displayStatusLabel = computed(() => (isFinished.value ? (props.statusLabel || 'Finalizado') : 'En progreso'))
+
+const homePossession = computed(() => {
+    const value = Number(props.match?.homePossession)
+    return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : null
+})
+
+const awayPossession = computed(() => {
+    const value = Number(props.match?.awayPossession)
+    return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : null
+})
+
+const hasPossession = computed(() => homePossession.value !== null && awayPossession.value !== null)
+const homeGoalsFeed = computed(() => Array.isArray(props.match?.homeGoalsFeed) ? props.match.homeGoalsFeed : [])
+const awayGoalsFeed = computed(() => Array.isArray(props.match?.awayGoalsFeed) ? props.match.awayGoalsFeed : [])
+const hasFooterData = computed(() => crestsInside.value && (hasPossession.value || homeGoalsFeed.value.length > 0 || awayGoalsFeed.value.length > 0))
+
+const teamColors = computed(() => resolveMatchTeamColors({
+    home: {
+        name: props.match?.homeTeam,
+        code: props.match?.homeCode,
+    },
+    away: {
+        name: props.match?.awayTeam,
+        code: props.match?.awayCode,
+    },
+}))
 </script>
 
 <template>
-    <section class="space-y-2">
-        <div v-if="!crestsInside" class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+    <section class="card-shell">
+        <div v-if="!crestsInside" class="card-topline">
             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                 {{ match.groupName || '-' }}
             </p>
@@ -69,146 +97,217 @@ const displayStatusLabel = computed(() => (isFinished.value ? (props.statusLabel
             </div>
         </div>
 
-        <div class="match-shell" :class="crestsInside ? 'match-shell-inside' : 'match-shell-outside'">
-            <div v-if="!crestsInside" class="shield-slot">
+        <div class="card-parent" :class="crestsInside ? 'card-parent-inside' : 'card-parent-outside'">
+            <div v-if="!crestsInside" class="crest-outer-slot">
                 <img
                     v-if="crestSrc(match.homeShieldUrl)"
                     :src="crestSrc(match.homeShieldUrl)"
                     :alt="match.homeTeam"
                     :title="match.homeTeam"
-                    class="shield-image"
+                    class="crest-image"
                     loading="lazy"
                 />
-                <span v-else class="shield-placeholder" aria-hidden="true" />
+                <span v-else class="crest-placeholder" aria-hidden="true" />
             </div>
 
             <article
-                class="live-match-card relative overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/75"
+                class="live-card relative overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/75"
                 :class="[
                     hoverable ? 'transition hover:border-primary-300 hover:shadow-md dark:hover:border-primary-700' : '',
                     isFinished ? 'match-finished' : 'match-live',
                 ]"
             >
-                <div class="match-body space-y-3">
-                    <div v-if="crestsInside" class="match-meta-row">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                            {{ match.groupName || '-' }}
-                        </p>
+                <header class="card-header">
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        {{ match.groupName || '-' }}
+                    </p>
 
-                        <div class="match-meta-center">
-                            <div class="inline-flex items-center gap-1.5">
-                                <ClockIcon class="h-4 w-4" :class="isFinished ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-500 dark:text-emerald-400'" />
-                                <span class="text-2xl font-black leading-none" :class="isFinished ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-500 dark:text-emerald-400'">
-                                    {{ match.matchTime }}
-                                </span>
-                            </div>
-                            <span class="match-meta-dot" aria-hidden="true" />
-                            <div class="location-meta inline-flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                                <MapPinIcon class="h-4 w-4 text-cyan-500 dark:text-cyan-400" />
-                                <span class="location-meta-text truncate">{{ match.venue || 'Sede por confirmar' }}</span>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-end">
-                            <span class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold tracking-wide" :class="isFinished ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'">
-                                <CheckCircleIcon v-if="showStatusIcon && isFinished" class="h-3.5 w-3.5" />
-                                <ClockIcon v-else-if="showStatusIcon" class="h-3.5 w-3.5" />
-                                {{ displayStatusLabel }}
+                    <div class="header-center">
+                        <div class="inline-flex items-center gap-1.5">
+                            <ClockIcon class="h-4 w-4" :class="isFinished ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-500 dark:text-emerald-400'" />
+                            <span class="text-2xl font-black leading-none" :class="isFinished ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-500 dark:text-emerald-400'">
+                                {{ match.matchTime }}
                             </span>
                         </div>
-                    </div>
-
-                    <div v-if="!crestsInside" class="match-location-row inline-flex w-full items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                        <MapPinIcon class="h-4 w-4 text-cyan-500 dark:text-cyan-400" />
-                        <span class="truncate">{{ match.venue || 'Sede por confirmar' }}</span>
-                    </div>
-
-                    <div class="match-content-grid" :class="crestsInside ? 'match-content-grid-inside' : 'match-content-grid-outside'">
-                        <div v-if="crestsInside" class="team-crest-panel team-crest-panel-home">
-                            <div class="shield-slot shield-slot-inside">
-                                <img
-                                    v-if="crestSrc(match.homeShieldUrl)"
-                                    :src="crestSrc(match.homeShieldUrl)"
-                                    :alt="match.homeTeam"
-                                    :title="match.homeTeam"
-                                    class="shield-image"
-                                    loading="lazy"
-                                />
-                                <span v-else class="shield-placeholder" aria-hidden="true" />
-                            </div>
-                        </div>
-
-                        <div class="team-panel team-panel-home">
-                            <div class="team-copy">
-                                <span class="team-name block truncate text-base font-semibold text-slate-900 dark:text-white md:text-[1.1rem]">{{ match.homeTeam }}</span>
-                                <span class="country-code block text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ match.homeCode }}</span>
-                            </div>
-                        </div>
-
-                        <div class="match-score-wrap">
-                            <div class="match-score-box inline-flex min-w-[92px] items-center justify-center gap-3 rounded-xl bg-slate-100 px-3 py-2 text-2xl font-black dark:bg-slate-800 md:min-w-[110px]">
-                                <span :class="(isHomeWinner(match) || isDraw(match)) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
-                                    {{ match.homeScore ?? 0 }}
-                                </span>
-                                <span class="text-slate-400 dark:text-slate-500">-</span>
-                                <span :class="(isAwayWinner(match) || isDraw(match)) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
-                                    {{ match.awayScore ?? 0 }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="team-panel team-panel-away">
-                            <div class="team-copy">
-                                <span class="team-name block truncate text-base font-semibold text-slate-900 dark:text-white md:text-[1.1rem]">{{ match.awayTeam }}</span>
-                                <span class="country-code block text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ match.awayCode }}</span>
-                            </div>
-                        </div>
-
-                        <div v-if="crestsInside" class="team-crest-panel team-crest-panel-away">
-                            <div class="shield-slot shield-slot-inside">
-                                <img
-                                    v-if="crestSrc(match.awayShieldUrl)"
-                                    :src="crestSrc(match.awayShieldUrl)"
-                                    :alt="match.awayTeam"
-                                    :title="match.awayTeam"
-                                    class="shield-image"
-                                    loading="lazy"
-                                />
-                                <span v-else class="shield-placeholder" aria-hidden="true" />
-                            </div>
+                        <span class="header-dot" aria-hidden="true" />
+                        <div class="location-chip inline-flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                            <MapPinIcon class="h-4 w-4 text-cyan-500 dark:text-cyan-400" />
+                            <span class="location-text truncate">{{ match.venue || 'Sede por confirmar' }}</span>
                         </div>
                     </div>
 
-                    <div class="match-mobile-teams">
-                        <div class="mobile-team-line">
-                            <span class="truncate font-semibold text-slate-900 dark:text-white">{{ match.homeTeam }}</span>
-                            <span class="font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ match.homeCode }}</span>
+                    <div class="flex justify-end">
+                        <span class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold tracking-wide" :class="isFinished ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'">
+                            <CheckCircleIcon v-if="showStatusIcon && isFinished" class="h-3.5 w-3.5" />
+                            <ClockIcon v-else-if="showStatusIcon" class="h-3.5 w-3.5" />
+                            {{ displayStatusLabel }}
+                        </span>
+                    </div>
+                </header>
+
+                <div v-if="!crestsInside" class="card-location-outside">
+                    <MapPinIcon class="h-4 w-4 text-cyan-500 dark:text-cyan-400" />
+                    <span class="truncate">{{ match.venue || 'Sede por confirmar' }}</span>
+                </div>
+
+                <div class="body-governor" :class="crestsInside ? 'body-governor-inside' : 'body-governor-outside'">
+                    <div v-if="crestsInside" class="crest-inner-slot crest-inner-slot-home">
+                        <img
+                            v-if="crestSrc(match.homeShieldUrl)"
+                            :src="crestSrc(match.homeShieldUrl)"
+                            :alt="match.homeTeam"
+                            :title="match.homeTeam"
+                            class="crest-image"
+                            loading="lazy"
+                        />
+                        <span v-else class="crest-placeholder" aria-hidden="true" />
+                    </div>
+
+                    <div class="body-stack">
+                        <div class="card-body" :class="crestsInside ? 'card-body-inside' : 'card-body-outside'">
+                            <div class="country-block country-block-home">
+                                <div class="country-copy">
+                                    <span class="team-name block truncate text-base font-semibold text-slate-900 dark:text-white md:text-[1.1rem]">{{ match.homeTeam }}</span>
+                                    <span class="country-code block text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ match.homeCode }}</span>
+                                </div>
+                            </div>
+
+                            <div class="score-block">
+                                <div class="match-score-box inline-flex min-w-[92px] items-center justify-center gap-3 rounded-xl bg-slate-100 px-3 py-2 text-2xl font-black dark:bg-slate-800 md:min-w-[110px]">
+                                    <span :class="(isHomeWinner(match) || isDraw(match)) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
+                                        {{ match.homeScore ?? 0 }}
+                                    </span>
+                                    <span class="text-slate-400 dark:text-slate-500">-</span>
+                                    <span :class="(isAwayWinner(match) || isDraw(match)) ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-white'">
+                                        {{ match.awayScore ?? 0 }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="country-block country-block-away">
+                                <div class="country-copy">
+                                    <span class="team-name block truncate text-base font-semibold text-slate-900 dark:text-white md:text-[1.1rem]">{{ match.awayTeam }}</span>
+                                    <span class="country-code block text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ match.awayCode }}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mobile-team-line">
-                            <span class="truncate font-semibold text-slate-900 dark:text-white">{{ match.awayTeam }}</span>
-                            <span class="font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ match.awayCode }}</span>
-                        </div>
+
+                        <footer v-if="hasFooterData" class="card-footer">
+                            <div class="goal-side goal-side-home">
+                                <AppTooltip
+                                    v-for="(goal, index) in homeGoalsFeed"
+                                    :key="`home-goal-${index}-${goal.minute}`"
+                                    :text="`${goal.playerName} ${goal.minute}`"
+                                    placement="top"
+                                    tooltip-class="max-w-none whitespace-nowrap"
+                                >
+                                    <span class="goal-icon goal-icon-home" aria-label="Gol local">
+                                        <svg viewBox="0 0 640 512" class="h-3.5 w-3.5 fill-current" aria-hidden="true">
+                                            <path d="M320.2 112c44.2 0 80-35.8 80-80l53.5 0c17 0 33.3 6.7 45.3 18.7L617.6 169.4c12.5 12.5 12.5 32.8 0 45.3l-50.7 50.7c-12.5 12.5-32.8 12.5-45.3 0l-41.4-41.4 0 224c0 35.3-28.7 64-64 64l-192 0c-35.3 0-64-28.7-64-64l0-224-41.4 41.4c-12.5 12.5-32.8 12.5-45.3 0L22.9 214.6c-12.5-12.5-12.5-32.8 0-45.3L141.5 50.7c12-12 28.3-18.7 45.3-18.7l53.5 0c0 44.2 35.8 80 80 80z"/>
+                                        </svg>
+                                    </span>
+                                </AppTooltip>
+                            </div>
+
+                            <div v-if="hasPossession" class="possession-core">
+                                <div class="possession-slot">
+                                    <AppTooltip :text="`${homePossession}% posesion`" placement="top">
+                                        <div class="possession-lane possession-lane-home">
+                                            <div
+                                                class="possession-line possession-line-home"
+                                                :style="{
+                                                    '--possession-pct': homePossession,
+                                                    background: `linear-gradient(90deg, ${teamColors.homeColor}88 0%, ${teamColors.homeColor} 100%)`,
+                                                }"
+                                            />
+                                        </div>
+                                    </AppTooltip>
+                                </div>
+
+                                <AppTooltip text="Posesion del balon" placement="top">
+                                    <div class="possession-ball" aria-hidden="true">
+                                        <svg viewBox="0 0 512 512" class="h-4 w-4 fill-current">
+                                            <path d="M417.3 360.1l-71.6-4.8c-5.2-.3-10.3 1.1-14.5 4.2s-7.2 7.4-8.4 12.5l-17.6 69.6C289.5 445.8 273 448 256 448s-33.5-2.2-49.2-6.4L189.2 372c-1.3-5-4.3-9.4-8.4-12.5s-9.3-4.5-14.5-4.2l-71.6 4.8c-17.6-27.2-28.5-59.2-30.4-93.6L125 228.3c4.4-2.8 7.6-7 9.2-11.9s1.4-10.2-.5-15l-26.7-66.6C128 109.2 155.3 89 186.7 76.9l55.2 46c4 3.3 9 5.1 14.1 5.1s10.2-1.8 14.1-5.1l55.2-46c31.3 12.1 58.7 32.3 79.6 57.9l-26.7 66.6c-1.9 4.8-2.1 10.1-.5 15s4.9 9.1 9.2 11.9l60.7 38.2c-1.9 34.4-12.8 66.4-30.4 93.6zM256 512a256 256 0 1 0 0-512 256 256 0 1 0 0 512zm14.1-325.7c-8.4-6.1-19.8-6.1-28.2 0L194 221c-8.4 6.1-11.9 16.9-8.7 26.8l18.3 56.3c3.2 9.9 12.4 16.6 22.8 16.6l59.2 0c10.4 0 19.6-6.7 22.8-16.6l18.3-56.3c3.2-9.9-.3-20.7-8.7-26.8l-47.9-34.8z"/>
+                                        </svg>
+                                    </div>
+                                </AppTooltip>
+
+                                <div class="possession-slot">
+                                    <AppTooltip :text="`${awayPossession}% posesion`" placement="top">
+                                        <div class="possession-lane possession-lane-away">
+                                            <div
+                                                class="possession-line possession-line-away"
+                                                :style="{
+                                                    '--possession-pct': awayPossession,
+                                                    background: `linear-gradient(90deg, ${teamColors.awayColor} 0%, ${teamColors.awayColor}88 100%)`,
+                                                }"
+                                            />
+                                        </div>
+                                    </AppTooltip>
+                                </div>
+                            </div>
+                            <div v-else class="possession-core possession-core-empty" />
+
+                            <div class="goal-side goal-side-away">
+                                <AppTooltip
+                                    v-for="(goal, index) in awayGoalsFeed"
+                                    :key="`away-goal-${index}-${goal.minute}`"
+                                    :text="`${goal.playerName} ${goal.minute}`"
+                                    placement="top"
+                                    tooltip-class="max-w-none whitespace-nowrap"
+                                >
+                                    <span class="goal-icon goal-icon-away" aria-label="Gol visitante">
+                                        <svg viewBox="0 0 640 512" class="h-3.5 w-3.5 fill-current" aria-hidden="true">
+                                            <path d="M320.2 112c44.2 0 80-35.8 80-80l53.5 0c17 0 33.3 6.7 45.3 18.7L617.6 169.4c12.5 12.5 12.5 32.8 0 45.3l-50.7 50.7c-12.5 12.5-32.8 12.5-45.3 0l-41.4-41.4 0 224c0 35.3-28.7 64-64 64l-192 0c-35.3 0-64-28.7-64-64l0-224-41.4 41.4c-12.5 12.5-32.8 12.5-45.3 0L22.9 214.6c-12.5-12.5-12.5-32.8 0-45.3L141.5 50.7c12-12 28.3-18.7 45.3-18.7l53.5 0c0 44.2 35.8 80 80 80z"/>
+                                        </svg>
+                                    </span>
+                                </AppTooltip>
+                            </div>
+                        </footer>
+                    </div>
+
+                    <div v-if="crestsInside" class="crest-inner-slot crest-inner-slot-away">
+                        <img
+                            v-if="crestSrc(match.awayShieldUrl)"
+                            :src="crestSrc(match.awayShieldUrl)"
+                            :alt="match.awayTeam"
+                            :title="match.awayTeam"
+                            class="crest-image"
+                            loading="lazy"
+                        />
+                        <span v-else class="crest-placeholder" aria-hidden="true" />
+                    </div>
+                </div>
+
+                <div class="match-mobile-teams">
+                    <div class="mobile-team-line">
+                        <span class="truncate font-semibold text-slate-900 dark:text-white">{{ match.homeTeam }}</span>
+                        <span class="font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ match.homeCode }}</span>
+                    </div>
+                    <div class="mobile-team-line">
+                        <span class="truncate font-semibold text-slate-900 dark:text-white">{{ match.awayTeam }}</span>
+                        <span class="font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ match.awayCode }}</span>
                     </div>
                 </div>
             </article>
 
-            <div v-if="!crestsInside" class="shield-slot">
+            <div v-if="!crestsInside" class="crest-outer-slot">
                 <img
                     v-if="crestSrc(match.awayShieldUrl)"
                     :src="crestSrc(match.awayShieldUrl)"
                     :alt="match.awayTeam"
                     :title="match.awayTeam"
-                    class="shield-image"
+                    class="crest-image"
                     loading="lazy"
                 />
-                <span v-else class="shield-placeholder" aria-hidden="true" />
+                <span v-else class="crest-placeholder" aria-hidden="true" />
             </div>
         </div>
     </section>
 </template>
 
 <style scoped>
-.live-match-card::before {
+.live-card::before {
     content: '';
     position: absolute;
     top: -1px;
@@ -218,13 +317,13 @@ const displayStatusLabel = computed(() => (isFinished.value ? (props.statusLabel
     border-radius: 9999px;
 }
 
-.match-live.live-match-card::before {
+.match-live.live-card::before {
     background: linear-gradient(90deg, rgba(16, 185, 129, 0) 0%, rgba(16, 185, 129, 0.75) 35%, rgba(34, 197, 94, 1) 55%, rgba(52, 211, 153, 0.85) 75%, rgba(16, 185, 129, 0) 100%);
     box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
     animation: live-scan 2.2s ease-in-out infinite alternate;
 }
 
-.match-finished.live-match-card::before {
+.match-finished.live-card::before {
     left: 0;
     width: 100%;
     background: linear-gradient(90deg, rgba(244, 63, 94, 0.1) 0%, rgba(251, 113, 133, 0.45) 50%, rgba(244, 63, 94, 0.1) 100%);
@@ -251,7 +350,7 @@ const displayStatusLabel = computed(() => (isFinished.value ? (props.statusLabel
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .live-match-card::before {
+    .live-card::before {
         animation: none;
         left: 0;
         width: 100%;
@@ -259,30 +358,80 @@ const displayStatusLabel = computed(() => (isFinished.value ? (props.statusLabel
     }
 }
 
-.match-shell {
+.card-shell {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.card-topline {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.card-parent {
     display: grid;
     align-items: center;
     gap: 1rem;
+    outline: 1px solid #ef4444;
 }
 
-.match-shell-outside {
+.card-parent-outside {
     grid-template-columns: auto minmax(0, 1fr) auto;
 }
 
-.match-shell-inside {
+.card-parent-inside {
     grid-template-columns: minmax(0, 1fr);
 }
 
-.shield-slot {
-    width: clamp(80px, 8vw, 108px);
-    height: clamp(80px, 8vw, 108px);
+.body-governor {
+    display: grid;
+    align-items: center;
+    gap: 1rem;
+    outline: 1px solid #ef4444;
+}
+
+.body-governor-inside {
+    grid-template-columns: clamp(64px, 7vw, 88px) minmax(0, 1fr) clamp(64px, 7vw, 88px);
+}
+
+.body-governor-outside {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.body-stack {
+    display: grid;
+    gap: 0.7rem;
+    min-width: 0;
+}
+
+.crest-outer-slot,
+.crest-inner-slot {
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
 }
 
-.shield-image {
+.crest-inner-slot-home {
+    justify-self: start;
+}
+
+.crest-inner-slot-away {
+    justify-self: end;
+}
+
+.crest-outer-slot {
+    width: clamp(80px, 8vw, 108px);
+    height: clamp(80px, 8vw, 108px);
+}
+
+.crest-inner-slot {
+    width: clamp(64px, 7vw, 88px);
+    height: clamp(64px, 7vw, 88px);
+}
+
+.crest-image {
     display: block;
     max-width: 100%;
     max-height: 100%;
@@ -292,18 +441,20 @@ const displayStatusLabel = computed(() => (isFinished.value ? (props.statusLabel
     object-position: center center;
 }
 
-.match-body {
-    min-width: 0;
+.crest-placeholder {
+    width: 100%;
+    height: 1px;
+    visibility: hidden;
 }
 
-.match-meta-row {
+.card-header {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 0.75rem;
 }
 
-.match-meta-center {
+.header-center {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -311,7 +462,7 @@ const displayStatusLabel = computed(() => (isFinished.value ? (props.statusLabel
     min-width: 0;
 }
 
-.match-meta-dot {
+.header-dot {
     width: 0.32rem;
     height: 0.32rem;
     border-radius: 9999px;
@@ -319,112 +470,275 @@ const displayStatusLabel = computed(() => (isFinished.value ? (props.statusLabel
     flex: 0 0 auto;
 }
 
-.location-meta-text {
+.location-text {
     transition: color 180ms ease;
 }
 
-.location-meta:hover .location-meta-text {
+.location-chip:hover .location-text {
     color: rgb(6 182 212);
 }
 
-.dark .location-meta:hover .location-meta-text {
+.dark .location-chip:hover .location-text {
     color: rgb(34 211 238);
 }
 
-.match-content-grid {
+.card-location-outside {
+    display: inline-flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: rgb(100 116 139);
+}
+
+.card-body {
     display: grid;
     align-items: center;
     gap: 1rem;
 }
 
-.match-content-grid-outside {
+.card-body-outside {
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 }
 
-.match-content-grid-inside {
-    grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr) auto;
+.card-body-inside {
+    grid-template-columns: minmax(92px, 140px) auto minmax(92px, 140px);
+    justify-content: center;
+    outline: 1px solid #ef4444;
 }
 
-.team-panel {
+.country-block {
     display: flex;
     align-items: center;
     min-width: 0;
+    min-height: 64px;
+    outline: 1px solid #ef4444;
 }
 
-.team-panel-home {
+.country-block-home {
     justify-content: flex-end;
     text-align: right;
+    padding-right: 4px;
 }
 
-.team-panel-away {
+.country-block-away {
     justify-content: flex-start;
     text-align: left;
+    padding-left: 4px;
 }
 
-.team-copy {
+.country-copy {
+    display: grid;
+    align-content: center;
+    gap: 0.2rem;
+    width: 100%;
     min-width: 0;
 }
 
-.match-score-wrap {
-    display: flex;
-    justify-content: center;
+.team-name {
+    line-height: 1.05;
 }
 
-.team-crest-panel {
+.country-code {
+    line-height: 1;
+}
+
+.score-block {
+    display: flex;
+    justify-content: center;
+    outline: 1px solid #ef4444;
+}
+
+.card-footer {
+    display: grid;
+    grid-template-columns: 88px auto 88px;
+    align-items: center;
+    gap: 0.75rem;
+    width: max-content;
+    margin: 0 auto;
+    padding-top: 0.1rem;
+    outline: 1px solid #ef4444;
+}
+
+.goal-side {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 0.35rem;
+    min-height: 28px;
+    width: 124px;
+    outline: 1px solid #ef4444;
 }
 
-.shield-slot-inside {
-    width: clamp(64px, 7vw, 88px);
-    height: clamp(64px, 7vw, 88px);
+.goal-side-home {
+    justify-content: flex-end;
+}
+
+.goal-side-away {
+    justify-content: flex-start;
+}
+
+.goal-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 9999px;
+    background: rgb(241 245 249);
+    color: rgb(71 85 105);
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.28);
+}
+
+.goal-icon-home {
+    color: rgb(22 163 74);
+}
+
+.goal-icon-away {
+    color: rgb(37 99 235);
+}
+
+.dark .goal-icon {
+    background: rgb(30 41 59 / 0.88);
+    color: rgb(226 232 240);
+}
+
+.possession-core {
+    --possession-base: 150px;
+    display: grid;
+    grid-template-columns: var(--possession-base) 24px var(--possession-base);
+    align-items: center;
+    column-gap: 0.85rem;
+    width: calc((var(--possession-base) * 2) + 48px);
+    outline: 1px solid #ef4444;
+}
+
+.possession-core-empty {
+    min-height: 28px;
+}
+
+.possession-slot {
+    width: var(--possession-base);
+}
+
+.possession-core :deep(.group) {
+    display: flex;
+    width: 100%;
+}
+
+.possession-core :deep(.group > .inline-flex) {
+    display: flex;
+    width: 100%;
+}
+
+.possession-lane {
+    display: flex;
+    align-items: center;
+    width: var(--possession-base);
+}
+
+.possession-lane-home {
+    justify-content: flex-end;
+}
+
+.possession-lane-away {
+    justify-content: flex-start;
+}
+
+.possession-line {
+    height: 0.34rem;
+    width: calc(var(--possession-base) * var(--possession-pct) / 100);
+    border-radius: 9999px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.possession-ball {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    color: rgb(71 85 105);
+}
+
+.dark .possession-ball {
+    color: rgb(148 163 184);
 }
 
 .match-mobile-teams {
     display: none;
 }
 
-.shield-placeholder {
-    width: 100%;
-    height: 1px;
-    visibility: hidden;
+@media (max-width: 960px) and (min-width: 641px) {
+    .body-governor-inside {
+        grid-template-columns: 56px minmax(0, 1fr) 56px;
+        gap: 0.75rem;
+    }
+
+    .card-body-inside {
+        grid-template-columns: minmax(88px, 120px) auto minmax(88px, 120px);
+        gap: 0.65rem;
+    }
+
+    .crest-inner-slot {
+        width: 56px;
+        height: 56px;
+    }
+
+    .possession-core {
+        --possession-base: 108px;
+    }
+
+    .card-body-inside .team-name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 1rem;
+    }
+
+    .goal-side {
+        width: 104px;
+    }
 }
 
 @media (max-width: 640px) {
-    .match-shell-outside {
+    .card-parent-outside {
         grid-template-columns: 84px minmax(0, 1fr) 84px;
         gap: 0.75rem;
     }
 
-    .shield-slot {
+    .crest-outer-slot {
         width: 84px;
         height: 84px;
     }
 
-    .match-content-grid {
-        grid-template-columns: auto;
-        gap: 0.75rem;
-    }
-
-    .match-meta-row {
+    .card-header {
         grid-template-columns: 1fr;
         justify-items: center;
         text-align: center;
         gap: 0.5rem;
     }
 
-    .match-meta-center {
+    .header-center {
         flex-wrap: wrap;
         gap: 0.5rem;
     }
 
-    .team-panel {
+    .card-body {
+        grid-template-columns: auto;
+        gap: 0.75rem;
+    }
+
+    .country-block,
+    .crest-inner-slot {
         display: none;
     }
 
-    .team-crest-panel {
-        display: none;
+    .body-governor {
+        outline: none;
+    }
+
+    .body-stack {
+        gap: 0.6rem;
     }
 
     .match-mobile-teams {
@@ -440,27 +754,52 @@ const displayStatusLabel = computed(() => (isFinished.value ? (props.statusLabel
         gap: 0.45rem;
         min-width: 0;
     }
+
+    .possession-core {
+        --possession-base: 110px;
+    }
+
+    .card-footer {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 0.55rem;
+        width: 100%;
+    }
+
+    .goal-side-home,
+    .goal-side-away {
+        justify-content: center;
+    }
 }
 
 @media (max-width: 420px) {
-    .match-shell-outside {
+    .card-parent-outside {
         grid-template-columns: 88px minmax(0, 1fr) 88px;
         gap: 0.5rem;
-        align-items: center;
     }
 
-    .shield-slot {
+    .crest-outer-slot {
         width: 88px;
         height: 88px;
     }
 
-    .live-match-card {
+    .live-card {
         padding: 0.6rem 0.55rem;
     }
 
-    .match-location-row {
+    .card-location-outside {
         font-size: 0.9rem;
         line-height: 1.2rem;
+    }
+
+    .possession-core {
+        --possession-base: 84px;
+        column-gap: 0.45rem;
+    }
+
+    .goal-icon {
+        width: 1.4rem;
+        height: 1.4rem;
     }
 
     .match-score-box {
