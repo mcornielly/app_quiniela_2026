@@ -120,23 +120,27 @@ const liveBadgeLabel = (match) => (isMatchFinished(match) ? 'Finalizado' : 'En p
                             <p class="text-2xl font-black text-rose-500 dark:text-rose-400">{{ match.matchTime }}</p>
                         </div>
 
-                        <div class="relative space-y-1.5 px-16 md:px-24">
-                            <img
-                                v-if="crestSrc(match.homeShieldUrl)"
-                                :src="crestSrc(match.homeShieldUrl)"
-                                :alt="match.homeTeam"
-                                :title="match.homeTeam"
-                                class="absolute left-0 top-1/2 h-20 w-20 -translate-y-1/2 object-contain md:h-24 md:w-24"
-                                loading="lazy"
-                            />
-                            <img
-                                v-if="crestSrc(match.awayShieldUrl)"
-                                :src="crestSrc(match.awayShieldUrl)"
-                                :alt="match.awayTeam"
-                                :title="match.awayTeam"
-                                class="absolute right-0 top-1/2 h-20 w-20 -translate-y-1/2 object-contain md:h-24 md:w-24"
-                                loading="lazy"
-                            />
+                        <div class="live-crest-shell relative space-y-1.5">
+                            <div class="live-crest-slot live-crest-slot-left" aria-hidden="true">
+                                <img
+                                    v-if="crestSrc(match.homeShieldUrl)"
+                                    :src="crestSrc(match.homeShieldUrl)"
+                                    :alt="match.homeTeam"
+                                    :title="match.homeTeam"
+                                    class="live-crest-image"
+                                    loading="lazy"
+                                />
+                            </div>
+                            <div class="live-crest-slot live-crest-slot-right" aria-hidden="true">
+                                <img
+                                    v-if="crestSrc(match.awayShieldUrl)"
+                                    :src="crestSrc(match.awayShieldUrl)"
+                                    :alt="match.awayTeam"
+                                    :title="match.awayTeam"
+                                    class="live-crest-image"
+                                    loading="lazy"
+                                />
+                            </div>
                             <div class="inline-flex w-full items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                                 <MapPinIcon class="h-4 w-4 text-cyan-500 dark:text-cyan-400" />
                                 <span class="truncate transition-colors hover:text-cyan-500 dark:hover:text-cyan-400">{{ match.venue || 'Sede por confirmar' }}</span>
@@ -191,6 +195,22 @@ const liveBadgeLabel = (match) => (isMatchFinished(match) ? 'Finalizado' : 'En p
 </template>
 
 <style scoped>
+
+.live-crest-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.live-crest-image {
+  vertical-align: middle;
+}
+.live-crest-slot-left,
+.live-crest-slot-right {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 .live-match-card::before {
     content: '';
     position: absolute;
@@ -242,6 +262,55 @@ const liveBadgeLabel = (match) => (isMatchFinished(match) ? 'Finalizado' : 'En p
     }
 }
 
+.live-crest-shell {
+    padding-left: 4.75rem;
+    padding-right: 4.75rem;
+}
+
+.live-crest-slot {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;               /* ← NUEVO */
+    align-items: center;         /* ← NUEVO */
+    justify-content: center;     /* ← NUEVO */
+    width: 5rem;
+    height: 5rem;
+    pointer-events: none;
+}
+
+.live-crest-slot-left {
+    left: 0;
+}
+
+.live-crest-slot-right {
+    right: 0;
+}
+
+.live-crest-image {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    object-position: center center;
+    vertical-align: middle;      /* ← NUEVO */
+}
+
+@media (min-width: 768px) {
+    .live-crest-shell {
+        padding-left: 5.5rem;
+        padding-right: 5.5rem;
+    }
+
+    .live-crest-slot {
+        width: 5.75rem;
+        height: 5.75rem;
+        transform: translateY(calc(-50% + 2px));
+    }
+}
+
 @media (max-width: 640px) {
     .team-name {
         display: none;
@@ -249,6 +318,16 @@ const liveBadgeLabel = (match) => (isMatchFinished(match) ? 'Finalizado' : 'En p
 
     .country-code {
         display: none;
+    }
+
+    .live-crest-shell {
+        padding-left: 4.5rem;
+        padding-right: 4.5rem;
+    }
+
+    .live-crest-slot {
+        width: 4.5rem;
+        height: 4.5rem;
     }
 }
 </style>

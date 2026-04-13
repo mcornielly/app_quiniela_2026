@@ -21,7 +21,7 @@ class GameStatusUpdated implements ShouldBroadcastNow
     {
     }
 
-    public static function fromGame(Game $game, ?string $type = null): self
+    public static function fromGame(Game $game, ?string $type = null, array $meta = []): self
     {
         $game->loadMissing(['homeTeam.country', 'awayTeam.country']);
 
@@ -62,6 +62,8 @@ class GameStatusUpdated implements ShouldBroadcastNow
             'matchTime' => $game->match_time ? Str::substr($game->match_time, 0, 5) : null,
             'venue' => $game->venue,
             'message' => $message,
+            'minute' => $meta['minute'] ?? null,
+            'playerName' => $meta['playerName'] ?? null,
             'occurredAt' => now()->toIso8601String(),
         ]);
     }

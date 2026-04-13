@@ -132,6 +132,8 @@ class FootballSimulateLive extends Command
         $home = is_numeric($game->home_score) ? (int) $game->home_score : 0;
         $away = is_numeric($game->away_score) ? (int) $game->away_score : 0;
         $goalScored = random_int(1, 100) <= $goalChance;
+        $homeScored = false;
+        $scorerName = null;
 
         if ($goalScored) {
             $homeScored = random_int(0, 1) === 1;
@@ -140,6 +142,8 @@ class FootballSimulateLive extends Command
             } else {
                 $away++;
             }
+
+            $scorerName = $this->resolveScorerName($game, $homeScored);
         }
 
         $game->update([
@@ -153,7 +157,10 @@ class FootballSimulateLive extends Command
         $marker = $goalScored ? 'GOAL' : 'tick';
         $this->line("[{$marker} {$minute}'] #{$game->match_number} {$this->teamName($game, 'home')} {$home} - {$away} {$this->teamName($game, 'away')}");
 
-        $this->broadcastUpdate($game, $goalScored ? 'update' : 'update');
+        $this->broadcastUpdate($game, 'update', [
+            'minute' => $minute,
+            'playerName' => $scorerName,
+        ]);
     }
 
     private function finalizeGames(Collection $games): void
@@ -199,13 +206,27 @@ class FootballSimulateLive extends Command
         return $game->awayTeam?->name ?? ($game->away_slot ?: 'Visitante');
     }
 
-    private function broadcastUpdate(Game $game, string $type): void
+    private function broadcastUpdate(Game $game, string $type, array $meta = []): void
     {
         try {
-            broadcast(GameStatusUpdated::fromGame($game, $type));
+            broadcast(GameStatusUpdated::fromGame($game, $type, $meta));
         } catch (\Throwable) {
             // Keep simulation running even if websocket server is unavailable.
         }
     }
-}
 
+    private function resolveScorerName(Game $game, bool $homeScored): string
+    {
+        $team = $homeScored ? $game->homeTeam : $game->awayTeam;
+
+        if (! $team) {
+            return 'Jugador por confirmar';
+        }
+
+        $player = $team->players()
+            ->inRandomOrder()
+            ->value('name');
+
+        return $player ?: 'Jugador por confirmar';
+    }
+}

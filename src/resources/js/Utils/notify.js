@@ -10,17 +10,39 @@ const notificationClass = () => {
 const notificationQueue = []
 let isProcessingQueue = false
 
+const normalizeNotificationPayload = (input, fallbackTitle, fallbackType) => {
+    if (typeof input === 'object' && input !== null) {
+        return {
+            title: input.title || fallbackTitle,
+            message: input.message || '',
+            type: input.type || fallbackType,
+            dangerouslyUseHTMLString: Boolean(input.useHTMLString),
+            duration: input.duration,
+        }
+    }
+
+    return {
+        title: fallbackTitle,
+        message: input,
+        type: fallbackType,
+        dangerouslyUseHTMLString: false,
+        duration: undefined,
+    }
+}
+
 const processQueue = async () => {
     if (isProcessingQueue || notificationQueue.length === 0) return
     isProcessingQueue = true
 
     while (notificationQueue.length > 0) {
-        const { title, message, type } = notificationQueue.shift()
+        const { title, message, type, dangerouslyUseHTMLString, duration } = notificationQueue.shift()
 
         ElNotification({
             title,
             message,
             type,
+            dangerouslyUseHTMLString,
+            ...(duration ? { duration } : {}),
             customClass: notificationClass(),
         })
 
@@ -32,17 +54,17 @@ const processQueue = async () => {
 }
 
 export function notifySuccess(message) {
-    notificationQueue.push({ title: 'Success', message, type: 'success' })
+    notificationQueue.push(normalizeNotificationPayload(message, 'Success', 'success'))
     processQueue()
 }
 
 export function notifyError(message) {
-    notificationQueue.push({ title: 'Error', message, type: 'error' })
+    notificationQueue.push(normalizeNotificationPayload(message, 'Error', 'error'))
     processQueue()
 }
 
 export function notifyInfo(message) {
-    notificationQueue.push({ title: 'Primary', message, type: 'primary' })
+    notificationQueue.push(normalizeNotificationPayload(message, 'Informacion', 'info'))
     processQueue()
 }
 

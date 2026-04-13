@@ -45,6 +45,7 @@ const deferFlashNotifications = ref(false)
 const pendingFlash = ref(null)
 const liveChannelName = 'matches.live'
 const USER_NOTIFICATIONS_STORAGE_KEY_BASE = 'user.notifications.v1'
+const lastLivePayloadByGame = ref({})
 
 const worldCupNavigation = computed(() => [
     { name: 'Calendario', href: route('calendar.index'), current: route().current('calendar.index') || route().current('matches.index'), icon: 'calendar' },
@@ -88,33 +89,130 @@ const toggleTheme = () => {
     applyTheme(currentTheme.value === 'dark' ? 'light' : 'dark')
 }
 
-const buildLiveInfoMessage = (payload) => {
-    const homeTeam = payload?.homeTeam ?? 'Local'
-    const awayTeam = payload?.awayTeam ?? 'Visitante'
-    const type = payload?.type
+const escapeHtml = (value) => String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
 
-    if (type === 'result') {
-        return `Partido finalizado:\n${homeTeam} vs ${awayTeam}.`
+const flagEmojiFromCode = (code) => {
+    const normalized = String(code || '').trim().toUpperCase()
+    if (!/^[A-Z]{2}$/.test(normalized)) return ''
+    return String.fromCodePoint(...[...normalized].map((char) => 127397 + char.charCodeAt(0)))
+}
+
+const matchupHtml = (payload) => {
+    const homeFlag = flagEmojiFromCode(payload?.homeCode)
+    const awayFlag = flagEmojiFromCode(payload?.awayCode)
+    const homeTeam = escapeHtml(payload?.homeTeam ?? 'Local')
+    const awayTeam = escapeHtml(payload?.awayTeam ?? 'Visitante')
+
+    return `<div style="text-align:center;font-weight:600;">${homeFlag ? `${homeFlag} ` : ''}${homeTeam} vs ${awayTeam}${awayFlag ? ` ${awayFlag}` : ''}</div>`
+}
+
+const resultScoreHtml = (payload) => {
+    const homeScore = Number.isFinite(Number(payload?.homeScore)) ? Number(payload.homeScore) : 0
+    const awayScore = Number.isFinite(Number(payload?.awayScore)) ? Number(payload.awayScore) : 0
+
+    return `<div style="margin-top:6px;text-align:center;font-weight:700;">${homeScore} - ${awayScore}</div>`
+}
+
+const goalToastConfig = (payload, previousPayload) => {
+    const currentHome = Number.isFinite(Number(payload?.homeScore)) ? Number(payload.homeScore) : 0
+    const currentAway = Number.isFinite(Number(payload?.awayScore)) ? Number(payload.awayScore) : 0
+    const previousHome = Number.isFinite(Number(previousPayload?.homeScore)) ? Number(previousPayload.homeScore) : 0
+    const previousAway = Number.isFinite(Number(previousPayload?.awayScore)) ? Number(previousPayload.awayScore) : 0
+
+    if (currentHome === previousHome && currentAway === previousAway) {
+        return null
     }
 
-    if (type === 'update') {
-        return `Resultados actualizados: ${homeTeam} vs ${awayTeam}.`
+    const homeScored = currentHome > previousHome
+    const scorerTeam = homeScored ? payload?.homeTeam : payload?.awayTeam
+    const scorerCode = homeScored ? payload?.homeCode : payload?.awayCode
+    const scorerFlag = flagEmojiFromCode(scorerCode)
+    const scoreLine = `${currentHome} - ${currentAway}`
+    const homeFlag = flagEmojiFromCode(payload?.homeCode)
+    const awayFlag = flagEmojiFromCode(payload?.awayCode)
+    const scorerName = escapeHtml(payload?.playerName ?? 'Jugador por confirmar')
+    const minute = Number.isFinite(Number(payload?.minute)) ? Number(payload.minute) : null
+    const minuteLabel = minute ? `${minute}''` : '--\'\''
+
+    return {
+        title: 'Juego Directo Gool...!',
+        message: `<div style="text-align:center;font-weight:700;">${homeFlag ? `${homeFlag} ` : ''}${escapeHtml(payload?.homeTeam)} ${escapeHtml(scoreLine)} ${escapeHtml(payload?.awayTeam)}${awayFlag ? ` ${awayFlag}` : ''}</div><div style="margin-top:6px;text-align:center;">${scorerFlag ? `${scorerFlag} ` : ''}${scorerName} ${escapeHtml(minuteLabel)}</div>`,
+        type: 'success',
+        useHTMLString: true,
+        duration: 4500,
+    }
+}
+
+const buildLiveToastConfig = (payload, previousPayload) => {
+    const type = payload?.type
+
+    if (type === 'start') {
+        return {
+            title: 'Juego Directo Inicio del Partido',
+            message: matchupHtml(payload),
+            type: 'info',
+            useHTMLString: true,
+            duration: 4000,
+        }
+    }
+
+    if (type === 'result') {
+        return {
+            title: 'Juego Finaliza Resultado',
+            message: `${matchupHtml(payload)}${resultScoreHtml(payload)}`,
+            type: 'success',
+            useHTMLString: true,
+            duration: 5000,
+        }
     }
 
     if (type === 'qualification') {
-        return `Llave confirmada: ${homeTeam} vs ${awayTeam}.`
+        return {
+            title: 'Clasificacion Confirmada',
+            message: matchupHtml(payload),
+            type: 'warning',
+            useHTMLString: true,
+            duration: 4500,
+        }
     }
 
-    if (type === 'start') {
-        return `Encuentro en juego: ${homeTeam} vs ${awayTeam}.`
+    if (type === 'update') {
+        return previousPayload ? goalToastConfig(payload, previousPayload) : null
     }
 
-    return payload?.message ?? `Actualizacion del partido: ${homeTeam} vs ${awayTeam}.`
+    return null
 }
 
 const pushNotification = (payload) => {
-    notifyInfo(buildLiveInfoMessage(payload))
-    fetchUserNotificationInbox()
+    const gameId = payload?.gameId
+    const previousPayload = gameId ? lastLivePayloadByGame.value[gameId] ?? null : null
+    const toastConfig = buildLiveToastConfig(payload, previousPayload)
+
+    if (gameId) {
+        lastLivePayloadByGame.value = {
+            ...lastLivePayloadByGame.value,
+            [gameId]: {
+                type: payload?.type ?? null,
+                status: payload?.status ?? null,
+                homeScore: payload?.homeScore ?? 0,
+                awayScore: payload?.awayScore ?? 0,
+            },
+        }
+    }
+
+    if (toastConfig) {
+        notifyInfo(toastConfig)
+    }
+
+    if (['result', 'qualification'].includes(payload?.type)) {
+        fetchUserNotificationInbox()
+    }
+
     window.dispatchEvent(new CustomEvent('dashboard:game-status-updated', { detail: payload }))
 }
 

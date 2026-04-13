@@ -193,17 +193,22 @@ const displayStatusLabel = computed(() => (isFinished.value ? (props.statusLabel
 }
 
 .shield-slot {
-    width: clamp(56px, 8vw, 110px);
+    width: clamp(72px, 8vw, 104px);
+    height: clamp(72px, 8vw, 104px);
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 .shield-image {
-    width: 100%;
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
     height: auto;
-    max-height: 110px;
     object-fit: contain;
+    object-position: center center;
 }
 
 .shield-placeholder {
@@ -220,10 +225,7 @@ const displayStatusLabel = computed(() => (isFinished.value ? (props.statusLabel
 
     .shield-slot {
         width: 84px;
-    }
-
-    .shield-image {
-        max-height: 86px;
+        height: 84px;
     }
 
     .country-code {
@@ -240,10 +242,7 @@ const displayStatusLabel = computed(() => (isFinished.value ? (props.statusLabel
 
     .shield-slot {
         width: 88px;
-    }
-
-    .shield-image {
-        max-height: 92px;
+        height: 88px;
     }
 
     .live-match-card {
