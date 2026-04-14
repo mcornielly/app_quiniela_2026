@@ -29,7 +29,7 @@ const activeTickerTheme = computed(() => ({
     ...(favoriteTeamTheme.value ?? {}),
 }))
 const activeTab = ref('live')
-const liveMatchesState = ref(Array.isArray(props.liveMatches) ? props.liveMatches : [])
+const allMatchesState = ref(Array.isArray(props.liveMatches) ? props.liveMatches : [])
 const initialLoading = ref(true)
 const pollIntervalMs = 25000
 let pollTimer = null
@@ -45,7 +45,8 @@ const isMatchFinished = (match) => {
 
 const liveBadgeLabel = (match) => (isMatchFinished(match) ? 'Finalizado' : 'En progreso')
 const skeletonRows = Array.from({ length: 3 }, (_, index) => index)
-const historyMatchesState = ref([])
+const liveMatchesState = computed(() => allMatchesState.value.filter((match) => !isMatchFinished(match)))
+const historyMatchesState = computed(() => allMatchesState.value.filter((match) => isMatchFinished(match)))
 const tabs = computed(() => ([
     {
         key: 'live',
@@ -80,7 +81,7 @@ const fetchLiveMatches = async ({ silent = false } = {}) => {
 
     try {
         const { data } = await axios.get(route('live.cards.feed'))
-        liveMatchesState.value = Array.isArray(data?.matches) ? data.matches : []
+        allMatchesState.value = Array.isArray(data?.matches) ? data.matches : []
     } catch {
         // Keep the last successful snapshot on screen if polling fails.
     } finally {
@@ -143,7 +144,8 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="mt-10">
-                <div class="flex flex-wrap items-center gap-2 md:gap-3 live-tabs">
+                <div class="live-tabs border-b border-slate-300 dark:border-slate-700">
+                <div class="flex flex-wrap items-center gap-2 md:gap-3">
                     <button
                         v-for="tab in tabs"
                         :key="tab.key"
@@ -159,8 +161,7 @@ onBeforeUnmount(() => {
                         </span>
                     </button>
                 </div>
-
-                <div class="border-b border-slate-300 dark:border-slate-700" />
+                </div>
 
                 <div class="mt-2 flex justify-center">
                     <p class="text-sm leading-tight text-slate-500 dark:text-slate-400">
@@ -261,7 +262,7 @@ onBeforeUnmount(() => {
     gap: 0.55rem;
     border-bottom: 2px solid transparent;
     margin-bottom: -1px;
-    padding: 0 1.15rem 1rem;
+    padding: 0 1.15rem 0.55rem;
     font-size: 0.95rem;
     font-weight: 600;
     letter-spacing: 0.18em;
@@ -271,6 +272,7 @@ onBeforeUnmount(() => {
 
 .live-tabs {
     margin-bottom: 0;
+    width: 100%;
 }
 
 .live-tab-active {
