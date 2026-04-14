@@ -326,7 +326,11 @@ class MatchesController extends Controller
                 $goals = $this->extractGoalFeed(
                     data_get($events, 'response', []),
                     (int) ($payload['homeApiTeamId'] ?? 0),
-                    (int) ($payload['awayApiTeamId'] ?? 0)
+                    (int) ($payload['awayApiTeamId'] ?? 0),
+                    [
+                        'home' => $this->localGoalPlayerLookup($game->homeTeam),
+                        'away' => $this->localGoalPlayerLookup($game->awayTeam),
+                    ]
                 );
                 $payload['homeGoalsFeed'] = $goals['home'];
                 $payload['awayGoalsFeed'] = $goals['away'];
@@ -408,7 +412,7 @@ class MatchesController extends Controller
         };
     }
 
-    private function extractGoalFeed(array $events, int $homeTeamId, int $awayTeamId): array
+    private function extractGoalFeed(array $events, int $homeTeamId, int $awayTeamId, array $playerLookup = []): array
     {
         $grouped = [
             'home' => [],
@@ -430,14 +434,18 @@ class MatchesController extends Controller
                 continue;
             }
 
+            $playerId = (int) data_get($event, 'player.id', 0);
+            $playerName = data_get($event, 'player.name') ?: 'Jugador por confirmar';
             $minute = (int) data_get($event, 'time.elapsed', 0);
             $extra = (int) data_get($event, 'time.extra', 0);
             $minuteLabel = $minute > 0
-                ? ($extra > 0 ? "{$minute}+{$extra}'" : "{$minute}'")
-                : "90'";
+                ? ($extra > 0 ? "{$minute}+{$extra}''" : "{$minute}''")
+                : "90''";
 
             $grouped[$side][] = [
-                'playerName' => data_get($event, 'player.name') ?: 'Jugador por confirmar',
+                'playerId' => $playerId > 0 ? $playerId : null,
+                'playerName' => $playerName,
+                'playerNumber' => $this->resolveGoalPlayerNumber($playerLookup[$side] ?? [], $playerId, $playerName),
                 'minute' => $minuteLabel,
             ];
         }
@@ -446,6 +454,72 @@ class MatchesController extends Controller
             'home' => array_slice($grouped['home'], 0, 5),
             'away' => array_slice($grouped['away'], 0, 5),
         ];
+    }
+
+    private function localGoalPlayerLookup($team): array
+    {
+        if (! $team) {
+            return ['byId' => [], 'byName' => []];
+        }
+
+        $players = $team->players()
+            ->select(['api_player_id', 'name', 'firstname', 'lastname', 'number'])
+            ->get();
+
+        $byId = [];
+        $byName = [];
+
+        foreach ($players as $player) {
+            $number = $player->number;
+
+            if ($number === null || $number === '') {
+                continue;
+            }
+
+            $playerId = (int) ($player->api_player_id ?: 0);
+            $name = trim((string) ($player->name ?: trim("{$player->firstname} {$player->lastname}")));
+            $normalizedName = $this->normalizePlayerLookupName($name);
+
+            if ($playerId > 0) {
+                $byId[$playerId] = $number;
+            }
+
+            if ($normalizedName !== '') {
+                $byName[$normalizedName] = $number;
+            }
+        }
+
+        return [
+            'byId' => $byId,
+            'byName' => $byName,
+        ];
+    }
+
+    private function resolveGoalPlayerNumber(array $lookup, int $playerId, string $playerName): int|string|null
+    {
+        if ($playerId > 0 && array_key_exists($playerId, $lookup['byId'] ?? [])) {
+            return $lookup['byId'][$playerId];
+        }
+
+        $normalizedName = $this->normalizePlayerLookupName($playerName);
+
+        if ($normalizedName !== '' && array_key_exists($normalizedName, $lookup['byName'] ?? [])) {
+            return $lookup['byName'][$normalizedName];
+        }
+
+        return null;
+    }
+
+    private function normalizePlayerLookupName(?string $value): string
+    {
+        $normalized = Str::of((string) $value)
+            ->ascii()
+            ->lower()
+            ->replaceMatches('/[^a-z0-9\s]/', ' ')
+            ->replaceMatches('/\s+/', ' ')
+            ->trim();
+
+        return (string) $normalized;
     }
 
     private function resolveTournament(): ?Tournament

@@ -29,6 +29,18 @@ const props = defineProps({
         type: String,
         default: 'outside',
     },
+    showHeaderMeta: {
+        type: Boolean,
+        default: true,
+    },
+    showFooterMeta: {
+        type: Boolean,
+        default: true,
+    },
+    showCenteredLocation: {
+        type: Boolean,
+        default: false,
+    },
 })
 
 const crestSrc = (src) => src || null
@@ -58,9 +70,30 @@ const awayPossession = computed(() => {
 })
 
 const hasPossession = computed(() => homePossession.value !== null && awayPossession.value !== null)
-const homeGoalsFeed = computed(() => Array.isArray(props.match?.homeGoalsFeed) ? props.match.homeGoalsFeed : [])
-const awayGoalsFeed = computed(() => Array.isArray(props.match?.awayGoalsFeed) ? props.match.awayGoalsFeed : [])
-const hasFooterData = computed(() => crestsInside.value && (hasPossession.value || homeGoalsFeed.value.length > 0 || awayGoalsFeed.value.length > 0))
+const scoreGoalCount = (value) => {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0
+}
+
+const ensureGoalFeed = (feed, score, side) => {
+    const items = Array.isArray(feed) ? [...feed] : []
+    const total = scoreGoalCount(score)
+
+    while (items.length < total) {
+        items.push({
+            playerName: 'Jugador por confirmar',
+            playerNumber: null,
+            minute: '',
+            isFallback: true,
+        })
+    }
+
+    return items.slice(0, Math.max(total, items.length))
+}
+
+const homeGoalsFeed = computed(() => ensureGoalFeed(props.match?.homeGoalsFeed, props.match?.homeScore, 'home'))
+const awayGoalsFeed = computed(() => ensureGoalFeed(props.match?.awayGoalsFeed, props.match?.awayScore, 'away'))
+const hasFooterData = computed(() => props.showFooterMeta && crestsInside.value && (hasPossession.value || homeGoalsFeed.value.length > 0 || awayGoalsFeed.value.length > 0))
 
 const teamColors = computed(() => resolveMatchTeamColors({
     home: {
@@ -72,6 +105,20 @@ const teamColors = computed(() => resolveMatchTeamColors({
         code: props.match?.awayCode,
     },
 }))
+
+const goalTooltipText = (goal) => {
+    if (goal?.isFallback) {
+        return goal?.playerName || 'Jugador por confirmar'
+    }
+
+    const number = goal?.playerNumber !== null && goal?.playerNumber !== undefined && goal?.playerNumber !== ''
+        ? `#${goal.playerNumber} `
+        : ''
+    const player = String(goal?.playerName || 'Jugador por confirmar').trim()
+    const minute = String(goal?.minute || '').trim()
+
+    return `${number}${player}${minute ? ` ${minute}` : ''}`.trim()
+}
 </script>
 
 <template>
@@ -117,7 +164,7 @@ const teamColors = computed(() => resolveMatchTeamColors({
                     isFinished ? 'match-finished' : 'match-live',
                 ]"
             >
-                <header class="card-header">
+                <header v-if="showHeaderMeta" class="card-header">
                     <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                         {{ match.groupName || '-' }}
                     </p>
@@ -145,7 +192,12 @@ const teamColors = computed(() => resolveMatchTeamColors({
                     </div>
                 </header>
 
-                <div v-if="!crestsInside" class="card-location-outside">
+                <div v-if="!crestsInside && showHeaderMeta" class="card-location-outside">
+                    <MapPinIcon class="h-4 w-4 text-cyan-500 dark:text-cyan-400" />
+                    <span class="truncate">{{ match.venue || 'Sede por confirmar' }}</span>
+                </div>
+
+                <div v-if="showCenteredLocation" class="card-location-centered">
                     <MapPinIcon class="h-4 w-4 text-cyan-500 dark:text-cyan-400" />
                     <span class="truncate">{{ match.venue || 'Sede por confirmar' }}</span>
                 </div>
@@ -193,11 +245,11 @@ const teamColors = computed(() => resolveMatchTeamColors({
                         </div>
 
                         <footer v-if="hasFooterData" class="card-footer">
-                            <div class="goal-side goal-side-home">
+                            <div class="footer-box goal-side goal-side-home">
                                 <AppTooltip
                                     v-for="(goal, index) in homeGoalsFeed"
                                     :key="`home-goal-${index}-${goal.minute}`"
-                                    :text="`${goal.playerName} ${goal.minute}`"
+                                    :text="goalTooltipText(goal)"
                                     placement="top"
                                     tooltip-class="max-w-none whitespace-nowrap"
                                 >
@@ -209,17 +261,19 @@ const teamColors = computed(() => resolveMatchTeamColors({
                                 </AppTooltip>
                             </div>
 
-                            <div v-if="hasPossession" class="possession-core">
+                            <div class="footer-box possession-core" :class="{ 'possession-core-empty': !hasPossession }">
                                 <div class="possession-slot">
-                                    <AppTooltip :text="`${homePossession}% posesion`" placement="top">
+                                    <AppTooltip :text="hasPossession ? `${homePossession}% posesion` : 'Sin datos de posesion'" placement="top">
                                         <div class="possession-lane possession-lane-home">
-                                            <div
-                                                class="possession-line possession-line-home"
-                                                :style="{
-                                                    '--possession-pct': homePossession,
-                                                    background: `linear-gradient(90deg, ${teamColors.homeColor}88 0%, ${teamColors.homeColor} 100%)`,
-                                                }"
-                                            />
+                                            <div class="possession-track">
+                                                <div
+                                                    class="possession-line possession-line-home"
+                                                    :style="{
+                                                        '--possession-pct': hasPossession ? homePossession : 0,
+                                                        background: `linear-gradient(270deg, ${teamColors.homeColor}88 0%, ${teamColors.homeColor} 100%)`,
+                                                    }"
+                                                />
+                                            </div>
                                         </div>
                                     </AppTooltip>
                                 </div>
@@ -233,26 +287,27 @@ const teamColors = computed(() => resolveMatchTeamColors({
                                 </AppTooltip>
 
                                 <div class="possession-slot">
-                                    <AppTooltip :text="`${awayPossession}% posesion`" placement="top">
+                                    <AppTooltip :text="hasPossession ? `${awayPossession}% posesion` : 'Sin datos de posesion'" placement="top">
                                         <div class="possession-lane possession-lane-away">
-                                            <div
-                                                class="possession-line possession-line-away"
-                                                :style="{
-                                                    '--possession-pct': awayPossession,
-                                                    background: `linear-gradient(90deg, ${teamColors.awayColor} 0%, ${teamColors.awayColor}88 100%)`,
-                                                }"
-                                            />
+                                            <div class="possession-track">
+                                                <div
+                                                    class="possession-line possession-line-away"
+                                                    :style="{
+                                                        '--possession-pct': hasPossession ? awayPossession : 0,
+                                                        background: `linear-gradient(90deg, ${teamColors.awayColor} 100%, ${teamColors.awayColor}88 0%)`,
+                                                    }"
+                                                />
+                                            </div>
                                         </div>
                                     </AppTooltip>
                                 </div>
                             </div>
-                            <div v-else class="possession-core possession-core-empty" />
 
-                            <div class="goal-side goal-side-away">
+                            <div class="footer-box goal-side goal-side-away">
                                 <AppTooltip
                                     v-for="(goal, index) in awayGoalsFeed"
                                     :key="`away-goal-${index}-${goal.minute}`"
-                                    :text="`${goal.playerName} ${goal.minute}`"
+                                    :text="goalTooltipText(goal)"
                                     placement="top"
                                     tooltip-class="max-w-none whitespace-nowrap"
                                 >
@@ -374,7 +429,6 @@ const teamColors = computed(() => resolveMatchTeamColors({
     display: grid;
     align-items: center;
     gap: 1rem;
-    outline: 1px solid #ef4444;
 }
 
 .card-parent-outside {
@@ -389,7 +443,6 @@ const teamColors = computed(() => resolveMatchTeamColors({
     display: grid;
     align-items: center;
     gap: 1rem;
-    outline: 1px solid #ef4444;
 }
 
 .body-governor-inside {
@@ -492,6 +545,29 @@ const teamColors = computed(() => resolveMatchTeamColors({
     color: rgb(100 116 139);
 }
 
+.card-location-centered {
+    display: inline-flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    margin-bottom: 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgb(100 116 139);
+    transition: color 180ms ease;
+}
+
+.card-location-centered:hover {
+    color: rgb(8 145 178);
+}
+
+.card-location-centered svg {
+    filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.45));
+}
+
 .card-body {
     display: grid;
     align-items: center;
@@ -505,7 +581,6 @@ const teamColors = computed(() => resolveMatchTeamColors({
 .card-body-inside {
     grid-template-columns: minmax(92px, 140px) auto minmax(92px, 140px);
     justify-content: center;
-    outline: 1px solid #ef4444;
 }
 
 .country-block {
@@ -513,7 +588,6 @@ const teamColors = computed(() => resolveMatchTeamColors({
     align-items: center;
     min-width: 0;
     min-height: 64px;
-    outline: 1px solid #ef4444;
 }
 
 .country-block-home {
@@ -547,18 +621,20 @@ const teamColors = computed(() => resolveMatchTeamColors({
 .score-block {
     display: flex;
     justify-content: center;
-    outline: 1px solid #ef4444;
 }
 
 .card-footer {
     display: grid;
-    grid-template-columns: 88px auto 88px;
+    grid-template-columns: minmax(124px, 1fr) minmax(0, 1.6fr) minmax(124px, 1fr);
     align-items: center;
     gap: 0.75rem;
-    width: max-content;
-    margin: 0 auto;
-    padding-top: 0.1rem;
-    outline: 1px solid #ef4444;
+    width: 100%;
+    min-width: 0;
+    padding-top: 0.25rem;
+}
+
+.footer-box {
+    min-width: 0;
 }
 
 .goal-side {
@@ -566,16 +642,15 @@ const teamColors = computed(() => resolveMatchTeamColors({
     align-items: center;
     gap: 0.35rem;
     min-height: 28px;
-    width: 124px;
-    outline: 1px solid #ef4444;
+    width: 100%;
 }
 
 .goal-side-home {
-    justify-content: flex-end;
+    justify-content: flex-start;
 }
 
 .goal-side-away {
-    justify-content: flex-start;
+    justify-content: flex-end;
 }
 
 .goal-icon {
@@ -604,13 +679,13 @@ const teamColors = computed(() => resolveMatchTeamColors({
 }
 
 .possession-core {
-    --possession-base: 150px;
     display: grid;
-    grid-template-columns: var(--possession-base) 24px var(--possession-base);
+    grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
     align-items: center;
     column-gap: 0.85rem;
-    width: calc((var(--possession-base) * 2) + 48px);
-    outline: 1px solid #ef4444;
+    width: 100%;
+    min-width: 0;
+    justify-self: center;
 }
 
 .possession-core-empty {
@@ -618,7 +693,8 @@ const teamColors = computed(() => resolveMatchTeamColors({
 }
 
 .possession-slot {
-    width: var(--possession-base);
+    width: 100%;
+    min-width: 0;
 }
 
 .possession-core :deep(.group) {
@@ -634,10 +710,24 @@ const teamColors = computed(() => resolveMatchTeamColors({
 .possession-lane {
     display: flex;
     align-items: center;
-    width: var(--possession-base);
+    width: 100%;
+    min-width: 0;
+}
+
+.possession-track {
+    width: 100%;
+    height: 0.34rem;
+    border-radius: 9999px;
+    background: rgb(226 232 240 / 0.95);
+    display: flex;
+    overflow: hidden;
 }
 
 .possession-lane-home {
+    justify-content: flex-end;
+}
+
+.possession-lane-home .possession-track {
     justify-content: flex-end;
 }
 
@@ -647,7 +737,7 @@ const teamColors = computed(() => resolveMatchTeamColors({
 
 .possession-line {
     height: 0.34rem;
-    width: calc(var(--possession-base) * var(--possession-pct) / 100);
+    width: calc(100% * var(--possession-pct) / 100);
     border-radius: 9999px;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
@@ -658,6 +748,14 @@ const teamColors = computed(() => resolveMatchTeamColors({
     justify-content: center;
     width: 24px;
     color: rgb(71 85 105);
+}
+
+.possession-core-empty .possession-ball {
+    opacity: 0.65;
+}
+
+.dark .possession-track {
+    background: rgb(51 65 85 / 0.95);
 }
 
 .dark .possession-ball {
@@ -684,10 +782,6 @@ const teamColors = computed(() => resolveMatchTeamColors({
         height: 56px;
     }
 
-    .possession-core {
-        --possession-base: 108px;
-    }
-
     .card-body-inside .team-name {
         white-space: nowrap;
         overflow: hidden;
@@ -696,7 +790,7 @@ const teamColors = computed(() => resolveMatchTeamColors({
     }
 
     .goal-side {
-        width: 104px;
+        min-width: 104px;
     }
 }
 
@@ -755,15 +849,15 @@ const teamColors = computed(() => resolveMatchTeamColors({
         min-width: 0;
     }
 
-    .possession-core {
-        --possession-base: 110px;
-    }
-
     .card-footer {
         grid-template-columns: 1fr;
         justify-items: center;
         gap: 0.55rem;
         width: 100%;
+    }
+
+    .goal-side {
+        min-width: 0;
     }
 
     .goal-side-home,
@@ -793,7 +887,6 @@ const teamColors = computed(() => resolveMatchTeamColors({
     }
 
     .possession-core {
-        --possession-base: 84px;
         column-gap: 0.45rem;
     }
 

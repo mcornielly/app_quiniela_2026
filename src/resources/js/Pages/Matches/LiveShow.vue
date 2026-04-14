@@ -51,12 +51,109 @@ const fixtureStatusShort = computed(() => feed.value?.fixture?.fixture?.status?.
 const fixtureStatusLong = computed(() => feed.value?.fixture?.fixture?.status?.long || '')
 const fixtureElapsed = computed(() => feed.value?.fixture?.fixture?.status?.elapsed)
 
+const normalizeGoalMinute = (elapsed, extra = null) => {
+    const minute = Number(elapsed)
+    const added = Number(extra)
+
+    if (!Number.isFinite(minute) || minute <= 0) {
+        return "90''"
+    }
+
+    if (Number.isFinite(added) && added > 0) {
+        return `${minute}+${added}''`
+    }
+
+    return `${minute}''`
+}
+
+const normalizePlayerLookupName = (value) => String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+
+const playerNumberLookup = computed(() => {
+    const lookup = new Map()
+
+    for (const pack of playerRows.value) {
+        const teamId = Number(pack?.team?.id || 0)
+
+        for (const entry of pack?.players || []) {
+            const playerId = Number(entry?.player?.id || 0)
+            const playerName = normalizePlayerLookupName(entry?.player?.name)
+            const playerNumber = entry?.statistics?.[0]?.games?.number ?? null
+
+            if (!teamId || playerNumber === null || playerNumber === undefined || playerNumber === '') {
+                continue
+            }
+
+            if (playerId) {
+                lookup.set(`id:${teamId}:${playerId}`, playerNumber)
+            }
+
+            if (playerName) {
+                lookup.set(`name:${teamId}:${playerName}`, playerNumber)
+            }
+        }
+    }
+
+    return lookup
+})
+
+const goalFeedFromEvents = computed(() => {
+    const grouped = {
+        home: [],
+        away: [],
+    }
+
+    for (const event of eventRows.value) {
+        const type = String(event?.type || '').toLowerCase()
+        const detail = String(event?.detail || '').toLowerCase()
+
+        if (type !== 'goal' && !detail.includes('goal')) {
+            continue
+        }
+
+        const teamId = Number(event?.team?.id || 0)
+        const side = teamId === currentHomeApiId.value ? 'home' : (teamId === currentAwayApiId.value ? 'away' : null)
+
+        if (!side) {
+            continue
+        }
+
+        const playerId = Number(event?.player?.id || 0)
+        const playerName = String(event?.player?.name || 'Jugador por confirmar').trim()
+        const playerNameKey = normalizePlayerLookupName(playerName)
+        const playerNumber = playerNumberLookup.value.get(`id:${teamId}:${playerId}`)
+            ?? playerNumberLookup.value.get(`name:${teamId}:${playerNameKey}`)
+            ?? null
+
+        grouped[side].push({
+            playerId: playerId || null,
+            playerName,
+            playerNumber,
+            minute: normalizeGoalMinute(event?.time?.elapsed, event?.time?.extra),
+        })
+    }
+
+    return {
+        home: grouped.home.slice(0, 5),
+        away: grouped.away.slice(0, 5),
+    }
+})
+
 const displayMatch = computed(() => {
     const base = props.match || {}
     const fixture = feed.value?.fixture
 
     if (!fixture) {
-        return base
+        return {
+            ...base,
+            homeGoalsFeed: goalFeedFromEvents.value.home,
+            awayGoalsFeed: goalFeedFromEvents.value.away,
+        }
     }
 
     return {
@@ -65,6 +162,8 @@ const displayMatch = computed(() => {
         awayScore: fixture?.goals?.away ?? base.awayScore,
         venue: fixture?.fixture?.venue?.name || base.venue,
         matchTime: fixtureElapsed.value ? `${fixtureElapsed.value}'` : base.matchTime,
+        homeGoalsFeed: goalFeedFromEvents.value.home,
+        awayGoalsFeed: goalFeedFromEvents.value.away,
     }
 })
 
@@ -335,6 +434,9 @@ onBeforeUnmount(() => {
                 :status-label="statusBadgeLabel"
                 :status-short="fixtureStatusShort"
                 :show-status-icon="false"
+                :show-header-meta="false"
+                :show-footer-meta="false"
+                :show-centered-location="true"
             />
 
             <!-- ── Detail section ── -->

@@ -48,6 +48,11 @@ class Tournament extends Model
         return $this->hasMany(Game::class);
     }
 
+    public function gameHistories()
+    {
+        return $this->hasMany(GameHistory::class);
+    }
+
     public function poolEntries()
     {
         return $this->hasMany(PoolEntry::class);

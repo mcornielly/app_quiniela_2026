@@ -88,6 +88,11 @@ class Game extends Model
         return $this->hasMany(Prediction::class);
     }
 
+    public function histories()
+    {
+        return $this->hasMany(GameHistory::class);
+    }
+
     public function scopeSearch($query, $search)
     {
         if (!$search) return $query;
