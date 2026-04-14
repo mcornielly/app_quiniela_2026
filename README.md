@@ -147,6 +147,28 @@ docker compose ps
 docker compose logs -f app
 ```
 
+## Flujo de Juego Directo
+
+Comandos disponibles para demos y limpieza del módulo `Juego Directo`:
+
+```powershell
+# Simular partidos en vivo
+docker compose exec app php artisan football:simulate-live --games=3 --ticks=18 --interval=8 --goal-chance=28
+
+# Resetear Juego Directo y limpiar historial del torneo
+docker compose exec app php artisan football:reset-live
+```
+
+Notas:
+
+- `football:simulate-live` marca juegos como `in_progress`, simula goles y puede finalizar partidos con `--finish`.
+- `football:reset-live` devuelve juegos `in_progress/finished` a `scheduled`, limpia scores/resultados y vacía `game_histories` del torneo.
+- Para conservar el histórico al resetear:
+
+```powershell
+docker compose exec app php artisan football:reset-live --keep-history
+```
+
 ## Troubleshooting WSL + npm
 
 Si al ejecutar `npm install` en WSL ves errores como `CMD.EXE ... rutas UNC` o paths `\\wsl.localhost\...`, estás usando `npm` de Windows dentro de Linux.

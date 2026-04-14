@@ -237,7 +237,58 @@ Internal command available:
 
 Goal: accelerate admin module creation under the table + drawer pattern.
 
-## 12) Current project checkpoint
+## 12) Live match module (`Juego Directo`)
+
+### Current behavior
+
+- Main live page:
+  - `resources/js/Pages/Matches/Live.vue`
+  - Tabs for `En vivo` and `Historial`
+  - Initial skeleton loading and soft fade-in
+- Live detail page:
+  - `resources/js/Pages/Matches/LiveShow.vue`
+  - Initial skeleton loading and soft fade-in
+- Reusable live card:
+  - `resources/js/Components/Live/LiveMatchCard.vue`
+
+### Historical persistence base
+
+Model:
+
+- `app/Models/GameHistory.php`
+
+Migration:
+
+- `database/migrations/2026_04_13_120000_create_game_histories_table.php`
+
+Purpose:
+
+- keep relevant live snapshots by tournament/game
+- preserve goals feed, events, statistics, lineups, players, and raw payload
+- support later rendering of finished match detail even when API data is no longer volatile
+
+### Operational commands
+
+- Simulate live flow:
+  - `php artisan football:simulate-live`
+- Reset live flow:
+  - `php artisan football:reset-live`
+
+`football:reset-live` currently:
+
+- resets `in_progress/finished` games to `scheduled`
+- clears match scores and result fields
+- deletes `game_histories` rows for the selected tournament
+- runs `optimize:clear` unless explicitly skipped
+
+Useful options:
+
+- `--tournament-year=2026`
+- `--tournament-type=world_cup`
+- `--keep-history`
+- `--skip-cache-clear`
+
+## 13) Current project checkpoint
 
 The system currently has:
 

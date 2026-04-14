@@ -76,7 +76,8 @@ const groupedTeams = computed(() => {
     const grouped = {}
 
     props.teams.forEach((team) => {
-        const key = team.group_name || '-'
+        const key = String(team.group_name || '').trim()
+        if (!key) return
         if (!grouped[key]) grouped[key] = []
         grouped[key].push(team)
     })
