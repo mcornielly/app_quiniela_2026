@@ -34,6 +34,7 @@ const activeTickerTheme = computed(() => ({
 }))
 
 const loading = ref(false)
+const initialLoading = ref(true)
 const loadError = ref('')
 const feed = ref({
     fixture: null,
@@ -44,7 +45,7 @@ const feed = ref({
     players: [],
     errors: [],
 })
-const pollIntervalMs = 20000
+const pollIntervalMs = 25000
 let pollTimer = null
 
 const fixtureStatusShort = computed(() => feed.value?.fixture?.fixture?.status?.short || '')
@@ -341,11 +342,13 @@ const widgetCards = computed(() => ([
     },
 ]))
 
-const fetchFeed = async () => {
+const fetchFeed = async ({ silent = false } = {}) => {
     if (!props.match?.id) return
 
-    loading.value = true
-    loadError.value = ''
+    if (!silent) {
+        loading.value = true
+        loadError.value = ''
+    }
 
     try {
         const { data } = await axios.get(route('live.feed', props.match.id))
@@ -361,13 +364,16 @@ const fetchFeed = async () => {
     } catch (error) {
         loadError.value = error?.response?.data?.message || 'No se pudo cargar el detalle en vivo.'
     } finally {
-        loading.value = false
+        if (!silent) {
+            loading.value = false
+            initialLoading.value = false
+        }
     }
 }
 
 const startPolling = () => {
     if (pollTimer) clearInterval(pollTimer)
-    pollTimer = setInterval(() => { fetchFeed() }, pollIntervalMs)
+    pollTimer = setInterval(() => { fetchFeed({ silent: true }) }, pollIntervalMs)
 }
 
 onMounted(async () => {
@@ -422,54 +428,131 @@ onBeforeUnmount(() => {
                         <template #icon>
                             <ClockIcon class="h-3.5 w-3.5" />
                         </template>
-                        {{ loading ? 'Actualizando...' : 'Auto refresh 20 s' }}
+                        {{ loading ? 'Actualizando...' : 'Auto refresh 25 s' }}
                     </AppBadge>
                 </div>
                 <div class="border-b border-slate-300 dark:border-slate-700" />
             </div>
 
-            <!-- ── Score card ── -->
-            <LiveMatchCard
-                :match="displayMatch"
-                :status-label="statusBadgeLabel"
-                :status-short="fixtureStatusShort"
-                :show-status-icon="false"
-                :show-header-meta="false"
-                :show-footer-meta="false"
-                :show-centered-location="true"
-            />
+            <Transition name="soft-fade" mode="out-in">
+            <section v-if="initialLoading" key="detail-skeleton" class="animate-pulse space-y-8 md:space-y-10">
+                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/75">
+                    <div class="space-y-5">
+                        <div class="mx-auto h-5 w-56 rounded-full bg-slate-200 dark:bg-slate-800" />
+                        <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+                            <div class="justify-self-end space-y-2 text-right">
+                                <div class="ml-auto h-7 w-28 rounded-full bg-slate-200 dark:bg-slate-800" />
+                                <div class="ml-auto h-4 w-10 rounded-full bg-slate-200 dark:bg-slate-800" />
+                            </div>
+                            <div class="h-14 w-32 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+                            <div class="space-y-2">
+                                <div class="h-7 w-28 rounded-full bg-slate-200 dark:bg-slate-800" />
+                                <div class="h-4 w-10 rounded-full bg-slate-200 dark:bg-slate-800" />
+                            </div>
+                        </div>
+                    </div>
+                </article>
 
-            <!-- ── Detail section ── -->
-            <section class="detail-stack space-y-8 md:space-y-10">
-                <!-- Alerts -->
-                <p v-if="loadError" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
-                    {{ loadError }}
-                </p>
-                <p v-if="feed.errors.includes('missing_fixture_id')" class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300">
-                    Falta <code>api_fixture_id</code> en este juego; sincroniza para activar estadisticas, alineacion, eventos y jugadores.
-                </p>
-                <p v-if="feed.errors.includes('missing_team_api_ids')" class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300">
-                    Falta <code>api_team_id</code> en uno de los equipos; por eso no hay Head to Head.
-                </p>
-
-                <!-- Widget cards -->
                 <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <article
-                        v-for="card in widgetCards"
-                        :key="card.label"
-                        class="kpi-card relative overflow-hidden rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+                        v-for="index in 4"
+                        :key="`detail-kpi-skeleton-${index}`"
+                        class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/75"
                     >
-                        <p class="text-xs uppercase tracking-[0.12em] text-gray-500 dark:text-gray-300">{{ card.label }}</p>
-                        <span class="absolute right-2 top-2 inline-flex" :class="card.accent">
-                            <svg :viewBox="card.iconViewBox" class="h-6 w-6 fill-current" aria-hidden="true">
-                                <path :d="card.iconPath" />
-                            </svg>
-                        </span>
-                        <div class="mt-2 flex min-h-[42px] items-center justify-center">
-                            <p class="text-center text-[1.7rem] font-black leading-none" :class="card.accent">{{ card.value }}</p>
+                        <div class="space-y-4">
+                            <div class="h-4 w-24 rounded-full bg-slate-200 dark:bg-slate-800" />
+                            <div class="mx-auto h-8 w-20 rounded-full bg-slate-200 dark:bg-slate-800" />
                         </div>
                     </article>
                 </section>
+
+                <section class="space-y-3">
+                    <div class="h-4 w-36 rounded-full bg-slate-200 dark:bg-slate-800" />
+                    <div class="grid gap-3 md:grid-cols-3">
+                        <article
+                            v-for="index in 3"
+                            :key="`detail-h2h-skeleton-${index}`"
+                            class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/75"
+                        >
+                            <div class="space-y-3 text-center">
+                                <div class="mx-auto h-4 w-28 rounded-full bg-slate-200 dark:bg-slate-800" />
+                                <div class="mx-auto h-8 w-12 rounded-full bg-slate-200 dark:bg-slate-800" />
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="space-y-3">
+                    <div class="h-4 w-40 rounded-full bg-slate-200 dark:bg-slate-800" />
+                    <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/75">
+                        <div class="h-40 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+                    </article>
+                </section>
+
+                <section class="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
+                    <div class="space-y-3">
+                        <div class="h-4 w-32 rounded-full bg-slate-200 dark:bg-slate-800" />
+                        <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/75">
+                            <div class="h-72 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+                        </article>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="h-4 w-28 rounded-full bg-slate-200 dark:bg-slate-800" />
+                        <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/75">
+                            <div class="space-y-4">
+                                <div v-for="index in 6" :key="`detail-stats-skeleton-${index}`" class="space-y-2">
+                                    <div class="h-4 rounded-full bg-slate-200 dark:bg-slate-800" />
+                                    <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-800" />
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+            </section>
+
+            <div v-else key="detail-content" class="space-y-8 md:space-y-10">
+                <!-- ── Score card ── -->
+                <LiveMatchCard
+                    :match="displayMatch"
+                    :status-label="statusBadgeLabel"
+                    :status-short="fixtureStatusShort"
+                    :show-status-icon="false"
+                    :show-header-meta="false"
+                    :show-footer-meta="false"
+                    :show-centered-location="true"
+                />
+
+                <!-- ── Detail section ── -->
+                <section class="detail-stack space-y-8 md:space-y-10">
+                    <!-- Alerts -->
+                    <p v-if="loadError" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
+                        {{ loadError }}
+                    </p>
+                    <p v-if="feed.errors.includes('missing_fixture_id')" class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300">
+                        Falta <code>api_fixture_id</code> en este juego; sincroniza para activar estadisticas, alineacion, eventos y jugadores.
+                    </p>
+                    <p v-if="feed.errors.includes('missing_team_api_ids')" class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300">
+                        Falta <code>api_team_id</code> en uno de los equipos; por eso no hay Head to Head.
+                    </p>
+
+                    <!-- Widget cards -->
+                    <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <article
+                            v-for="card in widgetCards"
+                            :key="card.label"
+                            class="kpi-card relative overflow-hidden rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+                        >
+                            <p class="text-xs uppercase tracking-[0.12em] text-gray-500 dark:text-gray-300">{{ card.label }}</p>
+                            <span class="absolute right-2 top-2 inline-flex" :class="card.accent">
+                                <svg :viewBox="card.iconViewBox" class="h-6 w-6 fill-current" aria-hidden="true">
+                                    <path :d="card.iconPath" />
+                                </svg>
+                            </span>
+                            <div class="mt-2 flex min-h-[42px] items-center justify-center">
+                                <p class="text-center text-[1.7rem] font-black leading-none" :class="card.accent">{{ card.value }}</p>
+                            </div>
+                        </article>
+                    </section>
 
                 <!-- Head to Head -->
                 <section class="space-y-3">
@@ -593,7 +676,9 @@ onBeforeUnmount(() => {
                     </div>
                     <p v-else class="text-sm text-slate-500 dark:text-slate-400">Sin datos de selecciones disponibles por ahora.</p>
                 </section>
-            </section>
+                </section>
+            </div>
+            </Transition>
         </section>
 
         <section v-else class="-mt-8">
@@ -603,3 +688,16 @@ onBeforeUnmount(() => {
         </section>
     </UserDashboardLayout>
 </template>
+
+<style scoped>
+.soft-fade-enter-active,
+.soft-fade-leave-active {
+    transition: opacity 280ms ease, transform 280ms ease;
+}
+
+.soft-fade-enter-from,
+.soft-fade-leave-to {
+    opacity: 0;
+    transform: translateY(10px);
+}
+</style>
